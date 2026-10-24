@@ -1,107 +1,24 @@
 package com.library.stockgap.domain.service;
-
-import com.library.stockgap.domain.model.CaseDossier;
-import com.library.stockgap.domain.model.CaseStatus;
-import com.library.stockgap.domain.model.EvidenceSnapshot;
-import com.library.stockgap.infrastructure.persistence.AnalysisRepository;
-import com.library.stockgap.infrastructure.persistence.CaseRepository;
-import com.library.stockgap.infrastructure.persistence.MissionRepository;
-import com.library.stockgap.infrastructure.persistence.OutboxRepository;
+import com.library.stockgap.domain.model.*;
+import com.library.stockgap.infrastructure.persistence.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
-/** Orchestration agent-first : chaque analyse est confiée au worker GPT. */
-@Service
-public class AnalysisOrchestrationService {
-    private final CaseRepository caseRepository;
-    private final AnalysisRepository analysisRepository;
-    private final MissionRepository missionRepository;
-    private final OutboxRepository outboxRepository;
-    private final SseHubService sseHubService;
-
-    public AnalysisOrchestrationService(CaseRepository caseRepository,
-                                        AnalysisRepository analysisRepository,
-                                        MissionRepository missionRepository,
-                                        OutboxRepository outboxRepository,
-                                        SseHubService sseHubService) {
-        this.caseRepository = caseRepository;
-        this.analysisRepository = analysisRepository;
-        this.missionRepository = missionRepository;
-        this.outboxRepository = outboxRepository;
-        this.sseHubService = sseHubService;
-    }
-
-    @Transactional
-    public UUID startAnalysis(UUID epoch, UUID caseId) {
-        CaseDossier dossier = caseRepository.findCaseDossier(epoch, caseId)
-            .orElseThrow(() -> new IllegalArgumentException("Dossier introuvable pour caseId: " + caseId));
-
-        analysisRepository.findActiveAnalysisId(epoch, caseId).ifPresent(previous -> {
-            analysisRepository.updateAnalysisStatus(epoch, previous, "CANCELLED");
-            missionRepository.cancelOpenMissionsForAnalysis(epoch, previous);
-            sseHubService.publishEvent(epoch, "AnalysisChanged", "Analysis", previous.toString(),
-                Map.of("analysisId", previous, "caseId", caseId, "state", "CANCELLED", "reason", "SUPERSEDED"));
-        });
-
-        UUID snapshotId = UUID.randomUUID();
-        UUID analysisId = UUID.randomUUID();
-        EvidenceSnapshot snapshot = new EvidenceSnapshot(
-            snapshotId, caseId, dossier.copyId(), "1.0.0", dossier.inventoryReferenceTime(), Instant.now(),
-            Map.of("caseId", caseId.toString(), "copyId", dossier.copyId().toString(),
-                "owningSiteId", dossier.owningSiteId(), "inventoryReferenceTime", dossier.inventoryReferenceTime().toString()),
-            dossier.timeline(), dossier.operatorNotes(), dossier.systemState(), dossier.observations(),
-            dossier.sourceAvailability(), dossier.symptoms());
-        analysisRepository.insertSnapshot(epoch, snapshot);
-        analysisRepository.insertAnalysisRun(epoch, analysisId, caseId, snapshotId, 1);
-
-        UUID missionId = UUID.randomUUID();
-        missionRepository.createMission(epoch, missionId, "INVESTIGATION", analysisId, null, snapshotId, 1, null);
-        Map<String, Object> envelope = new HashMap<>();
-        envelope.put("eventId", UUID.randomUUID().toString());
-        envelope.put("eventType", "InvestigationRequested");
-        envelope.put("schemaVersion", "1.0.0");
-        envelope.put("occurredAt", Instant.now().toString());
-        envelope.put("datasetEpoch", epoch.toString());
-        envelope.put("correlationId", analysisId.toString());
-        envelope.put("causationId", caseId.toString());
-        envelope.put("missionId", missionId.toString());
-        envelope.put("attempt", 1);
-        envelope.put("ruleSetVersion", 1);
-        envelope.put("evidenceSnapshotId", snapshotId.toString());
-        envelope.put("caseId", caseId.toString());
-        envelope.put("analysisId", analysisId.toString());
-        envelope.put("payload", Map.of("reason", "LLM_INVESTIGATION_REQUESTED"));
-        outboxRepository.enqueueEvent(epoch, UUID.fromString((String) envelope.get("eventId")), missionId,
-            "InvestigationRequested", envelope);
-
-        sseHubService.publishEvent(epoch, "AnalysisChanged", "Analysis", analysisId.toString(),
-            Map.of("analysisId", analysisId, "caseId", caseId, "state", "AGENT_PENDING"));
-        sseHubService.publishEvent(epoch, "MissionChanged", "Mission", missionId.toString(),
-            Map.of("missionId", missionId, "kind", "INVESTIGATION", "status", "QUEUED"));
-        return analysisId;
-    }
-
-    @Transactional
-    public UUID acceptDiagnostic(UUID epoch, UUID diagnosticId, UUID caseId) {
-        UUID acceptanceId = analysisRepository.acceptDiagnostic(epoch, diagnosticId, caseId);
-        sseHubService.publishEvent(epoch, "AnalysisChanged", "Case", caseId.toString(),
-            Map.of("caseId", caseId, "status", "DIAGNOSTIC_ACCEPTE", "acceptanceId", acceptanceId));
-        return acceptanceId;
-    }
-
-    @Transactional
-    public void cancelAnalysis(UUID epoch, UUID analysisId) {
-        var analysisOpt = analysisRepository.findAnalysis(epoch, analysisId);
-        if (analysisOpt.isEmpty()) return;
-        UUID caseId = (UUID) analysisOpt.get().get("caseId");
-        analysisRepository.updateAnalysisStatus(epoch, analysisId, "CANCELLED");
-        caseRepository.updateCaseStatus(epoch, caseId, CaseStatus.A_ANALYSER);
-        sseHubService.publishEvent(epoch, "AnalysisChanged", "Analysis", analysisId.toString(),
-            Map.of("analysisId", analysisId, "caseId", caseId, "state", "CANCELLED"));
-    }
+import java.time.Instant; import java.util.*;
+@Service public class AnalysisOrchestrationService {
+ private final CaseRepository cases; private final AnalysisRepository analyses; private final RuleRepository rules; private final MissionRepository missions; private final OutboxRepository outbox; private final DeterministicAnalysisService dmn; private final SseHubService sse;
+ public AnalysisOrchestrationService(CaseRepository cases,AnalysisRepository analyses,RuleRepository rules,MissionRepository missions,OutboxRepository outbox,DeterministicAnalysisService dmn,SseHubService sse){this.cases=cases;this.analyses=analyses;this.rules=rules;this.missions=missions;this.outbox=outbox;this.dmn=dmn;this.sse=sse;}
+ @Transactional public UUID startAnalysis(UUID epoch,UUID caseId){
+  CaseDossier d=cases.findCaseDossier(epoch,caseId).orElseThrow(()->new IllegalArgumentException("Dossier introuvable"));
+  analyses.findActiveAnalysisId(epoch,caseId).ifPresent(old->{analyses.updateAnalysisStatus(epoch,old,"CANCELLED");missions.cancelOpenMissionsForAnalysis(epoch,old);});
+  UUID sid=UUID.randomUUID(), aid=UUID.randomUUID(); int version=rules.getActiveRuleSetVersion(epoch);
+  EvidenceSnapshot snap=new EvidenceSnapshot(sid,caseId,d.copyId(),"1.0.0",d.inventoryReferenceTime(),Instant.now(),Map.of("caseId",caseId.toString(),"copyId",d.copyId().toString()),d.timeline(),d.operatorNotes(),d.systemState(),d.observations(),d.sourceAvailability(),d.symptoms());
+  analyses.insertSnapshot(epoch,snap); analyses.insertAnalysisRun(epoch,aid,caseId,sid,version);
+  var result=dmn.evaluate(snap,rules.getActiveRules(epoch));
+  if(result.fullyCovered()) { UUID did=UUID.randomUUID(); DiagnosticRecord diag=new DiagnosticRecord(did,aid,caseId,DiagnosticConclusion.fromFindings(result.findings()),result.findings(),List.of(),"Diagnostic déterministe complet établi par les règles DMN actives.",true,"DMN"); analyses.markDeterministicCompleted(epoch,aid,caseId,result.trace(),diag); sse.publishEvent(epoch,"AnalysisChanged","Analysis",aid.toString(),Map.of("analysisId",aid,"caseId",caseId,"state","COMPLETED","isDeterministic",true)); }
+  else { analyses.markFallbackRequested(epoch,aid,result.fallbackReason(),result.trace()); queueAgent(epoch,aid,caseId,sid,version,result.fallbackReason()); }
+  return aid;
+ }
+ private void queueAgent(UUID epoch,UUID aid,UUID caseId,UUID sid,int version,FallbackReason reason){UUID mid=UUID.randomUUID();missions.createMission(epoch,mid,"INVESTIGATION",aid,null,sid,version,null);Map<String,Object> e=new HashMap<>();e.put("eventId",UUID.randomUUID().toString());e.put("eventType","InvestigationRequested");e.put("schemaVersion","1.0.0");e.put("occurredAt",Instant.now().toString());e.put("datasetEpoch",epoch.toString());e.put("correlationId",aid.toString());e.put("causationId",caseId.toString());e.put("missionId",mid.toString());e.put("attempt",1);e.put("ruleSetVersion",version);e.put("evidenceSnapshotId",sid.toString());e.put("caseId",caseId.toString());e.put("analysisId",aid.toString());e.put("payload",Map.of("reason",reason.name()));outbox.enqueueEvent(epoch,UUID.fromString((String)e.get("eventId")),mid,"InvestigationRequested",e);sse.publishEvent(epoch,"AnalysisChanged","Analysis",aid.toString(),Map.of("analysisId",aid,"caseId",caseId,"state","AGENT_PENDING","fallbackReason",reason.name())); }
+ @Transactional public UUID acceptDiagnostic(UUID epoch,UUID did,UUID cid){UUID id=analyses.acceptDiagnostic(epoch,did,cid);sse.publishEvent(epoch,"AnalysisChanged","Case",cid.toString(),Map.of("caseId",cid,"status","DIAGNOSTIC_ACCEPTE","acceptanceId",id));return id;}
+ @Transactional public void cancelAnalysis(UUID epoch,UUID aid){var a=analyses.findAnalysis(epoch,aid);if(a.isEmpty())return;UUID cid=(UUID)a.get().get("caseId");analyses.updateAnalysisStatus(epoch,aid,"CANCELLED");missions.cancelOpenMissionsForAnalysis(epoch,aid);cases.updateCaseStatus(epoch,cid,CaseStatus.A_ANALYSER);}
 }

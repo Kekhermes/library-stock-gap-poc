@@ -119,16 +119,19 @@
         </div>
 
         <div class="panel-body">
-          <!-- Statut d'analyse en cours -->
-          <div v-if="dossier.analyses?.[0]?.status === 'FAILED'" style="border: 1px solid var(--accent-rose); border-radius: 6px; padding: 0.85rem; background: rgba(251, 113, 133, 0.08); margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-muted);">
-            <strong style="color: var(--accent-rose);">Analyse en échec</strong><br>
-            Le traitement n'a pas produit de diagnostic recevable ({{ dossier.analyses[0].fallbackReason || 'contrat de sortie invalide' }}).
-            Le cas peut être relancé.
+          <div v-if="dossier.analyses?.[0]?.status === 'AGENT_PENDING' || dossier.analyses?.[0]?.status === 'AGENT_RUNNING'" style="text-align: center; padding: 2rem;">
+            <div style="font-size: 2rem; margin-bottom: 1rem;">🤖</div>
+            <div style="font-weight: 600;">Investigation agentique en cours…</div>
+            <div style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">La règle DMN ne couvre pas entièrement ce dossier ({{ dossier.analyses[0].fallbackReason || 'couverture insuffisante' }}). GPT analyse maintenant le snapshot figé.</div>
+          </div>
+          <div v-else-if="dossier.analyses?.[0]?.status === 'FAILED'" style="border: 1px solid var(--accent-rose); border-radius: 6px; padding: 0.85rem; background: rgba(251, 113, 133, 0.08); margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-muted);">
+            <strong style="color: var(--accent-rose);">Investigation agentique en échec</strong><br>
+            La cascade DMN → agent a bien été déclenchée, mais l'agent n'a pas produit de diagnostic recevable. Le cas peut être relancé.
           </div>
 
-          <div v-if="dossier.status === 'EN_ANALYSE'" style="text-align: center; padding: 2rem;">
-            <div style="font-size: 2rem; margin-bottom: 1rem;">⏳</div>
-            <div style="font-weight: 600;">Analyse en cours...</div>
+          <div v-else-if="dossier.status === 'EN_ANALYSE'" style="text-align: center; padding: 2rem;">
+            <div style="font-size: 2rem; margin-bottom: 1rem;">⚙️</div>
+            <div style="font-weight: 600;">Évaluation déterministe en cours…</div>
             <div style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">
               1. Évaluation DMN par Apache KIE<br>
               2. Fallback investigation via Kafka si nécessaire

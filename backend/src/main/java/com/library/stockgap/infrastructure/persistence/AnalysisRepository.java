@@ -68,22 +68,19 @@ public class AnalysisRepository {
 
     @Transactional
     public void insertAnalysisRun(UUID epoch, UUID analysisId, UUID caseId, UUID snapshotId, int ruleSetVersion) {
-        Instant now = Instant.now();
-        try {
-            String reason = objectMapper.writeValueAsString(Map.of("reason", "LLM_INVESTIGATION_REQUESTED"));
-            jdbcTemplate.update(
-                "INSERT INTO runtime.analysis_run (dataset_epoch, analysis_id, case_id, snapshot_id, rule_set_version, " +
-                "status, fallback_reason, created_at) VALUES (?, ?, ?, ?, ?, 'AGENT_PENDING', ?::jsonb, ?)",
-                epoch, analysisId, caseId, snapshotId, ruleSetVersion, reason, Timestamp.from(now)
-            );
-        } catch (Exception e) {
-            throw new RuntimeException("Erreur création analyse agentique", e);
-        }
-        jdbcTemplate.update(
-            "UPDATE runtime.gap_case SET status = 'EN_ANALYSE', lock_version = lock_version + 1 " +
-            "WHERE dataset_epoch = ? AND case_id = ?",
-            epoch, caseId
-        );
+        jdbcTemplate.update("INSERT INTO runtime.analysis_run (dataset_epoch, analysis_id, case_id, snapshot_id, rule_set_version, status, created_at) VALUES (?, ?, ?, ?, ?, 'DETERMINISTIC_RUNNING', ?)", epoch, analysisId, caseId, snapshotId, ruleSetVersion, Timestamp.from(Instant.now()));
+        jdbcTemplate.update("UPDATE runtime.gap_case SET status = 'EN_ANALYSE', lock_version = lock_version + 1 WHERE dataset_epoch = ? AND case_id = ?", epoch, caseId);
+    }
+
+    @Transactional
+    public void markDeterministicCompleted(UUID epoch, UUID analysisId, UUID caseId, Map<String,Object> trace, DiagnosticRecord diagnostic) {
+        try { jdbcTemplate.update("UPDATE runtime.analysis_run SET status = 'COMPLETED', deterministic_trace = ?::jsonb, finished_at = ?, lock_version = lock_version + 1 WHERE dataset_epoch = ? AND analysis_id = ?", objectMapper.writeValueAsString(trace), Timestamp.from(Instant.now()), epoch, analysisId); insertDiagnosticRevision(epoch, diagnostic, "DMN", 1); }
+        catch(Exception e) { throw new RuntimeException("Erreur diagnostic DMN",e); }
+    }
+    @Transactional
+    public void markFallbackRequested(UUID epoch, UUID analysisId, FallbackReason reason, Map<String,Object> trace) {
+        try { jdbcTemplate.update("UPDATE runtime.analysis_run SET status = 'AGENT_PENDING', fallback_reason = ?::jsonb, deterministic_trace = ?::jsonb, lock_version = lock_version + 1 WHERE dataset_epoch = ? AND analysis_id = ?", objectMapper.writeValueAsString(Map.of("reason",reason.name(),"trace",trace)), objectMapper.writeValueAsString(trace), epoch, analysisId); }
+        catch(Exception e) { throw new RuntimeException("Erreur fallback agent",e); }
     }
 
     @Transactional
