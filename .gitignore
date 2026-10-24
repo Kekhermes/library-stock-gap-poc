@@ -28,5 +28,8 @@ dist/
 .vscode/
 .DS_Store
 
+# État local des outils de vérification.
+.hermes/
+
 # Les fixtures synthétiques et oracles d'évaluation sont volontairement versionnés.
 # « private » dans leur chemin signifie hors accès du runtime IA, pas secret réel.
