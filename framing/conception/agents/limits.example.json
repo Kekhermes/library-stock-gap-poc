@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "1.0.0",
+  "model": "gpt-5.6-luna",
+  "maxConcurrentMissions": 2,
+  "maxConcurrentTurnsPerConversation": 1,
+  "maxBatchSize": 5,
+  "automaticMission": {
+    "wallClockSeconds": 300,
+    "maxLlmCalls": 8,
+    "maxToolCalls": 24,
+    "maxInputTokensCumulative": 64000,
+    "maxOutputTokensCumulative": 12000,
+    "maxAutomaticRetries": 1
+  },
+  "expertTurn": {
+    "wallClockSeconds": 120,
+    "maxLlmCalls": 4,
+    "maxToolCalls": 24,
+    "maxInputTokensCumulative": 64000,
+    "maxOutputTokensCumulative": 12000,
+    "maxAutomaticRetries": 1
+  },
+  "accounting": {
+    "includeRetries": true,
+    "includeReportedReasoningTokensInOutput": true,
+    "excludeHumanWaitAndQueueTime": true,
+    "moneyTracking": false
+  },
+  "externalTracingEnabled": false
+}

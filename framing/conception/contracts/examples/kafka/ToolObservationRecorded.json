@@ -1,0 +1,34 @@
+{
+  "eventId": "00000000-0000-4000-8000-00000000006a",
+  "eventType": "ToolObservationRecorded",
+  "schemaVersion": "1.0.0",
+  "occurredAt": "2026-01-15T12:00:00Z",
+  "datasetEpoch": "00000000-0000-4000-8000-000000000002",
+  "correlationId": "00000000-0000-4000-8000-000000000003",
+  "causationId": "00000000-0000-4000-8000-000000000004",
+  "missionId": "00000000-0000-4000-8000-000000000005",
+  "attempt": 1,
+  "ruleSetVersion": 1,
+  "evidenceSnapshotId": "00000000-0000-4000-8000-000000000008",
+  "sequence": 7,
+  "caseId": "00000000-0000-4000-8000-00000000000a",
+  "analysisId": "00000000-0000-4000-8000-00000000000b",
+  "payload": {
+    "contextKind": "INVESTIGATION",
+    "leaseToken": "00000000-0000-4000-8000-000000000014",
+    "fencingToken": 1,
+    "callId": "00000000-0000-4000-8000-000000000029",
+    "tool": "READ_LOANS",
+    "outcome": "SUCCEEDED",
+    "evidenceRefs": [
+      {
+        "source": "LOANS",
+        "recordId": "00000000-0000-4000-8000-000000000046",
+        "evidenceSnapshotId": "00000000-0000-4000-8000-000000000008",
+        "fieldPath": "/payload/loanId"
+      }
+    ],
+    "summary": "Un prêt ouvert a été lu.",
+    "elapsedMilliseconds": 12
+  }
+}

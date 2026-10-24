@@ -1,0 +1,553 @@
+{
+  "operations": [
+    {
+      "method": "GET",
+      "path": "/api/overview",
+      "operationId": "get_overview",
+      "request": null,
+      "response": "Overview",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/local-status",
+      "operationId": "get_local_status",
+      "request": null,
+      "response": "LocalStatus",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/cases",
+      "operationId": "list_cases",
+      "request": null,
+      "response": "CasePage",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/cases/{caseId}",
+      "operationId": "get_case_dossier",
+      "request": null,
+      "response": "CaseDossier",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/cases/{caseId}/analyses",
+      "operationId": "list_case_analyses",
+      "request": null,
+      "response": "AnalysisPage",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/cases/{caseId}/analyses",
+      "operationId": "start_analysis",
+      "request": "AnalyzeRequest",
+      "response": "AcceptedAnalysis",
+      "status": "202",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/analyses/{analysisId}",
+      "operationId": "get_analysis",
+      "request": null,
+      "response": "Analysis",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/analyses/{analysisId}/cancellation",
+      "operationId": "cancel_analysis",
+      "request": "CancelRequest",
+      "response": "Analysis",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/analyses/{analysisId}/snapshot",
+      "operationId": "get_analysis_snapshot",
+      "request": null,
+      "response": "EvidenceSnapshot",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/analyses/{analysisId}/diagnostic",
+      "operationId": "get_analysis_diagnostic",
+      "request": null,
+      "response": "DiagnosticRecord",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/analysis-comparisons",
+      "operationId": "compare_analyses",
+      "request": null,
+      "response": "Comparison",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/batches",
+      "operationId": "start_batch",
+      "request": "BatchRequest",
+      "response": "AcceptedBatch",
+      "status": "202",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/batches/{batchId}",
+      "operationId": "get_batch",
+      "request": null,
+      "response": "Batch",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/batches/{batchId}/cancellation",
+      "operationId": "cancel_batch",
+      "request": "CancelRequest",
+      "response": "Batch",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/missions/{missionId}",
+      "operationId": "get_mission",
+      "request": null,
+      "response": "Mission",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/missions/{missionId}/cancellation",
+      "operationId": "cancel_mission",
+      "request": "CancelRequest",
+      "response": "Mission",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/diagnostics/{diagnosticId}/acceptance",
+      "operationId": "accept_diagnostic",
+      "request": "AcceptDiagnosticRequest",
+      "response": "DiagnosticAcceptance",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/diagnostics/{diagnosticId}/rejection",
+      "operationId": "reject_diagnostic",
+      "request": "RejectDiagnosticRequest",
+      "response": "DiagnosticRecord",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/rules",
+      "operationId": "list_rules",
+      "request": null,
+      "response": "RuleVersionPage",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/rules/{ruleId}",
+      "operationId": "get_rule",
+      "request": null,
+      "response": "RuleVersion",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/rules/{ruleId}/versions",
+      "operationId": "list_rule_versions",
+      "request": null,
+      "response": "RuleVersionPage",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/rules/{ruleId}/versions/{ruleVersion}",
+      "operationId": "get_rule_version",
+      "request": null,
+      "response": "RuleVersion",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/rules/{ruleId}/revision-requests",
+      "operationId": "request_rule_revision",
+      "request": "RevisionRequest",
+      "response": "AcceptedMission",
+      "status": "202",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/rules/{ruleId}/retirement-previews",
+      "operationId": "preview_rule_retirement",
+      "request": "RetirementPreviewRequest",
+      "response": "RetirementPreview",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/rules/{ruleId}/retirement",
+      "operationId": "retire_rule",
+      "request": "RetireRequest",
+      "response": "Publication",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/proposals",
+      "operationId": "list_proposals",
+      "request": null,
+      "response": "ProposalPage",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/proposals/{proposalId}",
+      "operationId": "get_proposal",
+      "request": null,
+      "response": "Proposal",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/proposals/{proposalId}/revisions/{proposalRevision}",
+      "operationId": "get_proposal_revision",
+      "request": null,
+      "response": "Proposal",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/proposals/{proposalId}/comparison",
+      "operationId": "compare_proposal_revisions",
+      "request": null,
+      "response": "ProposalComparison",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/proposals/{proposalId}/validations",
+      "operationId": "test_proposal",
+      "request": "TestProposalRequest",
+      "response": "AcceptedValidation",
+      "status": "202",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/validation-reports/{reportId}",
+      "operationId": "get_validation_report",
+      "request": null,
+      "response": "ValidationReport",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/proposals/{proposalId}/publication",
+      "operationId": "approve_and_publish",
+      "request": "PublishRequest",
+      "response": "Publication",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/publications",
+      "operationId": "list_publications",
+      "request": null,
+      "response": "PublicationPage",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/publications/{publicationId}",
+      "operationId": "get_publication",
+      "request": null,
+      "response": "Publication",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/publication-comparisons",
+      "operationId": "compare_publications",
+      "request": null,
+      "response": "Comparison",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/conversations/{conversationId}",
+      "operationId": "get_conversation",
+      "request": null,
+      "response": "Conversation",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/conversations/{conversationId}/messages",
+      "operationId": "list_messages",
+      "request": null,
+      "response": "ChatMessagePage",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/conversations/{conversationId}/messages",
+      "operationId": "send_expert_message",
+      "request": "MessageRequest",
+      "response": "AcceptedMission",
+      "status": "202",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/demo",
+      "operationId": "get_guided_demo",
+      "request": null,
+      "response": "DemoState",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/sync-snapshot",
+      "operationId": "get_sync_snapshot",
+      "request": null,
+      "response": "SyncSnapshot",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/events",
+      "operationId": "subscribe_events",
+      "request": null,
+      "response": "SyncSnapshot",
+      "status": "200",
+      "internal": false
+    },
+    {
+      "method": "POST",
+      "path": "/internal/missions/{missionId}/claim",
+      "operationId": "claim_mission",
+      "request": "ClaimRequest",
+      "response": "ClaimResponse",
+      "status": "200",
+      "internal": true
+    },
+    {
+      "method": "POST",
+      "path": "/internal/missions/{missionId}/heartbeat",
+      "operationId": "heartbeat_mission",
+      "request": "HeartbeatRequest",
+      "response": "HeartbeatResponse",
+      "status": "200",
+      "internal": true
+    },
+    {
+      "method": "POST",
+      "path": "/internal/missions/{missionId}/authorize-call",
+      "operationId": "authorize_call",
+      "request": "AuthorizeCallRequest",
+      "response": "CallAuthorization",
+      "status": "200",
+      "internal": true
+    },
+    {
+      "method": "POST",
+      "path": "/internal/missions/{missionId}/complete-call",
+      "operationId": "complete_call",
+      "request": "CallCompletionRequest",
+      "response": "CallCompletion",
+      "status": "200",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/internal/missions/{missionId}/snapshots/{evidenceSnapshotId}",
+      "operationId": "get_case_snapshot",
+      "request": null,
+      "response": "EvidenceSnapshot",
+      "status": "200",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/internal/missions/{missionId}/snapshots/{evidenceSnapshotId}/source-events",
+      "operationId": "get_source_events",
+      "request": null,
+      "response": "SourceEventPage",
+      "status": "200",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/internal/missions/{missionId}/snapshots/{evidenceSnapshotId}/loans",
+      "operationId": "get_loans",
+      "request": null,
+      "response": "SourceEventPage",
+      "status": "200",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/internal/missions/{missionId}/snapshots/{evidenceSnapshotId}/returns",
+      "operationId": "get_returns",
+      "request": null,
+      "response": "SourceEventPage",
+      "status": "200",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/internal/missions/{missionId}/snapshots/{evidenceSnapshotId}/receipts",
+      "operationId": "get_receipts",
+      "request": null,
+      "response": "SourceEventPage",
+      "status": "200",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/internal/missions/{missionId}/snapshots/{evidenceSnapshotId}/transfers",
+      "operationId": "get_transfers",
+      "request": null,
+      "response": "SourceEventPage",
+      "status": "200",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/internal/missions/{missionId}/snapshots/{evidenceSnapshotId}/repairs",
+      "operationId": "get_repairs",
+      "request": null,
+      "response": "SourceEventPage",
+      "status": "200",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/internal/missions/{missionId}/snapshots/{evidenceSnapshotId}/integrations",
+      "operationId": "get_integrations",
+      "request": null,
+      "response": "SourceEventPage",
+      "status": "200",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/internal/missions/{missionId}/snapshots/{evidenceSnapshotId}/operator-notes",
+      "operationId": "get_operator_notes",
+      "request": null,
+      "response": "OperatorNotePage",
+      "status": "200",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/internal/missions/{missionId}/rule-set",
+      "operationId": "get_rule_set",
+      "request": null,
+      "response": "RuleSetView",
+      "status": "200",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/internal/missions/{missionId}/rules/{ruleId}/history",
+      "operationId": "get_rule_history",
+      "request": null,
+      "response": "RuleVersionPage",
+      "status": "200",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/internal/missions/{missionId}/publications",
+      "operationId": "get_publication_history",
+      "request": null,
+      "response": "PublicationPage",
+      "status": "200",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/internal/missions/{missionId}/origin-diagnostic",
+      "operationId": "get_origin_diagnostic",
+      "request": null,
+      "response": "DiagnosticRecord",
+      "status": "200",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/internal/missions/{missionId}/conversation",
+      "operationId": "get_mission_conversation",
+      "request": null,
+      "response": "ChatMessagePage",
+      "status": "200",
+      "internal": true
+    },
+    {
+      "method": "GET",
+      "path": "/internal/missions/{missionId}/proposal",
+      "operationId": "get_mission_proposal",
+      "request": null,
+      "response": "Proposal",
+      "status": "200",
+      "internal": true
+    },
+    {
+      "method": "POST",
+      "path": "/internal/missions/{missionId}/prevalidation",
+      "operationId": "prevalidate_rule_change",
+      "request": "PrevalidationRequest",
+      "response": "PrevalidationResult",
+      "status": "200",
+      "internal": true
+    }
+  ]
+}

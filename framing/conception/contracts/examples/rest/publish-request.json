@@ -1,0 +1,8 @@
+{
+  "expectedProposalRevision": 1,
+  "expectedProposalVersion": 2,
+  "expectedRuleSetVersion": 1,
+  "reportId": "00000000-0000-4000-8000-00000000005b",
+  "candidateSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "confirmation": "APPROVE_AND_PUBLISH"
+}

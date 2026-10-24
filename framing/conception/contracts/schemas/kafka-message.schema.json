@@ -1,0 +1,3090 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KafkaAgentMessage",
+  "description": "Union discriminée eventType. Fixtures synthétiques, schemaVersion unique 1.0.0.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/InvestigationRequested"
+    },
+    {
+      "$ref": "#/$defs/RuleSynthesisRequested"
+    },
+    {
+      "$ref": "#/$defs/RuleRevisionRequested"
+    },
+    {
+      "$ref": "#/$defs/ExpertTurnRequested"
+    },
+    {
+      "$ref": "#/$defs/CancellationRequested"
+    },
+    {
+      "$ref": "#/$defs/MissionStarted"
+    },
+    {
+      "$ref": "#/$defs/ToolObservationRecorded"
+    },
+    {
+      "$ref": "#/$defs/TextChunkProduced"
+    },
+    {
+      "$ref": "#/$defs/DiagnosticProposed"
+    },
+    {
+      "$ref": "#/$defs/RuleChangeProposed"
+    },
+    {
+      "$ref": "#/$defs/RuleChangeNotProposed"
+    },
+    {
+      "$ref": "#/$defs/MissionFailed"
+    },
+    {
+      "$ref": "#/$defs/MissionCancelled"
+    }
+  ],
+  "$defs": {
+    "InvestigationRequested": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "InvestigationRequested"
+        },
+        "schemaVersion": {
+          "const": "1.0.0"
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "datasetEpoch": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "correlationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "causationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "missionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ruleSetVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "evidenceSnapshotId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "caseId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "analysisId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "conversationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "turnId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "contextKind": {
+              "type": "string",
+              "enum": [
+                "INVESTIGATION"
+              ]
+            },
+            "role": {
+              "const": "INVESTIGATOR"
+            },
+            "promptVersion": {
+              "const": "1.0.0"
+            },
+            "limits": {
+              "$ref": "common.schema.json#/$defs/Limits"
+            },
+            "allowedTools": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "READ_SNAPSHOT",
+                  "READ_TIMELINE",
+                  "READ_LOANS",
+                  "READ_RETURNS",
+                  "READ_RECEIPTS",
+                  "READ_TRANSFERS",
+                  "READ_REPAIRS",
+                  "READ_INTEGRATIONS",
+                  "READ_NOTES",
+                  "READ_RULES",
+                  "READ_PUBLICATIONS",
+                  "READ_DIAGNOSTIC",
+                  "READ_CONVERSATION",
+                  "READ_PROPOSAL",
+                  "PREVALIDATE"
+                ]
+              },
+              "minItems": 1,
+              "maxItems": 15
+            },
+            "deadlineAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            "objective": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16000
+            }
+          },
+          "required": [
+            "contextKind",
+            "role",
+            "promptVersion",
+            "limits",
+            "allowedTools",
+            "deadlineAt",
+            "objective"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "datasetEpoch",
+        "correlationId",
+        "causationId",
+        "missionId",
+        "attempt",
+        "ruleSetVersion",
+        "evidenceSnapshotId",
+        "sequence",
+        "payload"
+      ],
+      "additionalProperties": false,
+      "dependentRequired": {
+        "conversationId": [
+          "turnId"
+        ],
+        "turnId": [
+          "conversationId"
+        ]
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "INVESTIGATION"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId"
+            ],
+            "properties": {
+              "proposalId": false,
+              "proposalRevision": false
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_CASE"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId",
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {}
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_HISTORY"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {
+              "caseId": false,
+              "analysisId": false
+            }
+          }
+        }
+      ]
+    },
+    "RuleSynthesisRequested": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "RuleSynthesisRequested"
+        },
+        "schemaVersion": {
+          "const": "1.0.0"
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "datasetEpoch": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "correlationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "causationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "missionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ruleSetVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "evidenceSnapshotId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "caseId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "analysisId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "conversationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "turnId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "contextKind": {
+              "type": "string",
+              "enum": [
+                "RULE_CASE"
+              ]
+            },
+            "role": {
+              "const": "RULE_AGENT"
+            },
+            "promptVersion": {
+              "const": "1.0.0"
+            },
+            "limits": {
+              "$ref": "common.schema.json#/$defs/Limits"
+            },
+            "allowedTools": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "READ_SNAPSHOT",
+                  "READ_TIMELINE",
+                  "READ_LOANS",
+                  "READ_RETURNS",
+                  "READ_RECEIPTS",
+                  "READ_TRANSFERS",
+                  "READ_REPAIRS",
+                  "READ_INTEGRATIONS",
+                  "READ_NOTES",
+                  "READ_RULES",
+                  "READ_PUBLICATIONS",
+                  "READ_DIAGNOSTIC",
+                  "READ_CONVERSATION",
+                  "READ_PROPOSAL",
+                  "PREVALIDATE"
+                ]
+              },
+              "minItems": 1,
+              "maxItems": 15
+            },
+            "deadlineAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            "originDiagnosticId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "originEvidenceSnapshotId": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "contextKind",
+            "role",
+            "promptVersion",
+            "limits",
+            "allowedTools",
+            "deadlineAt",
+            "originDiagnosticId",
+            "originEvidenceSnapshotId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "datasetEpoch",
+        "correlationId",
+        "causationId",
+        "missionId",
+        "attempt",
+        "ruleSetVersion",
+        "evidenceSnapshotId",
+        "sequence",
+        "payload"
+      ],
+      "additionalProperties": false,
+      "dependentRequired": {
+        "conversationId": [
+          "turnId"
+        ],
+        "turnId": [
+          "conversationId"
+        ]
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "INVESTIGATION"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId"
+            ],
+            "properties": {
+              "proposalId": false,
+              "proposalRevision": false
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_CASE"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId",
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {}
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_HISTORY"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {
+              "caseId": false,
+              "analysisId": false
+            }
+          }
+        }
+      ]
+    },
+    "RuleRevisionRequested": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "RuleRevisionRequested"
+        },
+        "schemaVersion": {
+          "const": "1.0.0"
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "datasetEpoch": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "correlationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "causationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "missionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ruleSetVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "evidenceSnapshotId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "caseId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "analysisId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "conversationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "turnId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "contextKind": {
+              "type": "string",
+              "enum": [
+                "RULE_HISTORY"
+              ]
+            },
+            "role": {
+              "const": "RULE_AGENT"
+            },
+            "promptVersion": {
+              "const": "1.0.0"
+            },
+            "limits": {
+              "$ref": "common.schema.json#/$defs/Limits"
+            },
+            "allowedTools": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "READ_SNAPSHOT",
+                  "READ_TIMELINE",
+                  "READ_LOANS",
+                  "READ_RETURNS",
+                  "READ_RECEIPTS",
+                  "READ_TRANSFERS",
+                  "READ_REPAIRS",
+                  "READ_INTEGRATIONS",
+                  "READ_NOTES",
+                  "READ_RULES",
+                  "READ_PUBLICATIONS",
+                  "READ_DIAGNOSTIC",
+                  "READ_CONVERSATION",
+                  "READ_PROPOSAL",
+                  "PREVALIDATE"
+                ]
+              },
+              "minItems": 1,
+              "maxItems": 15
+            },
+            "deadlineAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            "originDiagnosticId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "originEvidenceSnapshotId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "targetRuleId": {
+              "anyOf": [
+                {
+                  "const": "R001"
+                },
+                {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              ]
+            },
+            "expectedRuleVersion": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "instruction": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16000
+            }
+          },
+          "required": [
+            "contextKind",
+            "role",
+            "promptVersion",
+            "limits",
+            "allowedTools",
+            "deadlineAt",
+            "originDiagnosticId",
+            "originEvidenceSnapshotId",
+            "targetRuleId",
+            "expectedRuleVersion",
+            "instruction"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "datasetEpoch",
+        "correlationId",
+        "causationId",
+        "missionId",
+        "attempt",
+        "ruleSetVersion",
+        "evidenceSnapshotId",
+        "sequence",
+        "payload"
+      ],
+      "additionalProperties": false,
+      "dependentRequired": {
+        "conversationId": [
+          "turnId"
+        ],
+        "turnId": [
+          "conversationId"
+        ]
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "INVESTIGATION"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId"
+            ],
+            "properties": {
+              "proposalId": false,
+              "proposalRevision": false
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_CASE"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId",
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {}
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_HISTORY"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {
+              "caseId": false,
+              "analysisId": false
+            }
+          }
+        }
+      ]
+    },
+    "ExpertTurnRequested": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "ExpertTurnRequested"
+        },
+        "schemaVersion": {
+          "const": "1.0.0"
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "datasetEpoch": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "correlationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "causationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "missionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ruleSetVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "evidenceSnapshotId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "caseId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "analysisId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "conversationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "turnId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "contextKind": {
+              "type": "string",
+              "enum": [
+                "INVESTIGATION",
+                "RULE_CASE",
+                "RULE_HISTORY"
+              ]
+            },
+            "role": {
+              "type": "string",
+              "enum": [
+                "INVESTIGATOR",
+                "RULE_AGENT"
+              ]
+            },
+            "promptVersion": {
+              "const": "1.0.0"
+            },
+            "limits": {
+              "$ref": "common.schema.json#/$defs/Limits"
+            },
+            "allowedTools": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "READ_SNAPSHOT",
+                  "READ_TIMELINE",
+                  "READ_LOANS",
+                  "READ_RETURNS",
+                  "READ_RECEIPTS",
+                  "READ_TRANSFERS",
+                  "READ_REPAIRS",
+                  "READ_INTEGRATIONS",
+                  "READ_NOTES",
+                  "READ_RULES",
+                  "READ_PUBLICATIONS",
+                  "READ_DIAGNOSTIC",
+                  "READ_CONVERSATION",
+                  "READ_PROPOSAL",
+                  "PREVALIDATE"
+                ]
+              },
+              "minItems": 1,
+              "maxItems": 15
+            },
+            "deadlineAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            },
+            "messageId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "text": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16000
+            },
+            "originDiagnosticId": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "contextKind",
+            "role",
+            "promptVersion",
+            "limits",
+            "allowedTools",
+            "deadlineAt",
+            "messageId",
+            "text",
+            "originDiagnosticId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "datasetEpoch",
+        "correlationId",
+        "causationId",
+        "missionId",
+        "attempt",
+        "ruleSetVersion",
+        "evidenceSnapshotId",
+        "sequence",
+        "payload",
+        "conversationId",
+        "turnId"
+      ],
+      "additionalProperties": false,
+      "dependentRequired": {
+        "conversationId": [
+          "turnId"
+        ],
+        "turnId": [
+          "conversationId"
+        ]
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "INVESTIGATION"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId"
+            ],
+            "properties": {
+              "proposalId": false,
+              "proposalRevision": false
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_CASE"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId",
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {}
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_HISTORY"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {
+              "caseId": false,
+              "analysisId": false
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "INVESTIGATION"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "role": {
+                    "const": "INVESTIGATOR"
+                  }
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "role": {
+                    "const": "RULE_AGENT"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "CancellationRequested": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "CancellationRequested"
+        },
+        "schemaVersion": {
+          "const": "1.0.0"
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "datasetEpoch": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "correlationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "causationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "missionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ruleSetVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "evidenceSnapshotId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "caseId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "analysisId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "conversationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "turnId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "contextKind": {
+              "type": "string",
+              "enum": [
+                "INVESTIGATION",
+                "RULE_CASE",
+                "RULE_HISTORY"
+              ]
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16000
+            },
+            "requestedBy": {
+              "type": "string",
+              "enum": [
+                "ADMIN",
+                "BACKEND"
+              ]
+            },
+            "expectedMissionVersion": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "fencingToken": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "contextKind",
+            "reason",
+            "requestedBy",
+            "expectedMissionVersion",
+            "fencingToken"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "datasetEpoch",
+        "correlationId",
+        "causationId",
+        "missionId",
+        "attempt",
+        "ruleSetVersion",
+        "evidenceSnapshotId",
+        "sequence",
+        "payload"
+      ],
+      "additionalProperties": false,
+      "dependentRequired": {
+        "conversationId": [
+          "turnId"
+        ],
+        "turnId": [
+          "conversationId"
+        ]
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "INVESTIGATION"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId"
+            ],
+            "properties": {
+              "proposalId": false,
+              "proposalRevision": false
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_CASE"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId",
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {}
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_HISTORY"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {
+              "caseId": false,
+              "analysisId": false
+            }
+          }
+        }
+      ]
+    },
+    "MissionStarted": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "MissionStarted"
+        },
+        "schemaVersion": {
+          "const": "1.0.0"
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "datasetEpoch": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "correlationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "causationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "missionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ruleSetVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "evidenceSnapshotId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "caseId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "analysisId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "conversationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "turnId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "contextKind": {
+              "type": "string",
+              "enum": [
+                "INVESTIGATION",
+                "RULE_CASE",
+                "RULE_HISTORY"
+              ]
+            },
+            "leaseToken": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "fencingToken": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "workerId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "leaseExpiresAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "Z$"
+            }
+          },
+          "required": [
+            "contextKind",
+            "leaseToken",
+            "fencingToken",
+            "workerId",
+            "leaseExpiresAt"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "datasetEpoch",
+        "correlationId",
+        "causationId",
+        "missionId",
+        "attempt",
+        "ruleSetVersion",
+        "evidenceSnapshotId",
+        "sequence",
+        "payload"
+      ],
+      "additionalProperties": false,
+      "dependentRequired": {
+        "conversationId": [
+          "turnId"
+        ],
+        "turnId": [
+          "conversationId"
+        ]
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "INVESTIGATION"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId"
+            ],
+            "properties": {
+              "proposalId": false,
+              "proposalRevision": false
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_CASE"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId",
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {}
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_HISTORY"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {
+              "caseId": false,
+              "analysisId": false
+            }
+          }
+        }
+      ]
+    },
+    "ToolObservationRecorded": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "ToolObservationRecorded"
+        },
+        "schemaVersion": {
+          "const": "1.0.0"
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "datasetEpoch": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "correlationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "causationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "missionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ruleSetVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "evidenceSnapshotId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "caseId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "analysisId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "conversationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "turnId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "contextKind": {
+              "type": "string",
+              "enum": [
+                "INVESTIGATION",
+                "RULE_CASE",
+                "RULE_HISTORY"
+              ]
+            },
+            "leaseToken": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "fencingToken": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "callId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "tool": {
+              "type": "string",
+              "enum": [
+                "READ_SNAPSHOT",
+                "READ_TIMELINE",
+                "READ_LOANS",
+                "READ_RETURNS",
+                "READ_RECEIPTS",
+                "READ_TRANSFERS",
+                "READ_REPAIRS",
+                "READ_INTEGRATIONS",
+                "READ_NOTES",
+                "READ_RULES",
+                "READ_PUBLICATIONS",
+                "READ_DIAGNOSTIC",
+                "READ_CONVERSATION",
+                "READ_PROPOSAL",
+                "PREVALIDATE"
+              ]
+            },
+            "outcome": {
+              "type": "string",
+              "enum": [
+                "SUCCEEDED",
+                "FAILED"
+              ]
+            },
+            "evidenceRefs": {
+              "type": "array",
+              "items": {
+                "$ref": "common.schema.json#/$defs/EvidenceRef"
+              },
+              "minItems": 0,
+              "maxItems": 1000
+            },
+            "summary": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16000
+            },
+            "elapsedMilliseconds": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "contextKind",
+            "leaseToken",
+            "fencingToken",
+            "callId",
+            "tool",
+            "outcome",
+            "evidenceRefs",
+            "summary",
+            "elapsedMilliseconds"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "datasetEpoch",
+        "correlationId",
+        "causationId",
+        "missionId",
+        "attempt",
+        "ruleSetVersion",
+        "evidenceSnapshotId",
+        "sequence",
+        "payload"
+      ],
+      "additionalProperties": false,
+      "dependentRequired": {
+        "conversationId": [
+          "turnId"
+        ],
+        "turnId": [
+          "conversationId"
+        ]
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "INVESTIGATION"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId"
+            ],
+            "properties": {
+              "proposalId": false,
+              "proposalRevision": false
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_CASE"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId",
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {}
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_HISTORY"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {
+              "caseId": false,
+              "analysisId": false
+            }
+          }
+        }
+      ]
+    },
+    "TextChunkProduced": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "TextChunkProduced"
+        },
+        "schemaVersion": {
+          "const": "1.0.0"
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "datasetEpoch": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "correlationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "causationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "missionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ruleSetVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "evidenceSnapshotId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "caseId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "analysisId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "conversationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "turnId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "contextKind": {
+              "type": "string",
+              "enum": [
+                "INVESTIGATION",
+                "RULE_CASE",
+                "RULE_HISTORY"
+              ]
+            },
+            "leaseToken": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "fencingToken": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "messageId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "chunkIndex": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "text": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16000
+            },
+            "isFinal": {
+              "type": "boolean"
+            },
+            "usage": {
+              "$ref": "common.schema.json#/$defs/Usage"
+            }
+          },
+          "required": [
+            "contextKind",
+            "leaseToken",
+            "fencingToken",
+            "messageId",
+            "chunkIndex",
+            "text",
+            "isFinal",
+            "usage"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "datasetEpoch",
+        "correlationId",
+        "causationId",
+        "missionId",
+        "attempt",
+        "ruleSetVersion",
+        "evidenceSnapshotId",
+        "sequence",
+        "payload",
+        "conversationId",
+        "turnId"
+      ],
+      "additionalProperties": false,
+      "dependentRequired": {
+        "conversationId": [
+          "turnId"
+        ],
+        "turnId": [
+          "conversationId"
+        ]
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "INVESTIGATION"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId"
+            ],
+            "properties": {
+              "proposalId": false,
+              "proposalRevision": false
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_CASE"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId",
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {}
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_HISTORY"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {
+              "caseId": false,
+              "analysisId": false
+            }
+          }
+        }
+      ]
+    },
+    "DiagnosticProposed": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "DiagnosticProposed"
+        },
+        "schemaVersion": {
+          "const": "1.0.0"
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "datasetEpoch": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "correlationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "causationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "missionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ruleSetVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "evidenceSnapshotId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "caseId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "analysisId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "conversationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "turnId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "contextKind": {
+              "type": "string",
+              "enum": [
+                "INVESTIGATION"
+              ]
+            },
+            "leaseToken": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "fencingToken": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "diagnosticId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "diagnostic": {
+              "$ref": "common.schema.json#/$defs/Diagnostic"
+            },
+            "usage": {
+              "$ref": "common.schema.json#/$defs/Usage"
+            }
+          },
+          "required": [
+            "contextKind",
+            "leaseToken",
+            "fencingToken",
+            "diagnosticId",
+            "diagnostic",
+            "usage"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "datasetEpoch",
+        "correlationId",
+        "causationId",
+        "missionId",
+        "attempt",
+        "ruleSetVersion",
+        "evidenceSnapshotId",
+        "sequence",
+        "payload"
+      ],
+      "additionalProperties": false,
+      "dependentRequired": {
+        "conversationId": [
+          "turnId"
+        ],
+        "turnId": [
+          "conversationId"
+        ]
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "INVESTIGATION"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId"
+            ],
+            "properties": {
+              "proposalId": false,
+              "proposalRevision": false
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_CASE"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId",
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {}
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_HISTORY"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {
+              "caseId": false,
+              "analysisId": false
+            }
+          }
+        }
+      ]
+    },
+    "RuleChangeProposed": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "RuleChangeProposed"
+        },
+        "schemaVersion": {
+          "const": "1.0.0"
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "datasetEpoch": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "correlationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "causationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "missionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ruleSetVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "evidenceSnapshotId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "caseId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "analysisId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "conversationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "turnId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "contextKind": {
+              "type": "string",
+              "enum": [
+                "RULE_CASE",
+                "RULE_HISTORY"
+              ]
+            },
+            "leaseToken": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "fencingToken": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "change": {
+              "$ref": "common.schema.json#/$defs/RuleChange"
+            },
+            "formalizable": {
+              "type": "boolean"
+            },
+            "limitations": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 16000
+              },
+              "minItems": 0,
+              "maxItems": 100
+            },
+            "usage": {
+              "$ref": "common.schema.json#/$defs/Usage"
+            }
+          },
+          "required": [
+            "contextKind",
+            "leaseToken",
+            "fencingToken",
+            "change",
+            "formalizable",
+            "limitations",
+            "usage"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "datasetEpoch",
+        "correlationId",
+        "causationId",
+        "missionId",
+        "attempt",
+        "ruleSetVersion",
+        "evidenceSnapshotId",
+        "sequence",
+        "payload"
+      ],
+      "additionalProperties": false,
+      "dependentRequired": {
+        "conversationId": [
+          "turnId"
+        ],
+        "turnId": [
+          "conversationId"
+        ]
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "INVESTIGATION"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId"
+            ],
+            "properties": {
+              "proposalId": false,
+              "proposalRevision": false
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_CASE"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId",
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {}
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_HISTORY"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {
+              "caseId": false,
+              "analysisId": false
+            }
+          }
+        }
+      ]
+    },
+    "RuleChangeNotProposed": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "RuleChangeNotProposed"
+        },
+        "schemaVersion": {
+          "const": "1.0.0"
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "datasetEpoch": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "correlationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "causationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "missionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ruleSetVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "evidenceSnapshotId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "caseId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "analysisId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "conversationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "turnId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "contextKind": {
+              "type": "string",
+              "enum": [
+                "RULE_CASE",
+                "RULE_HISTORY"
+              ]
+            },
+            "leaseToken": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "fencingToken": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "reason": {
+              "type": "string",
+              "enum": [
+                "NO_CHANGE",
+                "INSUFFICIENT_EVIDENCE",
+                "UNSUPPORTED_CAPABILITY"
+              ]
+            },
+            "explanation": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16000
+            },
+            "missingFacts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "fact": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 16000
+                  }
+                },
+                "required": [
+                  "fact",
+                  "reason"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 0,
+              "maxItems": 100
+            },
+            "originDiagnosticId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "originEvidenceSnapshotId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "usage": {
+              "$ref": "common.schema.json#/$defs/Usage"
+            }
+          },
+          "required": [
+            "contextKind",
+            "leaseToken",
+            "fencingToken",
+            "reason",
+            "explanation",
+            "missingFacts",
+            "originDiagnosticId",
+            "originEvidenceSnapshotId",
+            "usage"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "datasetEpoch",
+        "correlationId",
+        "causationId",
+        "missionId",
+        "attempt",
+        "ruleSetVersion",
+        "evidenceSnapshotId",
+        "sequence",
+        "payload"
+      ],
+      "additionalProperties": false,
+      "dependentRequired": {
+        "conversationId": [
+          "turnId"
+        ],
+        "turnId": [
+          "conversationId"
+        ]
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "INVESTIGATION"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId"
+            ],
+            "properties": {
+              "proposalId": false,
+              "proposalRevision": false
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_CASE"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId",
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {}
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_HISTORY"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {
+              "caseId": false,
+              "analysisId": false
+            }
+          }
+        }
+      ]
+    },
+    "MissionFailed": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "MissionFailed"
+        },
+        "schemaVersion": {
+          "const": "1.0.0"
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "datasetEpoch": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "correlationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "causationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "missionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ruleSetVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "evidenceSnapshotId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "caseId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "analysisId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "conversationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "turnId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "contextKind": {
+              "type": "string",
+              "enum": [
+                "INVESTIGATION",
+                "RULE_CASE",
+                "RULE_HISTORY"
+              ]
+            },
+            "leaseToken": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "fencingToken": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "code": {
+              "type": "string",
+              "enum": [
+                "QUOTA_EXCEEDED",
+                "TIMEOUT",
+                "PROVIDER_UNAVAILABLE",
+                "INVALID_OUTPUT",
+                "TOOL_DENIED",
+                "INTERNAL_ERROR"
+              ]
+            },
+            "retryable": {
+              "type": "boolean"
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16000
+            },
+            "retryAfterSeconds": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "usage": {
+              "$ref": "common.schema.json#/$defs/Usage"
+            }
+          },
+          "required": [
+            "contextKind",
+            "leaseToken",
+            "fencingToken",
+            "code",
+            "retryable",
+            "message",
+            "retryAfterSeconds",
+            "usage"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "datasetEpoch",
+        "correlationId",
+        "causationId",
+        "missionId",
+        "attempt",
+        "ruleSetVersion",
+        "evidenceSnapshotId",
+        "sequence",
+        "payload"
+      ],
+      "additionalProperties": false,
+      "dependentRequired": {
+        "conversationId": [
+          "turnId"
+        ],
+        "turnId": [
+          "conversationId"
+        ]
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "INVESTIGATION"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId"
+            ],
+            "properties": {
+              "proposalId": false,
+              "proposalRevision": false
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_CASE"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId",
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {}
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_HISTORY"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {
+              "caseId": false,
+              "analysisId": false
+            }
+          }
+        }
+      ]
+    },
+    "MissionCancelled": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "MissionCancelled"
+        },
+        "schemaVersion": {
+          "const": "1.0.0"
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "datasetEpoch": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "correlationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "causationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "missionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ruleSetVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "evidenceSnapshotId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "caseId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "analysisId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "conversationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "turnId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "proposalRevision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "contextKind": {
+              "type": "string",
+              "enum": [
+                "INVESTIGATION",
+                "RULE_CASE",
+                "RULE_HISTORY"
+              ]
+            },
+            "leaseToken": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "fencingToken": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16000
+            },
+            "lastCompletedCallId": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "usage": {
+              "$ref": "common.schema.json#/$defs/Usage"
+            }
+          },
+          "required": [
+            "contextKind",
+            "leaseToken",
+            "fencingToken",
+            "reason",
+            "lastCompletedCallId",
+            "usage"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "datasetEpoch",
+        "correlationId",
+        "causationId",
+        "missionId",
+        "attempt",
+        "ruleSetVersion",
+        "evidenceSnapshotId",
+        "sequence",
+        "payload"
+      ],
+      "additionalProperties": false,
+      "dependentRequired": {
+        "conversationId": [
+          "turnId"
+        ],
+        "turnId": [
+          "conversationId"
+        ]
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "INVESTIGATION"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId"
+            ],
+            "properties": {
+              "proposalId": false,
+              "proposalRevision": false
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_CASE"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "caseId",
+              "analysisId",
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {}
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "contextKind": {
+                    "const": "RULE_HISTORY"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "proposalId",
+              "proposalRevision"
+            ],
+            "properties": {
+              "caseId": false,
+              "analysisId": false
+            }
+          }
+        }
+      ]
+    }
+  }
+}

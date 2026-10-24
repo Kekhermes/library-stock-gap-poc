@@ -1,0 +1,32 @@
+# Secrets locaux : ne jamais publier de vraie clé.
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Exécution et dépendances locales.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+node_modules/
+target/
+build/
+dist/
+.cache/
+*.class
+*.jar
+*.log
+
+# IDE / système.
+.idea/
+.vscode/
+.DS_Store
+
+# Les fixtures synthétiques et oracles d'évaluation sont volontairement versionnés.
+# « private » dans leur chemin signifie hors accès du runtime IA, pas secret réel.
