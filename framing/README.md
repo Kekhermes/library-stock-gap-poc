@@ -2,11 +2,11 @@
 
 ## Statut
 
-**Cadrage consolidé v0.1 — livré pour relecture, sans autorisation d'implémentation.**
+**Cadrage v0.1 restauré, avec implémentation hybride en cours.**
 
-Les décisions explicites ont été recueillies et intégrées. La conception détaillée signalée PROPOSÉE n'est pas encore approuvée globalement. Kevin a demandé de s'arrêter à la livraison de ce dossier pour sa relecture.
+Les documents historiques conservent les décisions, hypothèses et cibles initiales. L’état factuel du POC livré (cascade DMN → fallback GPT, sécurité, UX, limites et versions) est documenté dans **[l’état d’implémentation actuel](12-etat-implementation-actuel.md)** et prévaut en cas de divergence.
 
-Nom demandé : `library-stock-gap-poc`. Dossier existant utilisé : `/home/kek/projects/library-stock-gap-ai-poc`. Aucun renommage effectué.
+Le projet est désormais un dépôt Git contenant une pile Docker Compose. Le démarrage réel est `docker compose up -d --build`.
 
 Les documents distinguent :
 - **ACQUIS** : exigence explicite de Kevin ;
@@ -31,6 +31,7 @@ Les documents distinguent :
 | [Données, évaluation et reset](09-donnees-evaluation-et-reset.md) | Jeu initial, unique règle, critères de preuve, quotas et remise à zéro |
 | [Stack cible vérifiée documentairement](10-stack-cible-et-verifications.md) | Versions candidates, licences et gates de compatibilité |
 | [Contrat des faits et DMN](11-contrat-faits-et-dmn.md) | Données d'entrée, FEEL autorisé, conclusions et validation |
+| **[État d’implémentation actuel](12-etat-implementation-actuel.md)** | **Comportement réellement livré, sécurité, UX, versions et écarts restants** |
 
 ## Méthode de travail
 
