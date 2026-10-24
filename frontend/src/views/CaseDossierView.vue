@@ -119,10 +119,25 @@
         </div>
 
         <div class="panel-body">
-          <div v-if="dossier.analyses?.[0]?.status === 'AGENT_PENDING' || dossier.analyses?.[0]?.status === 'AGENT_RUNNING'" style="text-align: center; padding: 2rem;">
-            <div style="font-size: 2rem; margin-bottom: 1rem;">🤖</div>
-            <div style="font-weight: 600;">Investigation agentique en cours…</div>
-            <div style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">La règle DMN ne couvre pas entièrement ce dossier ({{ dossier.analyses[0].fallbackReason || 'couverture insuffisante' }}). GPT analyse maintenant le snapshot figé.</div>
+          <div v-if="dossier.analyses?.[0]?.status === 'AGENT_PENDING' || dossier.analyses?.[0]?.status === 'AGENT_RUNNING'" class="agent-progress">
+            <div class="agent-progress__header">
+              <div class="agent-orb" aria-hidden="true"><span></span></div>
+              <div>
+                <div class="eyebrow">Cascade hybride</div>
+                <div class="agent-progress__title">Investigation GPT en cours</div>
+                <div class="agent-progress__copy">La première passe DMN est terminée. L’agent analyse maintenant le snapshot de preuves figé.</div>
+              </div>
+              <span class="badge badge-purple">AGENT</span>
+            </div>
+            <div class="fallback-reason">
+              <span>Relais déclenché</span>
+              <strong>{{ fallbackLabel(dossier.analyses[0].fallbackReason) }}</strong>
+            </div>
+            <div class="analysis-steps" aria-label="Progression de l'analyse">
+              <span class="done">✓ Règles DMN évaluées</span>
+              <span class="active"><i></i> Investigation GPT</span>
+              <span>Diagnostic à produire</span>
+            </div>
           </div>
           <div v-else-if="dossier.analyses?.[0]?.status === 'FAILED'" style="border: 1px solid var(--accent-rose); border-radius: 6px; padding: 0.85rem; background: rgba(251, 113, 133, 0.08); margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-muted);">
             <strong style="color: var(--accent-rose);">Investigation agentique en échec</strong><br>
@@ -452,6 +467,19 @@ function formatDate(iso) {
   }
 }
 
+function fallbackLabel(raw) {
+  const labels = {
+    NO_RULE_MATCH: 'Aucune règle active ne correspond au dossier',
+    PARTIAL_COVERAGE: 'Les règles actives ne couvrent qu’une partie du dossier'
+  };
+  try {
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return labels[parsed?.reason] || parsed?.reason || 'Couverture déterministe insuffisante';
+  } catch {
+    return labels[raw] || 'Couverture déterministe insuffisante';
+  }
+}
+
 onMounted(() => {
   loadDossier();
   pollInterval = setInterval(loadDossier, 3000);
@@ -461,3 +489,21 @@ onUnmounted(() => {
   if (pollInterval) clearInterval(pollInterval);
 });
 </script>
+
+<style scoped>
+.agent-progress { padding: 1.25rem; border: 1px solid rgba(167, 139, 250, .45); border-radius: 8px; background: linear-gradient(135deg, rgba(139, 92, 246, .10), rgba(30, 41, 59, .35)); }
+.agent-progress__header { display: grid; grid-template-columns: 42px 1fr auto; gap: .85rem; align-items: center; }
+.agent-orb { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: rgba(167,139,250,.16); border: 1px solid rgba(167,139,250,.5); }
+.agent-orb span { width: 11px; height: 11px; border-radius: 50%; background: var(--accent-purple); animation: pulse 1.25s ease-in-out infinite; }
+.eyebrow { color: var(--accent-purple); font-size: .68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.agent-progress__title { font-size: 1rem; font-weight: 700; margin-top: .1rem; }
+.agent-progress__copy { color: var(--text-muted); font-size: .82rem; line-height: 1.45; margin-top: .25rem; }
+.fallback-reason { display: flex; justify-content: space-between; gap: 1rem; padding: .65rem .75rem; margin-top: 1rem; border-radius: 5px; background: rgba(15,23,42,.45); font-size: .78rem; color: var(--text-muted); }
+.fallback-reason strong { color: var(--accent-amber); text-align: right; }
+.analysis-steps { display: flex; gap: .5rem; align-items: center; margin-top: .9rem; font-size: .72rem; color: var(--text-muted); }
+.analysis-steps span { flex: 1; white-space: nowrap; }
+.analysis-steps span:not(:last-child)::after { content: '→'; float: right; color: var(--border-color); }
+.analysis-steps .done { color: var(--accent-green); }.analysis-steps .active { color: #d8b4fe; font-weight: 600; }.analysis-steps i { display: inline-block; width: 7px; height: 7px; margin-right: 4px; border-radius: 50%; background: #d8b4fe; animation: pulse 1.25s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(1.65); opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .agent-orb span, .analysis-steps i { animation: none; } }
+</style>
