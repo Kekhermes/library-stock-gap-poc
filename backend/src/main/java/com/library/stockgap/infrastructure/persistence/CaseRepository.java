@@ -23,7 +23,9 @@ public class CaseRepository {
     public List<Map<String, Object>> findCases(UUID epoch, String siteId, String status, String symptomKind, int page, int size) {
         StringBuilder sql = new StringBuilder(
             "SELECT c.case_id, c.copy_id, cp.barcode, t.title, cp.owning_site_id, " +
-            "c.inventory_reference_time, gc.status, gc.current_acceptance_id " +
+            "c.inventory_reference_time, gc.status, gc.current_acceptance_id, " +
+            "(SELECT dr.conclusion FROM runtime.diagnostic_revision dr WHERE dr.dataset_epoch = c.dataset_epoch AND dr.case_id = c.case_id ORDER BY dr.created_at DESC LIMIT 1) AS diagnostic_conclusion, " +
+            "(SELECT dr.producer FROM runtime.diagnostic_revision dr WHERE dr.dataset_epoch = c.dataset_epoch AND dr.case_id = c.case_id ORDER BY dr.created_at DESC LIMIT 1) AS diagnostic_origin " +
             "FROM runtime.source_case c " +
             "JOIN runtime.copy cp ON c.dataset_epoch = cp.dataset_epoch AND c.copy_id = cp.copy_id " +
             "JOIN runtime.title t ON cp.dataset_epoch = t.dataset_epoch AND cp.title_id = t.title_id " +
@@ -60,6 +62,8 @@ public class CaseRepository {
             map.put("owningSiteId", rs.getString("owning_site_id"));
             map.put("inventoryReferenceTime", rs.getTimestamp("inventory_reference_time").toInstant().toString());
             map.put("status", rs.getString("status"));
+            map.put("diagnosticConclusion", rs.getString("diagnostic_conclusion"));
+            map.put("diagnosticOrigin", rs.getString("diagnostic_origin"));
             String accId = rs.getString("current_acceptance_id");
             map.put("currentAcceptanceId", accId != null ? UUID.fromString(accId) : null);
             map.put("symptoms", getSymptoms(epoch, caseId));

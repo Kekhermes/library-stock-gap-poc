@@ -76,8 +76,9 @@
                 </span>
               </td>
               <td>
-                <span :class="getStatusBadgeClass(c.status)">
-                  {{ formatStatus(c.status) }}
+                <span :class="getStatusBadgeClass(c.status)">{{ formatStatus(c.status) }}</span>
+                <span v-if="c.diagnosticConclusion" :class="getConclusionBadgeClass(c.diagnosticConclusion)" style="margin-left: 0.4rem;">
+                  {{ formatConclusion(c.diagnosticConclusion, c.diagnosticOrigin) }}
                 </span>
               </td>
               <td>
@@ -177,6 +178,17 @@ function formatStatus(status) {
     case 'DIAGNOSTIC_ACCEPTE': return 'Diagnostic accepté';
     default: return status;
   }
+}
+
+function getConclusionBadgeClass(conclusion) {
+  if (conclusion === 'SUPPORTED') return 'badge badge-green';
+  if (conclusion === 'PARTIAL') return 'badge badge-amber';
+  return 'badge badge-rose';
+}
+
+function formatConclusion(conclusion, origin) {
+  const labels = { SUPPORTED: 'Diagnostic étayé', PARTIAL: 'Diagnostic partiel', INDETERMINATE: 'Diagnostic indéterminé', CONFLICT: 'Diagnostic contradictoire' };
+  return `${labels[conclusion] || conclusion}${origin ? ` · ${origin === 'DMN' ? 'DMN' : 'IA'}` : ''}`;
 }
 
 onMounted(() => {
