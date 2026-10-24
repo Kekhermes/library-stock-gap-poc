@@ -317,8 +317,10 @@ public class RuleRepository {
             epoch, ruleId, candidateVer, proposalId, proposalRevision, dmnXml, sha, metaJson, Timestamp.from(now)
         );
 
-        // 3. Prepare new rule_set_publication version
-        int newVer = baseVer + 1;
+        // Publication version is allocated from the current active pointer, not the historical
+        // proposal base. This prevents a second approved proposal from colliding on v2.
+        int currentVer = getActiveRuleSetVersion(epoch);
+        int newVer = currentVer + 1;
         UUID commandId = UUID.randomUUID();
         String manifestSha = AnalysisRepository.sha256Hex("publication-v" + newVer + "-" + ruleId + "-" + candidateVer);
 
@@ -326,13 +328,13 @@ public class RuleRepository {
             "INSERT INTO runtime.rule_set_publication (dataset_epoch, rule_set_version, previous_version, kind, " +
             "proposal_id, proposal_revision, validation_report_id, manifest_sha256, approved_by, command_id, created_at) " +
             "VALUES (?, ?, ?, 'AGENT_CHANGE', ?, ?, ?, ?, 'Admin', ?, ?)",
-            epoch, newVer, baseVer, proposalId, proposalRevision, reportId, manifestSha, commandId, Timestamp.from(now)
+            epoch, newVer, currentVer, proposalId, proposalRevision, reportId, manifestSha, commandId, Timestamp.from(now)
         );
 
         // 4. Copy existing members from baseVer, replacing or adding this rule
         List<Map<String, Object>> prevMembers = jdbcTemplate.queryForList(
             "SELECT rule_id, rule_version FROM runtime.rule_set_member WHERE dataset_epoch = ? AND rule_set_version = ?",
-            epoch, baseVer
+            epoch, currentVer
         );
         boolean added = false;
         for (Map<String, Object> pm : prevMembers) {
