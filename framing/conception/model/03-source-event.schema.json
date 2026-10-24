@@ -1,0 +1,491 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:library-stock-gap:model:source-event:1.0.0",
+  "title": "Événement source normalisé — contrat du générateur 1.0.0",
+  "description": "Les formats doivent être activement vérifiés ; les références et chronologies sont des invariants applicatifs. Aucun champ oracle autorisé.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "sourceEventId",
+    "copyId",
+    "eventType",
+    "occurredAt",
+    "recordedAt",
+    "payload"
+  ],
+  "properties": {
+    "sourceEventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "copyId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "eventType": {
+      "type": "string"
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "recordedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "eventType": {
+          "const": "LoanOpened"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "operationId",
+            "correlationId",
+            "siteId",
+            "locationId",
+            "loanId"
+          ],
+          "properties": {
+            "operationId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "correlationId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "siteId": {
+              "enum": [
+                "CENTRE",
+                "NORD",
+                "SUD"
+              ]
+            },
+            "locationId": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "loanId": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "eventType": {
+          "const": "LoanClosed"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "operationId",
+            "correlationId",
+            "siteId",
+            "locationId",
+            "loanId"
+          ],
+          "properties": {
+            "operationId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "correlationId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "siteId": {
+              "enum": [
+                "CENTRE",
+                "NORD",
+                "SUD"
+              ]
+            },
+            "locationId": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "loanId": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "eventType": {
+          "const": "ReturnReceived"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "operationId",
+            "correlationId",
+            "siteId",
+            "locationId",
+            "loanId"
+          ],
+          "properties": {
+            "operationId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "correlationId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "siteId": {
+              "enum": [
+                "CENTRE",
+                "NORD",
+                "SUD"
+              ]
+            },
+            "locationId": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "loanId": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "eventType": {
+          "const": "ReceiptReceived"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "operationId",
+            "correlationId",
+            "siteId",
+            "locationId",
+            "receiptId"
+          ],
+          "properties": {
+            "operationId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "correlationId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "siteId": {
+              "enum": [
+                "CENTRE",
+                "NORD",
+                "SUD"
+              ]
+            },
+            "locationId": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "receiptId": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "eventType": {
+          "const": "TransferDispatched"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "operationId",
+            "correlationId",
+            "siteId",
+            "locationId",
+            "transferId",
+            "fromSiteId",
+            "toSiteId"
+          ],
+          "properties": {
+            "operationId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "correlationId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "siteId": {
+              "enum": [
+                "CENTRE",
+                "NORD",
+                "SUD"
+              ]
+            },
+            "locationId": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "transferId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "fromSiteId": {
+              "enum": [
+                "CENTRE",
+                "NORD",
+                "SUD"
+              ]
+            },
+            "toSiteId": {
+              "enum": [
+                "CENTRE",
+                "NORD",
+                "SUD"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "eventType": {
+          "const": "TransferReceived"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "operationId",
+            "correlationId",
+            "siteId",
+            "locationId",
+            "transferId",
+            "fromSiteId",
+            "toSiteId"
+          ],
+          "properties": {
+            "operationId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "correlationId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "siteId": {
+              "enum": [
+                "CENTRE",
+                "NORD",
+                "SUD"
+              ]
+            },
+            "locationId": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "transferId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "fromSiteId": {
+              "enum": [
+                "CENTRE",
+                "NORD",
+                "SUD"
+              ]
+            },
+            "toSiteId": {
+              "enum": [
+                "CENTRE",
+                "NORD",
+                "SUD"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "eventType": {
+          "const": "RepairStarted"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "operationId",
+            "correlationId",
+            "siteId",
+            "locationId",
+            "repairId"
+          ],
+          "properties": {
+            "operationId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "correlationId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "siteId": {
+              "enum": [
+                "CENTRE",
+                "NORD",
+                "SUD"
+              ]
+            },
+            "locationId": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "repairId": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "eventType": {
+          "const": "IntegrationProcessed"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "originalEventId",
+            "correlationId",
+            "outcome",
+            "projectedStatus",
+            "siteId",
+            "locationId"
+          ],
+          "properties": {
+            "originalEventId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "correlationId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "outcome": {
+              "enum": [
+                "APPLIED",
+                "QUEUED",
+                "FAILED"
+              ]
+            },
+            "projectedStatus": {
+              "enum": [
+                "ON_SHELF",
+                "ON_LOAN",
+                "IN_TRANSIT",
+                "RECEIVING",
+                "IN_REPAIR",
+                "WITHDRAWN",
+                "NOT_REGISTERED"
+              ]
+            },
+            "siteId": {
+              "enum": [
+                "CENTRE",
+                "NORD",
+                "SUD"
+              ]
+            },
+            "locationId": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

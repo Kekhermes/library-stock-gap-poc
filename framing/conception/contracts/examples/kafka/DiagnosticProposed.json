@@ -1,0 +1,61 @@
+{
+  "eventId": "00000000-0000-4000-8000-00000000006c",
+  "eventType": "DiagnosticProposed",
+  "schemaVersion": "1.0.0",
+  "occurredAt": "2026-01-15T12:00:00Z",
+  "datasetEpoch": "00000000-0000-4000-8000-000000000002",
+  "correlationId": "00000000-0000-4000-8000-000000000003",
+  "causationId": "00000000-0000-4000-8000-000000000004",
+  "missionId": "00000000-0000-4000-8000-000000000005",
+  "attempt": 1,
+  "ruleSetVersion": 1,
+  "evidenceSnapshotId": "00000000-0000-4000-8000-000000000008",
+  "sequence": 9,
+  "caseId": "00000000-0000-4000-8000-00000000000a",
+  "analysisId": "00000000-0000-4000-8000-00000000000b",
+  "payload": {
+    "contextKind": "INVESTIGATION",
+    "leaseToken": "00000000-0000-4000-8000-000000000014",
+    "fencingToken": 1,
+    "diagnosticId": "00000000-0000-4000-8000-00000000005a",
+    "diagnostic": {
+      "conclusion": "SUPPORTED",
+      "findings": [
+        {
+          "subjectCopyId": "00000000-0000-4000-8000-00000000003c",
+          "coveredSymptomIds": [
+            "00000000-0000-4000-8000-00000000003d"
+          ],
+          "causeCode": "LOAN_NOT_PROJECTED",
+          "epistemicStatus": "SUPPORTED",
+          "assertions": [
+            "Un prêt ouvert est présent dans la chronologie figée."
+          ],
+          "evidenceRefs": [
+            {
+              "source": "LOANS",
+              "recordId": "00000000-0000-4000-8000-000000000046",
+              "evidenceSnapshotId": "00000000-0000-4000-8000-000000000008",
+              "fieldPath": "/payload/loanId"
+            }
+          ],
+          "contradictionRefs": [],
+          "recommendedChecks": [
+            "Contrôler la projection du prêt."
+          ],
+          "explanation": "La projection indique un exemplaire en rayon malgré le prêt constaté."
+        }
+      ],
+      "missingEvidence": [],
+      "summary": "Écart compatible avec un prêt non projeté."
+    },
+    "usage": {
+      "llmCalls": 1,
+      "toolCalls": 1,
+      "inputTokens": 800,
+      "outputTokens": 200,
+      "elapsedMilliseconds": 1800,
+      "accountingComplete": true
+    }
+  }
+}

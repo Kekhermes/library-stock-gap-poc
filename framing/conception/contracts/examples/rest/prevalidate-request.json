@@ -1,0 +1,34 @@
+{
+  "change": {
+    "operation": "CREATE",
+    "originDiagnosticId": "00000000-0000-4000-8000-00000000005a",
+    "originEvidenceSnapshotId": "00000000-0000-4000-8000-000000000008",
+    "rationale": "Proposition synthétique issue du diagnostic accepté.",
+    "draft": {
+      "name": "Fixture de contrat — prêt",
+      "causeCode": "LOAN_NOT_PROJECTED",
+      "epistemicStatus": "SUPPORTED",
+      "scopeDescription": "Fixture syntaxique non publiable sans compilation et tests Java.",
+      "requiredSources": [
+        "LOANS"
+      ],
+      "conditionsExplanation": [
+        "Exemple technique, pas une règle prête à activer."
+      ],
+      "exceptions": [],
+      "recommendedChecks": [
+        "Contrôler les corrélations."
+      ],
+      "dmn": {
+        "mediaType": "application/xml",
+        "content": "<definitions xmlns=\"https://www.omg.org/spec/DMN/20230324/MODEL/\" id=\"fixture\" name=\"SyntheticFixture\" namespace=\"urn:synthetic:contract\"><decision id=\"d1\" name=\"example\"><literalExpression><text>true</text></literalExpression></decision></definitions>",
+        "sha256": "931fb789fc480bc79fec5530a2c24f6f5d4f72b20af27ad4a847dd890baf5a13",
+        "decisionId": "d1",
+        "rowIds": [
+          "fixture-row"
+        ]
+      }
+    }
+  },
+  "expectedRuleSetVersion": 1
+}

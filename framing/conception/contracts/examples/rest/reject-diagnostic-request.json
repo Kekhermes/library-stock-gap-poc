@@ -1,0 +1,5 @@
+{
+  "expectedDiagnosticVersion": 1,
+  "expectedAnalysisVersion": 2,
+  "reason": "Preuve insuffisante dans la fixture."
+}

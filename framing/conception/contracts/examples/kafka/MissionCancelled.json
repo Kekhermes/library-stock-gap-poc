@@ -1,0 +1,31 @@
+{
+  "eventId": "00000000-0000-4000-8000-000000000070",
+  "eventType": "MissionCancelled",
+  "schemaVersion": "1.0.0",
+  "occurredAt": "2026-01-15T12:00:00Z",
+  "datasetEpoch": "00000000-0000-4000-8000-000000000002",
+  "correlationId": "00000000-0000-4000-8000-000000000003",
+  "causationId": "00000000-0000-4000-8000-000000000004",
+  "missionId": "00000000-0000-4000-8000-000000000005",
+  "attempt": 1,
+  "ruleSetVersion": 1,
+  "evidenceSnapshotId": "00000000-0000-4000-8000-000000000008",
+  "sequence": 13,
+  "caseId": "00000000-0000-4000-8000-00000000000a",
+  "analysisId": "00000000-0000-4000-8000-00000000000b",
+  "payload": {
+    "contextKind": "INVESTIGATION",
+    "leaseToken": "00000000-0000-4000-8000-000000000014",
+    "fencingToken": 1,
+    "reason": "Annulation confirmée.",
+    "lastCompletedCallId": "00000000-0000-4000-8000-000000000029",
+    "usage": {
+      "llmCalls": 1,
+      "toolCalls": 1,
+      "inputTokens": 800,
+      "outputTokens": 200,
+      "elapsedMilliseconds": 1800,
+      "accountingComplete": true
+    }
+  }
+}

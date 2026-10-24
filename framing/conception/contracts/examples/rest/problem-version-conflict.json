@@ -1,0 +1,12 @@
+{
+  "type": "urn:stock-gap:error:version-conflict",
+  "title": "Version périmée",
+  "status": 409,
+  "code": "VERSION_CONFLICT",
+  "detail": "Relire la proposition et relancer ses validations.",
+  "instance": "/api/proposals/00000000-0000-4000-8000-00000000000c/publication",
+  "correlationId": "00000000-0000-4000-8000-000000000003",
+  "retryable": false,
+  "violations": [],
+  "currentVersion": 3
+}

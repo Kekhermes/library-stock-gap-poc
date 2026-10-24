@@ -1,0 +1,6 @@
+test_validator_exists_and_checks_its_own_schema (test_contracts.ValidatorBootstrap.test_validator_exists_and_checks_its_own_schema) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.038s
+
+OK

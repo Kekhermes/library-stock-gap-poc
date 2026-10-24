@@ -1,0 +1,39 @@
+{
+  "eventId": "00000000-0000-4000-8000-000000000066",
+  "eventType": "RuleRevisionRequested",
+  "schemaVersion": "1.0.0",
+  "occurredAt": "2026-01-15T12:00:00Z",
+  "datasetEpoch": "00000000-0000-4000-8000-000000000002",
+  "correlationId": "00000000-0000-4000-8000-000000000003",
+  "causationId": "00000000-0000-4000-8000-000000000004",
+  "missionId": "00000000-0000-4000-8000-000000000005",
+  "attempt": 1,
+  "ruleSetVersion": 1,
+  "evidenceSnapshotId": "00000000-0000-4000-8000-000000000008",
+  "sequence": 3,
+  "proposalId": "00000000-0000-4000-8000-00000000000c",
+  "proposalRevision": 1,
+  "payload": {
+    "contextKind": "RULE_HISTORY",
+    "role": "RULE_AGENT",
+    "promptVersion": "1.0.0",
+    "limits": {
+      "maxLlmCalls": 4,
+      "maxToolCalls": 20,
+      "maxInputTokens": 16000,
+      "maxOutputTokens": 4000,
+      "maxDurationSeconds": 300,
+      "maxAttempts": 3
+    },
+    "allowedTools": [
+      "READ_SNAPSHOT",
+      "READ_TIMELINE"
+    ],
+    "deadlineAt": "2026-01-15T12:05:00Z",
+    "originDiagnosticId": "00000000-0000-4000-8000-00000000005a",
+    "originEvidenceSnapshotId": "00000000-0000-4000-8000-000000000008",
+    "targetRuleId": "R001",
+    "expectedRuleVersion": 1,
+    "instruction": "Examiner une généralisation prudente."
+  }
+}

@@ -1,0 +1,194 @@
+{
+  "synthetic": true,
+  "description": "Fixtures hors ligne indépendantes, pas une séquence métier ; aucun résultat API réel, aucune époque de dataset vivant.",
+  "examples": [
+    {
+      "path": "examples/kafka/InvestigationRequested.json",
+      "schema": "kafka-message.schema.json"
+    },
+    {
+      "path": "examples/kafka/RuleSynthesisRequested.json",
+      "schema": "kafka-message.schema.json"
+    },
+    {
+      "path": "examples/kafka/RuleRevisionRequested.json",
+      "schema": "kafka-message.schema.json"
+    },
+    {
+      "path": "examples/kafka/ExpertTurnRequested.json",
+      "schema": "kafka-message.schema.json"
+    },
+    {
+      "path": "examples/kafka/CancellationRequested.json",
+      "schema": "kafka-message.schema.json"
+    },
+    {
+      "path": "examples/kafka/MissionStarted.json",
+      "schema": "kafka-message.schema.json"
+    },
+    {
+      "path": "examples/kafka/ToolObservationRecorded.json",
+      "schema": "kafka-message.schema.json"
+    },
+    {
+      "path": "examples/kafka/TextChunkProduced.json",
+      "schema": "kafka-message.schema.json"
+    },
+    {
+      "path": "examples/kafka/DiagnosticProposed.json",
+      "schema": "kafka-message.schema.json"
+    },
+    {
+      "path": "examples/kafka/RuleChangeProposed.json",
+      "schema": "kafka-message.schema.json"
+    },
+    {
+      "path": "examples/kafka/RuleChangeNotProposed.json",
+      "schema": "kafka-message.schema.json"
+    },
+    {
+      "path": "examples/kafka/MissionFailed.json",
+      "schema": "kafka-message.schema.json"
+    },
+    {
+      "path": "examples/kafka/MissionCancelled.json",
+      "schema": "kafka-message.schema.json"
+    },
+    {
+      "path": "examples/sse/AnalysisChanged.json",
+      "schema": "sse-event.schema.json"
+    },
+    {
+      "path": "examples/sse/MissionChanged.json",
+      "schema": "sse-event.schema.json"
+    },
+    {
+      "path": "examples/sse/DiagnosticReady.json",
+      "schema": "sse-event.schema.json"
+    },
+    {
+      "path": "examples/sse/ProposalChanged.json",
+      "schema": "sse-event.schema.json"
+    },
+    {
+      "path": "examples/sse/ValidationCompleted.json",
+      "schema": "sse-event.schema.json"
+    },
+    {
+      "path": "examples/sse/PublicationActivated.json",
+      "schema": "sse-event.schema.json"
+    },
+    {
+      "path": "examples/sse/ConversationMessageChanged.json",
+      "schema": "sse-event.schema.json"
+    },
+    {
+      "path": "examples/sse/BatchChanged.json",
+      "schema": "sse-event.schema.json"
+    },
+    {
+      "path": "examples/sse/DatasetReset.json",
+      "schema": "sse-event.schema.json"
+    },
+    {
+      "path": "examples/sse/ResyncRequired.json",
+      "schema": "sse-event.schema.json"
+    },
+    {
+      "path": "examples/rest/analyze-request.json",
+      "schema": "common.schema.json#/$defs/AnalyzeRequest"
+    },
+    {
+      "path": "examples/rest/analyze-accepted.json",
+      "schema": "common.schema.json#/$defs/AcceptedAnalysis"
+    },
+    {
+      "path": "examples/rest/batch-request.json",
+      "schema": "common.schema.json#/$defs/BatchRequest"
+    },
+    {
+      "path": "examples/rest/cancel-request.json",
+      "schema": "common.schema.json#/$defs/CancelRequest"
+    },
+    {
+      "path": "examples/rest/accept-diagnostic-request.json",
+      "schema": "common.schema.json#/$defs/AcceptDiagnosticRequest"
+    },
+    {
+      "path": "examples/rest/reject-diagnostic-request.json",
+      "schema": "common.schema.json#/$defs/RejectDiagnosticRequest"
+    },
+    {
+      "path": "examples/rest/message-request.json",
+      "schema": "common.schema.json#/$defs/MessageRequest"
+    },
+    {
+      "path": "examples/rest/revision-request.json",
+      "schema": "common.schema.json#/$defs/RevisionRequest"
+    },
+    {
+      "path": "examples/rest/test-proposal-request.json",
+      "schema": "common.schema.json#/$defs/TestProposalRequest"
+    },
+    {
+      "path": "examples/rest/publish-request.json",
+      "schema": "common.schema.json#/$defs/PublishRequest"
+    },
+    {
+      "path": "examples/rest/retirement-preview-request.json",
+      "schema": "common.schema.json#/$defs/RetirementPreviewRequest"
+    },
+    {
+      "path": "examples/rest/retire-request.json",
+      "schema": "common.schema.json#/$defs/RetireRequest"
+    },
+    {
+      "path": "examples/rest/claim-request.json",
+      "schema": "common.schema.json#/$defs/ClaimRequest"
+    },
+    {
+      "path": "examples/rest/heartbeat-request.json",
+      "schema": "common.schema.json#/$defs/HeartbeatRequest"
+    },
+    {
+      "path": "examples/rest/authorize-llm-request.json",
+      "schema": "common.schema.json#/$defs/AuthorizeCallRequest"
+    },
+    {
+      "path": "examples/rest/authorize-tool-request.json",
+      "schema": "common.schema.json#/$defs/AuthorizeCallRequest"
+    },
+    {
+      "path": "examples/rest/complete-call-request.json",
+      "schema": "common.schema.json#/$defs/CallCompletionRequest"
+    },
+    {
+      "path": "examples/rest/prevalidate-request.json",
+      "schema": "common.schema.json#/$defs/PrevalidationRequest"
+    },
+    {
+      "path": "examples/rest/prevalidate-result.json",
+      "schema": "common.schema.json#/$defs/PrevalidationResult"
+    },
+    {
+      "path": "examples/rest/diagnostic-record.json",
+      "schema": "common.schema.json#/$defs/DiagnosticRecord"
+    },
+    {
+      "path": "examples/rest/rule-revise.json",
+      "schema": "common.schema.json#/$defs/RuleChange"
+    },
+    {
+      "path": "examples/rest/rule-retire.json",
+      "schema": "common.schema.json#/$defs/RuleChange"
+    },
+    {
+      "path": "examples/rest/problem-version-conflict.json",
+      "schema": "common.schema.json#/$defs/Problem"
+    },
+    {
+      "path": "examples/dead-letter.json",
+      "schema": "dead-letter.schema.json"
+    }
+  ]
+}
