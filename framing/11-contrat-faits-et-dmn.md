@@ -19,24 +19,30 @@ Les règles n'importent pas arbitrairement d'autres règles actives. Une publica
 Structure logique candidate :
 
 ```text
-CaseFacts
-  schemaVersion
-  snapshotId
-  inventoryReferenceTime
-  dataCapturedAt
-  case: caseId, copyId, symptomIds, siteId
-  expected: status, siteId, locationId, sourceEventIds
-  observed: observations[], identityQuality, scopeCoverage
-  loans[]: loanId, copyId, occurredAt, recordedAt, state, sourceEventId
-  returns[]: returnId, loanId, copyId, occurredAt, recordedAt, sourceEventId
-  receipts[]: receiptId, copyId, occurredAt, recordedAt, state, sourceEventId
-  transfers[]: transferId, copyId, fromSite, toSite, sentAt, receivedAt, sourceEventIds
-  maintenance[]: operationId, copyId, type, state, occurredAt, sourceEventId
-  integrations[]: eventId, businessEventId, targetProjection, state, processedAt
-  sourceAvailability[]: source, status, completeFrom, completeTo
+CaseFacts (projections scalaires aplaties pour FEEL/DMN) :
+  - symptomKind : string ("STATUS_MISMATCH", "LOCATION_MISMATCH", "UNEXPECTED_PRESENCE", "MISSING", "COUNT_UNCERTAIN")
+  - expectedValue : string (statut ou valeur attendue, ex: "ON_LOAN", "IN_TRANSIT", "ON_SHELF")
+  - observedValue : string (statut ou valeur observée, ex: "RECEIVING", "IN_REPAIR")
+  - expectedStatus : string (statut système attendu)
+  - observedStatus : string (statut physique constaté)
+  - systemStatus : string (statut actuel au SIGB)
+  - expectedSiteId : string (site attendu)
+  - observedSiteId : string (site constaté)
+  - expectedLocationId : string (emplacement attendu)
+  - observedLocationId : string (emplacement constaté)
+  - observationReliable : boolean (true si quality = "VALID")
+  - observationQuality : string ("VALID", "AMBIGUOUS", "REJECTED")
+  - latestIntegrationOutcome : string ("FAILED", "APPLIED", "QUEUED")
+  - latestIntegrationErrorCode : string (ex: "PROJECTION_WRITE_UNAVAILABLE")
+  - latestProjectedStatus : string (statut visé par la projection)
+  - integrationsAvailabilityStatus : string ("COMPLETE", "PARTIAL", "UNAVAILABLE")
+  - loansAvailabilityStatus, returnsAvailabilityStatus, transfersAvailabilityStatus, repairsAvailabilityStatus, inventoryAvailabilityStatus : string
+  - loansCount, loansClosedCount, returnsCount, transfersDispatchedCount, transfersReceivedCount, repairsCount : integer
 ```
 
-Les noms définitifs seront stabilisés avec les tests contractuels. Dates normalisées, identités opaques et valeurs énumérées versionnées. Les listes sont bornées selon un périmètre temporel explicite ; une liste tronquée ne doit pas être déclarée complète.
+Les noms définitifs sont stabilisés avec les tests contractuels. Dates normalisées, identités opaques et valeurs énumérées versionnées. Les listes sont bornées selon un périmètre temporel explicite ; une liste tronquée ne doit pas être déclarée complète.
+
+Attention primordiale : les règles DMN s'exécutent lors de l'**analyse déterministe pré-LLM** sur des dossiers vierges (`A_ANALYSER`). Aucun champ de conclusion préexistante (`diagnosticConclusion`, `acceptedDiagnosticConclusion`) ne doit être exigé par les conditions DMN.
 
 Les notes libres sont dans le dossier de preuves accessible à l'investigateur, **pas dans les conditions FEEL**. Aucun champ `expectedCause`, `scenarioFamily`, `injectedFault` ou équivalent n'existe dans ce contrat.
 
@@ -87,6 +93,10 @@ Finding
   recommendedChecks[]
   explanationTemplateId / bounded explanation parameters
 ```
+
+Au niveau de la table de décision DMN, chaque règle doit produire au minimum :
+- `<output id="out_cause" name="causeCode" typeRef="string"/>` : le code de cause normalisé (ex. `"PROJECTION_WRITE_UNAVAILABLE"`, `"LOCATION_DIFFERENCE"`).
+- `<output id="out_epistemic" name="epistemicStatus" typeRef="string"/>` : statut épistémique (`"SUPPORTED"`).
 
 La règle ne retourne ni objet Java arbitraire ni action exécutable. Les références sont vérifiées contre le snapshot ; une référence inventée invalide la sortie. Le moteur ne reçoit pas d'autorisation d'écrire sur le stock.
 

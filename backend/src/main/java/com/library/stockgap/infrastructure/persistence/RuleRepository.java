@@ -31,6 +31,13 @@ public class RuleRepository {
         return v != null ? v : 1;
     }
 
+    private static String extractXmlAttribute(String xml, String attr) {
+        if (xml == null) return null;
+        var p = java.util.regex.Pattern.compile(attr + "\\s*=\\s*\"([^\"]+)\"");
+        var m = p.matcher(xml);
+        return m.find() ? m.group(1) : null;
+    }
+
     public List<RuleMetadata> getActiveRules(UUID epoch) {
         int activeVer = getActiveRuleSetVersion(epoch);
         String sql =
@@ -58,11 +65,14 @@ public class RuleRepository {
                 meta = Collections.emptyMap();
             }
 
-            String name = (String) meta.getOrDefault("name", ruleId);
+            String xmlNs = extractXmlAttribute(dmnXml, "namespace");
+            String xmlName = extractXmlAttribute(dmnXml, "name");
+
+            String name = (String) meta.getOrDefault("name", xmlName != null ? xmlName : ruleId);
             String origin = (String) meta.getOrDefault("origin", "AGENT");
             String dmnPath = (String) meta.getOrDefault("dmnPath", "rules/" + ruleId + "-v" + ver + ".dmn");
-            String namespace = (String) meta.getOrDefault("namespace", "urn:library-stock-gap:rules:" + ruleId + ":" + ver);
-            String modelName = (String) meta.getOrDefault("modelName", ruleId + "-v" + ver);
+            String namespace = (String) meta.getOrDefault("namespace", xmlNs != null ? xmlNs : "urn:library-stock-gap:rules:" + ruleId + ":" + ver);
+            String modelName = (String) meta.getOrDefault("modelName", xmlName != null ? xmlName : ruleId + "-v" + ver);
             String causeCode = (String) meta.getOrDefault("causeCode", "UNKNOWN");
             List<String> covered = (List<String>) meta.getOrDefault("coveredSymptomKinds", Collections.emptyList());
             List<String> recs = (List<String>) meta.getOrDefault("recommendations", Collections.emptyList());
@@ -125,11 +135,14 @@ public class RuleRepository {
                 meta = Collections.emptyMap();
             }
 
-            String name = (String) meta.getOrDefault("name", id);
+            String xmlNs = extractXmlAttribute(dmnXml, "namespace");
+            String xmlName = extractXmlAttribute(dmnXml, "name");
+
+            String name = (String) meta.getOrDefault("name", xmlName != null ? xmlName : id);
             String origin = (String) meta.getOrDefault("origin", "AGENT");
             String dmnPath = (String) meta.getOrDefault("dmnPath", "rules/" + id + "-v" + ver + ".dmn");
-            String namespace = (String) meta.getOrDefault("namespace", "urn:library-stock-gap:rules:" + id + ":" + ver);
-            String modelName = (String) meta.getOrDefault("modelName", id + "-v" + ver);
+            String namespace = (String) meta.getOrDefault("namespace", xmlNs != null ? xmlNs : "urn:library-stock-gap:rules:" + id + ":" + ver);
+            String modelName = (String) meta.getOrDefault("modelName", xmlName != null ? xmlName : id + "-v" + ver);
             String causeCode = (String) meta.getOrDefault("causeCode", "UNKNOWN");
             List<String> covered = (List<String>) meta.getOrDefault("coveredSymptomKinds", Collections.emptyList());
             List<String> recs = (List<String>) meta.getOrDefault("recommendations", Collections.emptyList());
@@ -211,13 +224,16 @@ public class RuleRepository {
             );
 
             // 3. proposal_operation
-            Map<String, Object> opMeta = Map.of(
-                "name", ruleName,
-                "causeCode", causeCode,
-                "coveredSymptomKinds", coveredSymptomKinds,
-                "recommendations", List.of("Contrôler la conformité du stock."),
-                "limitations", List.of("Proposition synthétisée par agent.")
-            );
+            String extractedNs = extractXmlAttribute(dmnXml, "namespace");
+            String extractedName = extractXmlAttribute(dmnXml, "name");
+            Map<String, Object> opMeta = new HashMap<>();
+            opMeta.put("name", ruleName);
+            opMeta.put("causeCode", causeCode);
+            opMeta.put("coveredSymptomKinds", coveredSymptomKinds);
+            opMeta.put("recommendations", List.of("Contrôler la conformité du stock."));
+            opMeta.put("limitations", List.of("Proposition synthétisée par agent."));
+            if (extractedNs != null) opMeta.put("namespace", extractedNs);
+            if (extractedName != null) opMeta.put("modelName", extractedName);
             String opMetaJson = objectMapper.writeValueAsString(opMeta);
 
             int candidateVer = 1;
