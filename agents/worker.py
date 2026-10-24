@@ -205,12 +205,29 @@ def run_gpt_investigation(producer: Producer, envelope: dict[str, Any], lease_to
     )
     try:
         diagnostic = Diagnostic.model_validate_json(final.output_text)
-    except ValidationError as error:
-        raise RuntimeError(f"Sortie GPT invalide: {error}") from error
-    _validate_grounding(diagnostic, snapshot, snapshot_id)
+        _validate_grounding(diagnostic, snapshot, snapshot_id)
+    except (ValidationError, ValueError) as error:
+        # Le modèle peut citer un identifiant contextuel (lieu, exemplaire) au lieu d'un recordId de preuve.
+        # Une correction bornée évite de faire échouer tout le dossier pour cette erreur de forme.
+        repair = client.responses.create(
+            model=OPENAI_MODEL,
+            previous_response_id=final.id,
+            input="Ta sortie a été rejetée : " + str(error) + ". Corrige-la. evidenceRefs/contradictionRefs ne peuvent contenir que les sourceEventId, observationId ou noteId réellement présents dans le snapshot, et evidenceSnapshotId doit être le snapshot courant.",
+            instructions=SYSTEM_PROMPT,
+            text={"format": {"type": "json_schema", "name": "stock_gap_diagnostic", "strict": True, "schema": schema}},
+        )
+        try:
+            diagnostic = Diagnostic.model_validate_json(repair.output_text)
+            _validate_grounding(diagnostic, snapshot, snapshot_id)
+        except (ValidationError, ValueError) as repaired_error:
+            raise RuntimeError(f"Sortie GPT invalide après correction: {repaired_error}") from repaired_error
+        final = repair
+        correction_calls = 1
+    else:
+        correction_calls = 0
     in1, out1 = _usage(first)
     in2, out2 = _usage(final)
-    return diagnostic, {"inputTokens": in1 + in2, "outputTokens": out1 + out2, "llmCalls": 2, "toolCalls": 1}
+    return diagnostic, {"inputTokens": in1 + in2, "outputTokens": out1 + out2, "llmCalls": 2 + correction_calls, "toolCalls": 1}
 
 
 def handle_investigation(producer: Producer, envelope: dict[str, Any]) -> None:

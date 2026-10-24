@@ -63,7 +63,7 @@ class GptInvestigationTest(unittest.TestCase):
         invalid["findings"][0]["evidenceRefs"][0]["recordId"] = "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
         client = SimpleNamespace(responses=FakeResponses(invalid))
         with patch.object(worker, "OpenAI", return_value=client), patch.object(worker, "get_case_snapshot", return_value=SNAPSHOT), patch.object(worker, "send_kafka_event"):
-            with self.assertRaisesRegex(ValueError, "preuve absente"):
+            with self.assertRaisesRegex(RuntimeError, "Sortie GPT invalide après correction"):
                 worker.run_gpt_investigation(None, ENVELOPE, "lease", 1)
 
     def test_strict_schema_requires_every_declared_property(self):
