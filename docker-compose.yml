@@ -1,0 +1,113 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: stockgap-postgres
+    environment:
+      POSTGRES_DB: stockgap
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d stockgap"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - stockgap-net
+
+  redpanda:
+    image: redpandadata/redpanda:v24.3.1
+    container_name: stockgap-redpanda
+    command:
+      - redpanda start
+      - --overprovisioned
+      - --smp 1
+      - --memory 1G
+      - --reserve-memory 0M
+      - --node-id 0
+      - --check=false
+      - --kafka-addr PLAINTEXT://0.0.0.0:9092,OUTSIDE://0.0.0.0:19092
+      - --advertise-kafka-addr PLAINTEXT://redpanda:9092,OUTSIDE://localhost:19092
+    ports:
+      - "127.0.0.1:19092:19092"
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -i OK || exit 0"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - stockgap-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: stockgap-backend
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: stockgap
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+      WORKER_TOKEN: ${WORKER_TOKEN:-worker-internal-secret-token}
+      AUTO_SEED: "true"
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redpanda:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - stockgap-net
+
+  agents:
+    build:
+      context: ./agents
+      dockerfile: Dockerfile
+    container_name: stockgap-agents
+    environment:
+      BACKEND_URL: http://backend:8080
+      WORKER_TOKEN: ${WORKER_TOKEN:-worker-internal-secret-token}
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.6-luna}
+    depends_on:
+      backend:
+        condition: service_healthy
+      redpanda:
+        condition: service_started
+    networks:
+      - stockgap-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: stockgap-frontend
+    ports:
+      - "127.0.0.1:3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - stockgap-net
+
+networks:
+  stockgap-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redpanda_data:

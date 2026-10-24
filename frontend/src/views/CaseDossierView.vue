@@ -1,0 +1,429 @@
+<template>
+  <div v-if="dossier">
+    <!-- Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <router-link to="/cases" class="btn btn-secondary btn-sm">← Retour aux cas</router-link>
+        <h1 style="font-size: 1.3rem; font-weight: 700;">
+          Dossier : <span style="font-family: monospace; color: var(--accent-blue);">{{ dossier.barcode }}</span>
+        </h1>
+        <span style="color: var(--text-muted);">{{ dossier.title }}</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span :class="getStatusBadgeClass(dossier.status)">{{ formatStatus(dossier.status) }}</span>
+        <button v-if="dossier.status !== 'EN_ANALYSE'" @click="startAnalysis" class="btn btn-primary btn-sm">
+          ⚡ Analyser le cas
+        </button>
+        <button v-else @click="cancelAnalysis" class="btn btn-danger btn-sm">
+          Annuler l'analyse
+        </button>
+      </div>
+    </div>
+
+    <!-- 3-Panel Layout -->
+    <div class="dossier-layout">
+      <!-- 1. LEFT PANEL: FAITS -->
+      <div class="dossier-panel">
+        <div class="panel-header">
+          <span>📋 1. Faits & Sources figées</span>
+          <span class="badge badge-blue">{{ dossier.owningSiteId }}</span>
+        </div>
+
+        <div class="panel-body">
+          <!-- Système vs Observation -->
+          <div style="margin-bottom: 1.25rem;">
+            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase;">
+              Comparaison d'inventaire
+            </div>
+
+            <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 0.5rem;">
+              <div style="font-size: 0.75rem; color: var(--text-muted);">Attendu (Système informatique) :</div>
+              <div style="font-weight: 600; color: var(--accent-amber);">
+                Statut: {{ dossier.systemState?.status || 'NON RENSEIGNÉ' }} | Site: {{ dossier.systemState?.siteId }}
+              </div>
+            </div>
+
+            <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border-color);">
+              <div style="font-size: 0.75rem; color: var(--text-muted);">Observé (Scan physique) :</div>
+              <div v-if="dossier.observations?.length > 0">
+                <div v-for="obs in dossier.observations" :key="obs.observationId" style="font-weight: 600; color: var(--accent-green);">
+                  Site: {{ obs.siteId }} | Qualité: {{ obs.quality }} | Date: {{ formatDate(obs.observedAt) }}
+                </div>
+              </div>
+              <div v-else style="color: var(--accent-rose); font-style: italic;">
+                Aucune observation physique enregistrée.
+              </div>
+            </div>
+          </div>
+
+          <!-- Symptômes constatés -->
+          <div style="margin-bottom: 1.25rem;">
+            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase;">
+              Symptômes d'écart ({{ dossier.symptoms?.length }})
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+              <div v-for="sym in dossier.symptoms" :key="sym.symptomId"
+                   style="background: rgba(251, 191, 36, 0.08); border: 1px solid rgba(251, 191, 36, 0.25); padding: 0.5rem; border-radius: 4px; font-size: 0.85rem;">
+                <span class="badge badge-amber">{{ sym.kind }}</span>
+                <span v-if="sym.expectedValue" style="margin-left: 0.5rem; color: var(--text-muted);">
+                  Attendu: {{ sym.expectedValue }}
+                </span>
+                <span v-if="sym.observedValue" style="margin-left: 0.5rem; color: var(--text-muted);">
+                  Observé: {{ sym.observedValue }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notes opérateur -->
+          <div style="margin-bottom: 1.25rem;" v-if="dossier.operatorNotes?.length > 0">
+            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase;">
+              Notes opérateur libres (Données non FEEL)
+            </div>
+            <div v-for="note in dossier.operatorNotes" :key="note.noteId"
+                 style="background: rgba(148, 163, 184, 0.08); border-left: 3px solid var(--text-muted); padding: 0.5rem 0.75rem; margin-bottom: 0.5rem; font-size: 0.85rem; font-style: italic;">
+              "{{ note.text }}"
+              <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">{{ formatDate(note.recordedAt) }}</div>
+            </div>
+          </div>
+
+          <!-- Chronologie des événements -->
+          <div>
+            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase;">
+              Chronologie des événements source ({{ dossier.timeline?.length }})
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.8rem;">
+              <div v-for="ev in dossier.timeline" :key="ev.sourceEventId"
+                   style="padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; background: rgba(0,0,0,0.1);">
+                <div style="display: flex; justify-content: space-between; font-weight: 600;">
+                  <span style="color: var(--accent-blue);">{{ ev.eventType }}</span>
+                  <span style="color: var(--text-muted);">{{ formatDate(ev.occurredAt) }}</span>
+                </div>
+                <div style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.2rem; font-family: monospace;">
+                  {{ JSON.stringify(ev.payload) }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. CENTER PANEL: RESULTAT & CONNAISSANCE -->
+      <div class="dossier-panel">
+        <div class="panel-header">
+          <span>🧠 2. Diagnostic & Règles DMN</span>
+          <span v-if="dossier.currentDiagnostic" :class="dossier.currentDiagnostic.isDeterministic ? 'badge badge-green' : 'badge badge-purple'">
+            {{ dossier.currentDiagnostic.isDeterministic ? 'Déterministe DMN' : 'Investigateur IA' }}
+          </span>
+        </div>
+
+        <div class="panel-body">
+          <!-- Statut d'analyse en cours -->
+          <div v-if="dossier.status === 'EN_ANALYSE'" style="text-align: center; padding: 2rem;">
+            <div style="font-size: 2rem; margin-bottom: 1rem;">⏳</div>
+            <div style="font-weight: 600;">Analyse en cours...</div>
+            <div style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">
+              1. Évaluation DMN par Apache KIE<br>
+              2. Fallback investigation via Kafka si nécessaire
+            </div>
+          </div>
+
+          <!-- Diagnostic disponible -->
+          <div v-else-if="dossier.currentDiagnostic">
+            <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 6px; padding: 1rem; margin-bottom: 1rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <span style="font-weight: 700; font-size: 1.1rem;">Synthèse diagnostique</span>
+                <span :class="getEpistemicBadge(dossier.currentDiagnostic.conclusion)">
+                  {{ dossier.currentDiagnostic.conclusion }}
+                </span>
+              </div>
+
+              <p style="font-size: 0.95rem; margin-bottom: 0.75rem;">
+                {{ dossier.currentDiagnostic.summary }}
+              </p>
+
+              <!-- Findings -->
+              <div v-for="(f, idx) in dossier.currentDiagnostic.findings" :key="idx"
+                   style="border-top: 1px solid var(--border-color); padding-top: 0.75rem; margin-top: 0.75rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;">
+                  <span class="badge badge-blue">{{ f.causeCode }}</span>
+                  <span style="font-size: 0.8rem; color: var(--text-muted);">
+                    Règle: {{ f.ruleId || 'Investigation IA' }}
+                  </span>
+                </div>
+                <div v-for="(ast, aidx) in f.assertions" :key="aidx" style="font-size: 0.85rem; margin-bottom: 0.25rem;">
+                  • {{ ast }}
+                </div>
+                <div v-if="f.recommendedChecks?.length > 0" style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
+                  <strong>Recommandations :</strong> {{ f.recommendedChecks.join(', ') }}
+                </div>
+              </div>
+
+              <!-- Bouton d'acceptation -->
+              <div v-if="dossier.status === 'A_REVOIR'" style="margin-top: 1.25rem; padding-top: 0.75rem; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
+                <button @click="acceptDiagnostic" class="btn btn-success btn-sm">
+                  ✓ Accepter ce diagnostic
+                </button>
+              </div>
+            </div>
+
+            <!-- Proposition de règle synthétisée -->
+            <div v-if="dossier.currentProposal" style="border: 1px solid var(--accent-purple); border-radius: 6px; padding: 1rem; background: rgba(192, 132, 252, 0.05); margin-top: 1.25rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <div>
+                  <span class="badge badge-purple" style="margin-right: 0.5rem;">{{ dossier.currentProposal.operation }}</span>
+                  <strong>{{ dossier.currentProposal.ruleName }}</strong>
+                </div>
+                <span class="badge badge-amber">{{ dossier.currentProposal.state }}</span>
+              </div>
+
+              <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                <strong>Justification :</strong> {{ dossier.currentProposal.rationale }}
+              </div>
+
+              <!-- DMN Source Code -->
+              <div style="margin-bottom: 1rem;">
+                <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.25rem;">Modèle DMN 1.5 généré :</div>
+                <pre class="code-block" style="max-height: 150px;">{{ dossier.currentProposal.dmnXml }}</pre>
+              </div>
+
+              <!-- Actions de publication -->
+              <div v-if="dossier.currentProposal.state === 'READY_FOR_APPROVAL'" style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.8rem; color: var(--accent-green);">
+                  ✓ Tests de replay validés
+                </span>
+                <button @click="approveProposal" class="btn btn-primary btn-sm">
+                  🚀 Approuver & Publier au Runtime
+                </button>
+              </div>
+              <div v-else-if="dossier.currentProposal.state === 'PUBLISHED'" style="color: var(--accent-green); font-size: 0.85rem; font-weight: 600;">
+                ✓ Règle publiée et active au runtime (v{{ store.activeRuleSetVersion }})
+              </div>
+            </div>
+          </div>
+
+          <div v-else style="text-align: center; padding: 3rem; color: var(--text-muted);">
+            <div>Aucun diagnostic pour ce dossier.</div>
+            <button @click="startAnalysis" class="btn btn-primary btn-sm" style="margin-top: 1rem;">
+              Lancer l'analyse déterministe
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. RIGHT PANEL: ECHANGE & CHAT EXPERT -->
+      <div class="dossier-panel">
+        <div class="panel-header">
+          <span>💬 3. Discussion Expert</span>
+          <span class="badge badge-blue">Admin & Agents</span>
+        </div>
+
+        <div class="panel-body" style="display: flex; flex-direction: column;">
+          <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem;">
+            <div v-if="messages.length === 0" style="color: var(--text-muted); font-style: italic; font-size: 0.85rem; text-align: center; margin-top: 2rem;">
+              Posez des questions ou discutez des règles avec l'agent d'investigation ou de règles.
+            </div>
+
+            <div v-for="msg in messages" :key="msg.messageId"
+                 :style="{
+                   alignSelf: msg.senderRole === 'Admin' ? 'flex-end' : 'flex-start',
+                   maxWidth: '85%',
+                   background: msg.senderRole === 'Admin' ? '#0284c7' : 'var(--bg-tertiary)',
+                   color: 'white',
+                   padding: '0.6rem 0.85rem',
+                   borderRadius: '8px',
+                   fontSize: '0.85rem'
+                 }">
+              <div style="font-size: 0.7rem; opacity: 0.75; margin-bottom: 0.2rem; font-weight: 600;">
+                {{ msg.senderRole }} • {{ formatDate(msg.sentAt) }}
+              </div>
+              <div>{{ msg.text }}</div>
+            </div>
+          </div>
+
+          <!-- Message Input -->
+          <div style="display: flex; gap: 0.5rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
+            <input v-model="newMessage" @keyup.enter="sendMessage" placeholder="Message à l'agent..." style="flex: 1;" />
+            <button @click="sendMessage" :disabled="!newMessage.trim()" class="btn btn-primary btn-sm">
+              Envoyer
+            </button>
+          </div>
+
+          <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem; text-align: center;">
+            ⚠️ Un message de chat ne vaut pas approbation applicative.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, onUnmounted } from 'vue';
+import { useRoute } from 'vue-router';
+import { useStockGapStore } from '../stores/stockGapStore';
+
+const route = useRoute();
+const store = useStockGapStore();
+
+const dossier = ref(null);
+const messages = ref([]);
+const newMessage = ref('');
+let pollInterval = null;
+
+async function loadDossier() {
+  const caseId = route.params.caseId;
+  try {
+    const res = await fetch(`/api/cases/${caseId}`);
+    if (res.ok) {
+      dossier.value = await res.json();
+      if (dossier.value.activeConversationId) {
+        loadMessages(dossier.value.activeConversationId);
+      }
+    }
+  } catch (e) {
+    console.error('Erreur chargement dossier', e);
+  }
+}
+
+async function loadMessages(conversationId) {
+  try {
+    const res = await fetch(`/api/conversations/${conversationId}/messages`);
+    if (res.ok) {
+      messages.value = await res.json();
+    }
+  } catch (e) {
+    console.error('Erreur chargement messages', e);
+  }
+}
+
+async function startAnalysis() {
+  const caseId = route.params.caseId;
+  try {
+    const res = await fetch(`/api/cases/${caseId}/analyses`, { method: 'POST' });
+    if (res.ok) {
+      loadDossier();
+    }
+  } catch (e) {
+    console.error('Erreur lancement analyse', e);
+  }
+}
+
+async function cancelAnalysis() {
+  const analysis = dossier.value?.analyses?.[0];
+  if (!analysis) return;
+  try {
+    await fetch(`/api/analyses/${analysis.analysisId}/cancellation`, { method: 'POST' });
+    loadDossier();
+  } catch (e) {
+    console.error('Erreur annulation', e);
+  }
+}
+
+async function acceptDiagnostic() {
+  const diag = dossier.value?.currentDiagnostic;
+  if (!diag) return;
+  try {
+    const res = await fetch(`/api/diagnostics/${diag.diagnosticId}/acceptance`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ caseId: dossier.value.caseId })
+    });
+    if (res.ok) {
+      loadDossier();
+      store.fetchOverview();
+    }
+  } catch (e) {
+    console.error('Erreur acceptation', e);
+  }
+}
+
+async function approveProposal() {
+  const prop = dossier.value?.currentProposal;
+  if (!prop) return;
+  try {
+    const res = await fetch(`/api/proposals/${prop.proposalId}/approval`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ revision: prop.revision, reportId: prop.proposalId })
+    });
+    if (res.ok) {
+      loadDossier();
+      store.fetchOverview();
+      store.fetchSyncSnapshot();
+    }
+  } catch (e) {
+    console.error('Erreur approbation proposition', e);
+  }
+}
+
+async function sendMessage() {
+  if (!newMessage.value.trim() || !dossier.value?.activeConversationId) return;
+  const convId = dossier.value.activeConversationId;
+  const text = newMessage.value.trim();
+  newMessage.value = '';
+
+  try {
+    const res = await fetch(`/api/conversations/${convId}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, role: 'Admin' })
+    });
+    if (res.ok) {
+      loadMessages(convId);
+    }
+  } catch (e) {
+    console.error('Erreur envoi message', e);
+  }
+}
+
+function getStatusBadgeClass(status) {
+  switch (status) {
+    case 'A_ANALYSER': return 'badge badge-amber';
+    case 'EN_ANALYSE': return 'badge badge-blue';
+    case 'A_REVOIR': return 'badge badge-purple';
+    case 'DIAGNOSTIC_ACCEPTE': return 'badge badge-green';
+    default: return 'badge badge-secondary';
+  }
+}
+
+function formatStatus(status) {
+  switch (status) {
+    case 'A_ANALYSER': return 'À analyser';
+    case 'EN_ANALYSE': return 'En analyse';
+    case 'A_REVOIR': return 'À revoir';
+    case 'DIAGNOSTIC_ACCEPTE': return 'Diagnostic accepté';
+    default: return status;
+  }
+}
+
+function getEpistemicBadge(conclusion) {
+  switch (conclusion) {
+    case 'SUPPORTED': return 'badge badge-green';
+    case 'HYPOTHESIS': return 'badge badge-amber';
+    case 'INDETERMINATE': return 'badge badge-rose';
+    default: return 'badge badge-secondary';
+  }
+}
+
+function formatDate(iso) {
+  if (!iso) return '';
+  try {
+    return new Date(iso).toLocaleDateString('fr-FR', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+  } catch (e) {
+    return iso;
+  }
+}
+
+onMounted(() => {
+  loadDossier();
+  pollInterval = setInterval(loadDossier, 3000);
+});
+
+onUnmounted(() => {
+  if (pollInterval) clearInterval(pollInterval);
+});
+</script>

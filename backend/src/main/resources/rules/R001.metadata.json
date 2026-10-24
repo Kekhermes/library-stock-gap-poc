@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0.0",
+  "ruleId": "R001",
+  "ruleVersion": 1,
+  "name": "Localisation différente constatée",
+  "origin": "BOOTSTRAP",
+  "dmnPath": "rules/R001-v1.dmn",
+  "namespace": "urn:library-stock-gap:rules:R001:1",
+  "modelName": "R001-v1",
+  "decisionName": "locationDifference",
+  "causeCode": "LOCATION_DIFFERENCE",
+  "coveredSymptomKinds": ["LOCATION_MISMATCH"],
+  "recommendations": ["Vérifier le rangement et l'affectation de l'exemplaire."],
+  "limitations": [
+    "N'identifie pas l'auteur ni le mécanisme causal du déplacement.",
+    "Ne couvre pas un écart de statut ou une autre anomalie simultanée.",
+    "Ne conclut pas en présence d'une observation absente, ambiguë ou non fiable."
+  ],
+  "immutable": true
+}
