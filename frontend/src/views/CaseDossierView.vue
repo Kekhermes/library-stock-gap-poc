@@ -185,7 +185,11 @@
             <!-- Diagnostic accepté sans règle formalisable -->
             <div v-if="dossier.status === 'DIAGNOSTIC_ACCEPTE' && !dossier.currentProposal"
                  style="border: 1px solid var(--accent-amber); border-radius: 6px; padding: 0.85rem; background: rgba(251, 191, 36, 0.06); margin-top: 1.25rem; font-size: 0.85rem; color: var(--text-muted);">
-              <template v-if="dossier.currentDiagnostic && dossier.currentDiagnostic.conclusion !== 'SUPPORTED'">
+              <template v-if="dossier.currentDiagnostic?.isDeterministic">
+                <strong style="color: var(--accent-green);">Diagnostic déterministe accepté</strong><br>
+                Ce diagnostic provient d'une règle DMN active ; aucune synthèse de règle n'est déclenchée.
+              </template>
+              <template v-else-if="dossier.currentDiagnostic && dossier.currentDiagnostic.conclusion !== 'SUPPORTED'">
                 <strong style="color: var(--accent-amber);">Diagnostic accepté non formalisable ({{ dossier.currentDiagnostic.conclusion }})</strong><br>
                 Aucune règle n'est proposée : les preuves disponibles ne permettent pas une règle FEEL publiable.
                 Le dossier conserve ses preuves et ses recommandations de vérification.
