@@ -19,6 +19,17 @@ import java.time.Instant; import java.util.*;
   return aid;
  }
  private void queueAgent(UUID epoch,UUID aid,UUID caseId,UUID sid,int version,FallbackReason reason){UUID mid=UUID.randomUUID();missions.createMission(epoch,mid,"INVESTIGATION",aid,null,sid,version,null);Map<String,Object> e=new HashMap<>();e.put("eventId",UUID.randomUUID().toString());e.put("eventType","InvestigationRequested");e.put("schemaVersion","1.0.0");e.put("occurredAt",Instant.now().toString());e.put("datasetEpoch",epoch.toString());e.put("correlationId",aid.toString());e.put("causationId",caseId.toString());e.put("missionId",mid.toString());e.put("attempt",1);e.put("ruleSetVersion",version);e.put("evidenceSnapshotId",sid.toString());e.put("caseId",caseId.toString());e.put("analysisId",aid.toString());e.put("payload",Map.of("reason",reason.name()));outbox.enqueueEvent(epoch,UUID.fromString((String)e.get("eventId")),mid,"InvestigationRequested",e);sse.publishEvent(epoch,"AnalysisChanged","Analysis",aid.toString(),Map.of("analysisId",aid,"caseId",caseId,"state","AGENT_PENDING","fallbackReason",reason.name())); }
- @Transactional public UUID acceptDiagnostic(UUID epoch,UUID did,UUID cid){UUID id=analyses.acceptDiagnostic(epoch,did,cid);sse.publishEvent(epoch,"AnalysisChanged","Case",cid.toString(),Map.of("caseId",cid,"status","DIAGNOSTIC_ACCEPTE","acceptanceId",id));return id;}
+ @Transactional public UUID acceptDiagnostic(UUID epoch,UUID did,UUID cid){
+  UUID id=analyses.acceptDiagnostic(epoch,did,cid);
+  var diagnostic=analyses.findDiagnostic(epoch,did);
+  if(diagnostic.isPresent() && !diagnostic.get().isDeterministic() && diagnostic.get().conclusion()==DiagnosticConclusion.SUPPORTED){
+   var analysis=analyses.findAnalysis(epoch,diagnostic.get().analysisId());
+   if(analysis.isPresent()){
+    UUID snapshot=(UUID)analysis.get().get("snapshotId"); int version=(int)analysis.get().get("ruleSetVersion"); UUID mission=UUID.randomUUID(); missions.createMission(epoch,mission,"RULE_SYNTHESIS",null,id,snapshot,version,null);
+    Map<String,Object> e=new HashMap<>(); e.put("eventId",UUID.randomUUID().toString()); e.put("eventType","RuleSynthesisRequested"); e.put("schemaVersion","1.0.0"); e.put("occurredAt",Instant.now().toString()); e.put("datasetEpoch",epoch.toString()); e.put("correlationId",id.toString()); e.put("causationId",did.toString()); e.put("missionId",mission.toString()); e.put("attempt",1); e.put("ruleSetVersion",version); e.put("evidenceSnapshotId",snapshot.toString()); e.put("caseId",cid.toString()); e.put("payload",Map.of("originDiagnosticId",did.toString(),"originAcceptanceId",id.toString(),"diagnosticConclusion",diagnostic.get().conclusion().name())); outbox.enqueueEvent(epoch,UUID.fromString((String)e.get("eventId")),mission,"RuleSynthesisRequested",e); sse.publishEvent(epoch,"MissionChanged","Mission",mission.toString(),Map.of("missionId",mission,"kind","RULE_SYNTHESIS","status","QUEUED"));
+   }
+  }
+  sse.publishEvent(epoch,"AnalysisChanged","Case",cid.toString(),Map.of("caseId",cid,"status","DIAGNOSTIC_ACCEPTE","acceptanceId",id));return id;
+ }
  @Transactional public void cancelAnalysis(UUID epoch,UUID aid){var a=analyses.findAnalysis(epoch,aid);if(a.isEmpty())return;UUID cid=(UUID)a.get().get("caseId");analyses.updateAnalysisStatus(epoch,aid,"CANCELLED");missions.cancelOpenMissionsForAnalysis(epoch,aid);cases.updateCaseStatus(epoch,cid,CaseStatus.A_ANALYSER);}
 }
