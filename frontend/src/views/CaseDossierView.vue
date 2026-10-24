@@ -120,6 +120,12 @@
 
         <div class="panel-body">
           <!-- Statut d'analyse en cours -->
+          <div v-if="dossier.analyses?.[0]?.status === 'FAILED'" style="border: 1px solid var(--accent-rose); border-radius: 6px; padding: 0.85rem; background: rgba(251, 113, 133, 0.08); margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-muted);">
+            <strong style="color: var(--accent-rose);">Analyse en échec</strong><br>
+            Le traitement n'a pas produit de diagnostic recevable ({{ dossier.analyses[0].fallbackReason || 'contrat de sortie invalide' }}).
+            Le cas peut être relancé.
+          </div>
+
           <div v-if="dossier.status === 'EN_ANALYSE'" style="text-align: center; padding: 2rem;">
             <div style="font-size: 2rem; margin-bottom: 1rem;">⏳</div>
             <div style="font-weight: 600;">Analyse en cours...</div>
@@ -160,12 +166,30 @@
                 </div>
               </div>
 
+              <div v-if="dossier.currentDiagnostic.missingEvidence?.length > 0"
+                   style="border-top: 1px solid var(--border-color); padding-top: 0.75rem; margin-top: 0.75rem; font-size: 0.8rem; color: var(--accent-amber);">
+                <strong>Preuves manquantes :</strong> {{ dossier.currentDiagnostic.missingEvidence.join(', ') }}
+              </div>
+
               <!-- Bouton d'acceptation -->
               <div v-if="dossier.status === 'A_REVOIR'" style="margin-top: 1.25rem; padding-top: 0.75rem; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
                 <button @click="acceptDiagnostic" class="btn btn-success btn-sm">
                   ✓ Accepter ce diagnostic
                 </button>
               </div>
+            </div>
+
+            <!-- Diagnostic accepté sans règle formalisable -->
+            <div v-if="dossier.status === 'DIAGNOSTIC_ACCEPTE' && !dossier.currentProposal"
+                 style="border: 1px solid var(--accent-amber); border-radius: 6px; padding: 0.85rem; background: rgba(251, 191, 36, 0.06); margin-top: 1.25rem; font-size: 0.85rem; color: var(--text-muted);">
+              <template v-if="dossier.currentDiagnostic && dossier.currentDiagnostic.conclusion !== 'SUPPORTED'">
+                <strong style="color: var(--accent-amber);">Diagnostic accepté non formalisable ({{ dossier.currentDiagnostic.conclusion }})</strong><br>
+                Aucune règle n'est proposée : les preuves disponibles ne permettent pas une règle FEEL publiable.
+                Le dossier conserve ses preuves et ses recommandations de vérification.
+              </template>
+              <template v-else>
+                ⏳ Synthèse de règle en cours...
+              </template>
             </div>
 
             <!-- Proposition de règle synthétisée -->
@@ -401,8 +425,11 @@ function formatStatus(status) {
 function getEpistemicBadge(conclusion) {
   switch (conclusion) {
     case 'SUPPORTED': return 'badge badge-green';
+    case 'PARTIAL': return 'badge badge-amber';
     case 'HYPOTHESIS': return 'badge badge-amber';
     case 'INDETERMINATE': return 'badge badge-rose';
+    case 'CONFLICT': return 'badge badge-rose';
+    case 'CONTRADICTED': return 'badge badge-rose';
     default: return 'badge badge-secondary';
   }
 }

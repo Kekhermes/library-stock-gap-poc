@@ -44,6 +44,21 @@ public class SseHubService {
             activeEmitters.remove(emitter);
         });
 
+        // Un premier événement est nécessaire pour que le navigateur ouvre réellement le flux :
+        // sans écriture, les en-têtes HTTP ne sont pas engagés et EventSource reste en CONNECTING.
+        try {
+            emitter.send(SseEmitter.event()
+                .name("Connected")
+                .data(Map.of(
+                    "datasetEpoch", epoch.toString(),
+                    "cursor", sseStreamRepository.getCurrentCursor(epoch)
+                ), MediaType.APPLICATION_JSON));
+        } catch (IOException e) {
+            activeEmitters.remove(emitter);
+            emitter.completeWithError(e);
+            return emitter;
+        }
+
         // Replay missed events if afterCursor provided
         if (afterCursor != null && !afterCursor.isBlank()) {
             try {

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.library.stockgap.domain.model.DiagnosticRecord;
 import com.library.stockgap.domain.model.EpistemicStatus;
 import com.library.stockgap.domain.model.Finding;
+import com.library.stockgap.domain.service.AgentDiagnosticAssembler;
 import com.library.stockgap.domain.service.RuleGovernanceService;
 import com.library.stockgap.domain.service.SseHubService;
 import com.library.stockgap.infrastructure.persistence.*;
@@ -72,7 +73,7 @@ public class AgentEventConsumer {
                 case "TextChunkProduced" -> handleTextChunkProduced(epoch, envelope, payload);
                 case "ToolObservationRecorded" -> handleToolObservation(epoch, envelope, payload);
                 case "MissionCancelled" -> handleMissionCancelled(epoch, missionId);
-                case "MissionFailed" -> handleMissionFailed(epoch, missionId);
+                case "MissionFailed" -> handleMissionFailed(epoch, missionId, uuidOrNull(envelope, "analysisId"), uuidOrNull(envelope, "caseId"));
                 default -> log.debug("Événement Kafka ignoré: {}", eventType);
             }
 
@@ -82,45 +83,57 @@ public class AgentEventConsumer {
     }
 
     private void handleDiagnosticProposed(UUID epoch, Map<String, Object> envelope, Map<String, Object> payload) {
-        UUID caseId = UUID.fromString((String) envelope.get("caseId"));
-        UUID analysisId = UUID.fromString((String) envelope.get("analysisId"));
-        UUID missionId = UUID.fromString((String) envelope.get("missionId"));
+        UUID caseId = uuidOrNull(envelope, "caseId");
+        UUID analysisId = uuidOrNull(envelope, "analysisId");
+        UUID missionId = uuidOrNull(envelope, "missionId");
+        UUID diagId = payload != null && payload.get("diagnosticId") != null
+            ? UUID.fromString((String) payload.get("diagnosticId")) : UUID.randomUUID();
 
-        Map<String, Object> diagData = (Map<String, Object>) payload.get("diagnostic");
-        UUID diagId = payload.get("diagnosticId") != null ?
-            UUID.fromString((String) payload.get("diagnosticId")) : UUID.randomUUID();
+        try {
+            Map<String, Object> diagData = payload == null ? null : (Map<String, Object>) payload.get("diagnostic");
+            UUID snapshotId = uuidOrNull(envelope, "evidenceSnapshotId");
+            UUID leaseToken = payload == null ? null : uuidOrNull(payload, "leaseToken");
+            int fencingToken = payload != null && payload.get("fencingToken") instanceof Number n ? n.intValue() : -1;
+            if (snapshotId == null || leaseToken == null || !missionRepository.isActiveInvestigation(epoch, missionId, analysisId, snapshotId, leaseToken, fencingToken)) {
+                throw new IllegalArgumentException("Mission, lease ou fencing token non actif");
+            }
+            var snapshot = analysisRepository.findSnapshot(epoch, snapshotId)
+                .orElseThrow(() -> new IllegalArgumentException("Snapshot introuvable"));
+            DiagnosticRecord record = AgentDiagnosticAssembler.assemble(diagId, analysisId, caseId, diagData, snapshot);
 
-        String conclusionStr = (String) diagData.getOrDefault("conclusion", "SUPPORTED");
-        EpistemicStatus conclusion = EpistemicStatus.valueOf(conclusionStr);
-        String summary = (String) diagData.getOrDefault("summary", "");
-        List<String> missing = (List<String>) diagData.getOrDefault("missingEvidence", Collections.emptyList());
+            analysisRepository.insertDiagnosticRevision(epoch, record, "INVESTIGATOR", 1);
+            analysisRepository.updateAnalysisStatus(epoch, analysisId, "COMPLETED");
+            missionRepository.markMissionCompleted(epoch, missionId);
 
-        List<Map<String, Object>> rawFindings = (List<Map<String, Object>>) diagData.getOrDefault("findings", Collections.emptyList());
-        List<Finding> findings = new ArrayList<>();
-        for (Map<String, Object> rf : rawFindings) {
-            UUID copyId = UUID.fromString((String) rf.get("subjectCopyId"));
-            List<UUID> symptomIds = ((List<String>) rf.getOrDefault("coveredSymptomIds", Collections.emptyList()))
-                    .stream().map(UUID::fromString).toList();
-            findings.add(new Finding(
-                copyId, symptomIds, (String) rf.get("causeCode"),
-                EpistemicStatus.valueOf((String) rf.getOrDefault("epistemicStatus", "SUPPORTED")),
-                (List<String>) rf.getOrDefault("assertions", Collections.emptyList()),
-                Collections.emptyList(), Collections.emptyList(),
-                (List<String>) rf.getOrDefault("recommendedChecks", Collections.emptyList()),
-                (String) rf.getOrDefault("explanation", ""),
-                null, null
-            ));
+            sseHubService.publishEvent(epoch, "AnalysisChanged", "Analysis", analysisId.toString(),
+                Map.of("analysisId", analysisId, "caseId", caseId, "state", "COMPLETED", "isDeterministic", false));
+            sseHubService.publishEvent(epoch, "DiagnosticReady", "Diagnostic", diagId.toString(),
+                Map.of("diagnosticId", diagId, "analysisId", analysisId, "caseId", caseId,
+                    "conclusion", record.conclusion().name()));
+        } catch (Exception e) {
+            // Un diagnostic agent non conforme ne doit jamais laisser l'analyse pendante:
+            // l'échec est visible et le cas redevient analysable.
+            log.error("Diagnostic agent rejeté (analyse {}, cas {}): {}", analysisId, caseId, e.getMessage(), e);
+            rejectDiagnostic(epoch, analysisId, caseId, missionId, e);
         }
+    }
 
-        DiagnosticRecord record = new DiagnosticRecord(diagId, analysisId, caseId, conclusion, findings, missing, summary, false, "INVESTIGATOR");
-        analysisRepository.insertDiagnosticRevision(epoch, record, "INVESTIGATOR", 1);
-        analysisRepository.updateAnalysisStatus(epoch, analysisId, "COMPLETED");
-        missionRepository.markMissionCompleted(epoch, missionId);
-
-        sseHubService.publishEvent(epoch, "AnalysisChanged", "Analysis", analysisId.toString(),
-            Map.of("analysisId", analysisId, "caseId", caseId, "state", "COMPLETED", "isDeterministic", false));
-        sseHubService.publishEvent(epoch, "DiagnosticReady", "Diagnostic", diagId.toString(),
-            Map.of("diagnosticId", diagId, "analysisId", analysisId, "caseId", caseId, "conclusion", conclusionStr));
+    private void rejectDiagnostic(UUID epoch, UUID analysisId, UUID caseId, UUID missionId, Exception failure) {
+        try {
+            if (analysisId != null) {
+                analysisRepository.failAnalysis(epoch, analysisId);
+                sseHubService.publishEvent(epoch, "AnalysisChanged", "Analysis", analysisId.toString(),
+                    Map.of("analysisId", analysisId, "caseId", caseId, "state", "FAILED",
+                        "reason", String.valueOf(failure.getMessage())));
+            }
+            if (missionId != null) {
+                missionRepository.markMissionFailed(epoch, missionId);
+                sseHubService.publishEvent(epoch, "MissionChanged", "Mission", missionId.toString(),
+                    Map.of("missionId", missionId, "status", "FAILED"));
+            }
+        } catch (Exception nested) {
+            log.error("Échec du marquage d'échec pour analyse {}: {}", analysisId, nested.getMessage(), nested);
+        }
     }
 
     private void handleRuleChangeProposed(UUID epoch, Map<String, Object> envelope, Map<String, Object> payload) {
@@ -201,9 +214,19 @@ public class AgentEventConsumer {
             Map.of("missionId", missionId, "status", "CANCELLED"));
     }
 
-    private void handleMissionFailed(UUID epoch, UUID missionId) {
-        missionRepository.markMissionCancelled(epoch, missionId);
+    private void handleMissionFailed(UUID epoch, UUID missionId, UUID analysisId, UUID caseId) {
+        missionRepository.markMissionFailed(epoch, missionId);
+        if (analysisId != null) {
+            analysisRepository.failAnalysis(epoch, analysisId);
+            sseHubService.publishEvent(epoch, "AnalysisChanged", "Analysis", analysisId.toString(),
+                Map.of("analysisId", analysisId, "caseId", caseId, "state", "FAILED", "reason", "LLM_INVESTIGATION_FAILED"));
+        }
         sseHubService.publishEvent(epoch, "MissionChanged", "Mission", missionId.toString(),
             Map.of("missionId", missionId, "status", "FAILED"));
+    }
+
+    private static UUID uuidOrNull(Map<String, Object> source, String key) {
+        Object raw = source.get(key);
+        return raw == null ? null : UUID.fromString(raw.toString());
     }
 }

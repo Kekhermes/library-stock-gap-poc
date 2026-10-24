@@ -1,27 +1,18 @@
 # library-stock-gap-poc
 
-POC pédagogique d'analyse des désynchronisations de stock d'une bibliothèque après inventaire.
+POC d'investigation agentique GPT des écarts de stock d'une bibliothèque après inventaire.
 
-**Le cadrage est dans [`framing/`](framing/README.md) ; l'application est implémentée et exécutable localement** (Java/Spring Boot + Apache KIE DMN, worker Python, Vue, PostgreSQL, Redpanda).
-
-## Principe
-
-```text
-Cas d'écart → diagnostic déterministe DMN
-                 ├─ suffisant → résultat expliqué, sans LLM
-                 └─ insuffisant → investigation IA → diagnostic accepté
-                                      → proposition de règle → tests/replay
-                                      → validation humaine → publication runtime
-                                      → prochain cas traité par le déterministe
-```
+Le diagnostic est produit par le worker Python GPT à partir d'un snapshot complet et figé des données PostgreSQL. Java/Spring Boot reste propriétaire des états, des snapshots et de la persistance ; le worker n'a aucun accès SQL ni droit de modification métier.
 
 ## Démarrage
 
-Prérequis : Docker Engine + plugin Compose.
+Prérequis : Docker Engine et le plugin Compose. La clé OpenAI est requise pour une analyse.
 
 ```bash
-cp .env.example .env          # facultatif : aucune clé n'est requise pour la démo
-docker compose up -d --build  # postgres, redpanda, backend, agents, frontend
+cp .env.example .env
+# renseigner OPENAI_API_KEY dans .env
+# OPENAI_MODEL est conservé tel que configuré
+docker compose up -d --build
 ```
 
 | Service | URL locale |
@@ -29,76 +20,32 @@ docker compose up -d --build  # postgres, redpanda, backend, agents, frontend
 | Interface Vue | http://localhost:3000 |
 | API Admin | http://localhost:8080/api |
 | Santé | http://localhost:8080/actuator/health |
-| PostgreSQL | `127.0.0.1:5433` (base `stockgap`) |
-| Kafka (Redpanda) | `127.0.0.1:19092` |
+| Console Redpanda | http://localhost:8085 |
+| PostgreSQL | `127.0.0.1:5433` |
+| Kafka | `127.0.0.1:19092` |
 
-Le premier démarrage migre le schéma, importe le jeu `demo` (1 200 exemplaires, 120 cas) et active le bootstrap : **une seule règle, R001 v1**.
+Lancez une analyse depuis un dossier. Elle crée une mission Kafka, puis le worker GPT :
 
-## Démonstration vérifiée
+1. réclame la mission ;
+2. appelle l'outil borné `get_case_snapshot` ;
+3. analyse le snapshot de toutes les données agrégées ;
+4. retourne un diagnostic JSON structuré ;
+5. est validé côté Python et Java avant persistance.
+
+## Sécurité et fiabilité
+
+- La clé OpenAI reste dans `.env`, exclu de Git.
+- Le worker ne peut ni exécuter du shell, ni interroger PostgreSQL, ni corriger le stock.
+- Les sorties GPT doivent citer uniquement des symptômes et identifiants de preuve présents dans le snapshot ; toute référence inventée est rejetée.
+- Une erreur d'API, de modèle ou de validation met l'analyse en échec de manière visible et permet la relance.
+- Le diagnostic est une aide probabiliste : l'acceptation humaine ne déclenche aucune correction automatique.
+
+## Vérifications
 
 ```bash
-./scripts/demo-loop.sh
+cd agents && .venv/bin/python -m unittest -v test_worker
+cd ../backend && mvn test
+cd ../frontend && npm run build
 ```
 
-Le script exécute et **vérifie** la boucle complète (8 assertions) :
-
-1. bootstrap : référentiel v1, exactement R001 active ;
-2. cas A non couvert → fallback vers l'investigateur (diagnostic non déterministe) ;
-3. acceptation humaine du diagnostic ;
-4. synthèse agentique d'une règle DMN ;
-5. validation (compilation + replay) → rapport PASSED ;
-6. publication atomique → référentiel **v2**, 2 règles actives ;
-7. cas B analogue → diagnostic **déterministe**, **0 appel LLM**.
-
-Exécution réelle du 2026-10-24 : **8 OK / 0 FAIL**.
-
-## Architecture
-
-| Service | Responsabilité |
-|---|---|
-| `backend/` | REST/SSE, domaine, cycles de vie, DMN/KIE, validation et publication atomique. Seule autorité métier. |
-| `agents/` | Worker Kafka : investigateur et agent de règles. Aucun accès SQL, aucun droit de publication. |
-| `frontend/` | Vue 3 + Vite + Pinia : adaptateur REST/SSE, aucun moteur de diagnostic. |
-| `postgres` | Schémas `runtime` (métier) et `evaluation` (isolé, hors accès runtime). |
-| `redpanda` | Missions et résultats asynchrones (`stock-gap.agent.commands.v1` / `.events.v1`). |
-
-Deux surfaces d'API étanches : `/api/**` (Admin local) et `/internal/**` (worker, `WorkerToken` requis ; un jeton worker présenté sur `/api/**` renvoie **403**).
-
-### Écrans
-
-Vue d'ensemble (compteurs, règles actives, flux SSE temps réel) · Dossiers d'écarts filtrables · **Dossier à trois panneaux** (faits / diagnostic et règles / discussion expert) · Catalogue de règles en lecture seule avec retrait · Propositions · Publications · Démonstration guidée · Système & reset.
-
-## Réinitialisation
-
-`POST /api/system/reset` (ou bouton dans *Système & Reset*) crée une **époque neuve** : jeu `demo` réimporté, R001 v1 seule active, ancienne époque archivée. Elle n'efface ni `.env` ni la configuration locale.
-
-## Garanties vérifiées et limites honnêtes
-
-Vérifié par exécution réelle :
-
-- moteur DMN Apache KIE 10.2.0 chargeant et évaluant R001 (8 cas d'acceptation, y compris qualité nulle et non fiable) ;
-- couverture partielle détectée → fallback motivé, jamais un diagnostic inventé ;
-- aller-retour Kafka de bout en bout (commande → investigation → `DiagnosticProposed`) ;
-- acceptation du diagnostic distincte de la publication d'une règle ;
-- publication atomique : nouvelle version de référentiel, aucune analyse en cours réécrite ;
-- journal SSE durable : rejeu complet depuis un curseur, `id: <epoch>:<position>` ;
-- 5 tests backend verts, build frontend vert, pile Compose saine.
-
-Non couvert (assumé, cf. cadrage) :
-
-- aucun contrôle SMT : un rapport PASSED n'est pas une preuve de non-régression universelle ;
-- pas d'« exactly once » fournisseur : un crash après appel OpenAI peut répéter une inférence ;
-- la synthèse de règles du worker est déterministe et locale ; brancher un modèle réel (`OPENAI_API_KEY`) doit être revalidé avant toute présentation comme résultat LLM ;
-- pas de RAG, Keycloak, Valkey ni correction du stock dans le POC.
-
-## Ressources
-
-- [Cadrage et décisions](framing/README.md).
-- [Ressources de conception](framing/conception/README.md).
-- [Revue initiale et lecture critique](framing/01-lecture-critique.md).
-
-## Données et confidentialité
-
-Les bibliothèques, exemplaires, opérations et cas sont fictifs. Les oracles et catalogues d'évaluation (`framing/conception/data/private/`) restent hors du worker et ne sont jamais injectés dans ses prompts.
-
-Aucune clé OpenAI n'est fournie. `.env` est ignoré par Git ; seules les inférences explicitement demandées transmettraient les données nécessaires au fournisseur. Le générateur de fixtures et la démonstration fonctionnent sans LLM.
+Voir le [cadrage agentique](framing/README.md).

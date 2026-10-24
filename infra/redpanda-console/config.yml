@@ -1,0 +1,17 @@
+# Configuration de Redpanda Console (inspection technique du transport asynchrone).
+# Montée en lecture seule dans le conteneur `redpanda-console` ; aucune donnée
+# métier n'y transite : la console observe uniquement topics, messages et offsets.
+kafka:
+  brokers:
+    - redpanda:9092
+
+redpanda:
+  adminApi:
+    enabled: true
+    urls:
+      - http://redpanda:9644
+
+# Télémétrie Console désactivée : aucun envoi d'usage vers Redpanda/Heap.
+# (Les bandeaux marketing builder.io restent chargés par l'interface elle-même.)
+analytics:
+  enabled: false

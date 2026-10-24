@@ -7,7 +7,7 @@ public record DiagnosticRecord(
     UUID diagnosticId,
     UUID analysisId,
     UUID caseId,
-    EpistemicStatus conclusion,
+    DiagnosticConclusion conclusion,
     List<Finding> findings,
     List<String> missingEvidence,
     String summary,

@@ -1,9 +1,0 @@
-test_all_twelve_kafka_examples_and_reject_mutations (test_contracts.MessageContracts.test_all_twelve_kafka_examples_and_reject_mutations) ... ok
-test_documents_and_manifest_validate (test_contracts.TransportDocuments.test_documents_and_manifest_validate) ... ok
-test_sse_and_publication_reject_invalid_versions_and_fields (test_contracts.TransportDocuments.test_sse_and_publication_reject_invalid_versions_and_fields) ... ok
-test_validator_exists_and_checks_its_own_schema (test_contracts.ValidatorBootstrap.test_validator_exists_and_checks_its_own_schema) ... ok
-
-----------------------------------------------------------------------
-Ran 4 tests in 1.879s
-
-OK

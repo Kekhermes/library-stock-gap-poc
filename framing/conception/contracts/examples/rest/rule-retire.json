@@ -1,8 +1,0 @@
-{
-  "operation": "RETIRE",
-  "targetRuleId": "R001",
-  "expectedRuleVersion": 1,
-  "originDiagnosticId": "00000000-0000-4000-8000-00000000005a",
-  "originEvidenceSnapshotId": "00000000-0000-4000-8000-000000000008",
-  "rationale": "Proposition synthétique issue du diagnostic accepté."
-}

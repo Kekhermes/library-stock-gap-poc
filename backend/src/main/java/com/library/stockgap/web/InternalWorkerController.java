@@ -47,33 +47,15 @@ public class InternalWorkerController {
         return ResponseEntity.ok(res);
     }
 
-    @PostMapping("/missions/{missionId}/heartbeat")
-    public ResponseEntity<Map<String, Object>> heartbeat(
-            @PathVariable UUID missionId,
-            @RequestBody Map<String, Object> body) {
-        UUID epoch = getEpoch();
-        UUID leaseToken = UUID.fromString((String) body.get("leaseToken"));
-        boolean ok = missionRepository.heartbeat(epoch, missionId, leaseToken);
-        return ResponseEntity.ok(Map.of("acknowledged", ok));
-    }
-
-    @PostMapping("/missions/{missionId}/authorize-call")
-    public ResponseEntity<Map<String, Object>> authorizeCall(
-            @PathVariable UUID missionId,
-            @RequestBody Map<String, Object> body) {
-        UUID epoch = getEpoch();
-        UUID leaseToken = UUID.fromString((String) body.get("leaseToken"));
-        String callType = (String) body.getOrDefault("callType", "TOOL");
-        String toolName = (String) body.getOrDefault("toolName", "get_case_snapshot");
-        var res = missionRepository.authorizeCall(epoch, missionId, leaseToken, callType, toolName);
-        return ResponseEntity.ok(res);
-    }
-
     @GetMapping("/missions/{missionId}/snapshots/{snapshotId}")
     public ResponseEntity<EvidenceSnapshot> getSnapshot(
             @PathVariable UUID missionId,
-            @PathVariable UUID snapshotId) {
+            @PathVariable UUID snapshotId,
+            @RequestHeader("X-Mission-Lease") UUID leaseToken) {
         UUID epoch = getEpoch();
+        if (!missionRepository.canReadSnapshot(epoch, missionId, snapshotId, leaseToken)) {
+            return ResponseEntity.status(403).build();
+        }
         var snapOpt = analysisRepository.findSnapshot(epoch, snapshotId);
         return snapOpt.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }

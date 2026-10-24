@@ -46,6 +46,28 @@ services:
     networks:
       - stockgap-net
 
+  redpanda-console:
+    image: redpandadata/console:v3.13.1
+    container_name: stockgap-console
+    environment:
+      CONFIG_FILEPATH: /etc/console/config.yml
+    volumes:
+      - ./infra/redpanda-console/config.yml:/etc/console/config.yml:ro
+    ports:
+      # 8080 est déjà pris par le backend : la console écoute sur 8085.
+      - "127.0.0.1:8085:8080"
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/ >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - stockgap-net
+
   backend:
     build:
       context: ./backend

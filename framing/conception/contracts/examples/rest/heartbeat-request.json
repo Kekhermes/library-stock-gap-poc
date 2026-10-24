@@ -1,9 +1,0 @@
-{
-  "fence": {
-    "datasetEpoch": "00000000-0000-4000-8000-000000000002",
-    "attempt": 1,
-    "leaseToken": "00000000-0000-4000-8000-000000000014",
-    "fencingToken": 1
-  },
-  "lastProducedSequence": 1
-}

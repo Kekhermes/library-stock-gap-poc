@@ -69,64 +69,21 @@ public class AnalysisRepository {
     @Transactional
     public void insertAnalysisRun(UUID epoch, UUID analysisId, UUID caseId, UUID snapshotId, int ruleSetVersion) {
         Instant now = Instant.now();
-        jdbcTemplate.update(
-            "INSERT INTO runtime.analysis_run (dataset_epoch, analysis_id, case_id, snapshot_id, rule_set_version, " +
-            "status, created_at) VALUES (?, ?, ?, ?, ?, 'DETERMINISTIC_RUNNING', ?)",
-            epoch, analysisId, caseId, snapshotId, ruleSetVersion, Timestamp.from(now)
-        );
-        // Update case status to EN_ANALYSE
+        try {
+            String reason = objectMapper.writeValueAsString(Map.of("reason", "LLM_INVESTIGATION_REQUESTED"));
+            jdbcTemplate.update(
+                "INSERT INTO runtime.analysis_run (dataset_epoch, analysis_id, case_id, snapshot_id, rule_set_version, " +
+                "status, fallback_reason, created_at) VALUES (?, ?, ?, ?, ?, 'AGENT_PENDING', ?::jsonb, ?)",
+                epoch, analysisId, caseId, snapshotId, ruleSetVersion, reason, Timestamp.from(now)
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("Erreur création analyse agentique", e);
+        }
         jdbcTemplate.update(
             "UPDATE runtime.gap_case SET status = 'EN_ANALYSE', lock_version = lock_version + 1 " +
             "WHERE dataset_epoch = ? AND case_id = ?",
             epoch, caseId
         );
-    }
-
-    @Transactional
-    public void markDeterministicCompleted(UUID epoch, UUID analysisId, UUID caseId, Map<String, Object> trace, DiagnosticRecord diagnostic) {
-        Instant now = Instant.now();
-        try {
-            String traceJson = objectMapper.writeValueAsString(trace);
-            jdbcTemplate.update(
-                "UPDATE runtime.analysis_run SET status = 'COMPLETED', deterministic_trace = ?::jsonb, " +
-                "finished_at = ?, lock_version = lock_version + 1 " +
-                "WHERE dataset_epoch = ? AND analysis_id = ?",
-                traceJson, Timestamp.from(now), epoch, analysisId
-            );
-
-            // Insert diagnostic revision
-            insertDiagnosticRevision(epoch, diagnostic, "DMN", 1);
-
-            // Update case status to A_REVOIR
-            jdbcTemplate.update(
-                "UPDATE runtime.gap_case SET status = 'A_REVOIR', lock_version = lock_version + 1 " +
-                "WHERE dataset_epoch = ? AND case_id = ?",
-                epoch, caseId
-            );
-        } catch (Exception e) {
-            throw new RuntimeException("Erreur completion deterministe", e);
-        }
-    }
-
-    @Transactional
-    public void markFallbackRequested(UUID epoch, UUID analysisId, UUID caseId, FallbackReason reason, Map<String, Object> trace) {
-        try {
-            Map<String, Object> fallbackPayload = Map.of(
-                "reason", reason.name(),
-                "trace", trace
-            );
-            String fallbackJson = objectMapper.writeValueAsString(fallbackPayload);
-            String traceJson = objectMapper.writeValueAsString(trace);
-
-            jdbcTemplate.update(
-                "UPDATE runtime.analysis_run SET status = 'AGENT_PENDING', fallback_reason = ?::jsonb, " +
-                "deterministic_trace = ?::jsonb, lock_version = lock_version + 1 " +
-                "WHERE dataset_epoch = ? AND analysis_id = ?",
-                fallbackJson, traceJson, epoch, analysisId
-            );
-        } catch (Exception e) {
-            throw new RuntimeException("Erreur fallback requested", e);
-        }
     }
 
     @Transactional
@@ -145,6 +102,35 @@ public class AnalysisRepository {
                 status, epoch, analysisId
             );
         }
+    }
+
+    /**
+     * Termine une analyse par un échec visible et rend le cas de nouveau analysable.
+     * Un diagnostic agent rejeté ne doit pas laisser le dossier bloqué en EN_ANALYSE.
+     */
+    @Transactional
+    public void failAnalysis(UUID epoch, UUID analysisId) {
+        Instant now = Instant.now();
+        jdbcTemplate.update(
+            "UPDATE runtime.analysis_run SET status = 'FAILED', finished_at = ?, lock_version = lock_version + 1 " +
+            "WHERE dataset_epoch = ? AND analysis_id = ? AND status NOT IN ('COMPLETED','FAILED','CANCELLED')",
+            Timestamp.from(now), epoch, analysisId
+        );
+        jdbcTemplate.update(
+            "UPDATE runtime.gap_case SET status = 'A_ANALYSER', lock_version = lock_version + 1 " +
+            "WHERE dataset_epoch = ? AND status = 'EN_ANALYSE' " +
+            "AND case_id = (SELECT case_id FROM runtime.analysis_run WHERE dataset_epoch = ? AND analysis_id = ?)",
+            epoch, epoch, analysisId
+        );
+    }
+
+    /** Analyse encore active (non terminale) d'un cas, si elle existe. */
+    public Optional<UUID> findActiveAnalysisId(UUID epoch, UUID caseId) {
+        var list = jdbcTemplate.query(
+            "SELECT analysis_id FROM runtime.analysis_run WHERE dataset_epoch = ? AND case_id = ? " +
+            "AND status NOT IN ('COMPLETED','FAILED','CANCELLED') ORDER BY created_at DESC LIMIT 1",
+            (rs, rowNum) -> UUID.fromString(rs.getString("analysis_id")), epoch, caseId);
+        return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
     }
 
     @Transactional
@@ -251,7 +237,7 @@ public class AnalysisRepository {
             UUID id = UUID.fromString(rs.getString("diagnostic_id"));
             UUID analysisId = UUID.fromString(rs.getString("analysis_id"));
             UUID caseId = UUID.fromString(rs.getString("case_id"));
-            EpistemicStatus conclusion = EpistemicStatus.valueOf(rs.getString("conclusion"));
+            DiagnosticConclusion conclusion = DiagnosticConclusion.valueOf(rs.getString("conclusion"));
             String producer = rs.getString("producer");
             Map<String, Object> res;
             try {
