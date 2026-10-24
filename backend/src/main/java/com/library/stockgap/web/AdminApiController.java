@@ -228,7 +228,8 @@ public class AdminApiController {
             @RequestBody Map<String, Object> body) {
         UUID epoch = getEpoch();
         int revision = ((Number) body.getOrDefault("revision", 1)).intValue();
-        UUID reportId = UUID.fromString((String) body.get("reportId"));
+        // Le navigateur ne choisit jamais le rapport : le backend impose le dernier PASS de la proposition.
+        UUID reportId = ruleRepository.requirePassingValidationReport(epoch, proposalId, revision);
         int newVer = ruleGovernanceService.approveAndPublish(epoch, proposalId, revision, reportId);
         return ResponseEntity.ok(Map.of("proposalId", proposalId, "status", "PUBLISHED", "newRuleSetVersion", newVer));
     }

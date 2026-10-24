@@ -268,6 +268,16 @@ public class RuleRepository {
         }
     }
 
+    public UUID requirePassingValidationReport(UUID epoch, UUID proposalId, int revision) {
+        var reports = jdbcTemplate.query(
+            "SELECT report_id FROM runtime.validation_report WHERE dataset_epoch = ? AND proposal_id = ? AND proposal_revision = ? AND outcome = 'PASS' ORDER BY created_at DESC LIMIT 1",
+            (rs, rowNum) -> UUID.fromString(rs.getString("report_id")), epoch, proposalId, revision);
+        if (reports.isEmpty()) {
+            throw new IllegalStateException("Aucun rapport de validation PASS pour cette proposition");
+        }
+        return reports.getFirst();
+    }
+
     @Transactional
     public int publishProposal(UUID epoch, UUID proposalId, int proposalRevision, UUID reportId) {
         // Read proposal operation
