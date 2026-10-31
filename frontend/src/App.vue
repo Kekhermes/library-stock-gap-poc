@@ -15,7 +15,7 @@
 
       <div class="sidebar-footer">
         <div>Investigation : <strong>GPT agentique</strong></div>
-        <div style="margin-top: 0.25rem;">Données : <strong>snapshot figé</strong></div>
+        <div style="margin-top: 0.25rem;">Analyses : <strong>preuves figées</strong></div>
       </div>
     </aside>
 

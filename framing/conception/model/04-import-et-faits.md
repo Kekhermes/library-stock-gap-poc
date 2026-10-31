@@ -42,7 +42,7 @@ Le DDL vérifie les huit types, `payload` objet, les clés communes et les clés
 | Clé | Type | Sens |
 |---|---|---|
 | `operationId` | UUID requis | Identité de l'opération source représentée par cet événement |
-| `correlationId` | UUID requis | Corrélation avec son traitement d'intégration ; pas nécessairement commune aux étapes d'un prêt/transfert |
+| `correlationId` | UUID requis | Corrélation avec son traitement de mise à jour du stock informatique ; pas nécessairement commune aux étapes d'un prêt/transfert |
 | `siteId` | `CENTRE|NORD|SUD` requis | Site où l'événement est constaté |
 | `locationId` | UUID ou null, propriété requise | Emplacement de l'opération, si connu ; doit appartenir à siteId si renseigné |
 
@@ -51,9 +51,9 @@ Le DDL vérifie les huit types, `payload` objet, les clés communes et les clés
 | eventType | Clés supplémentaires requises | Corrélation/normalisation |
 |---|---|---|
 | `LoanOpened` | `loanId: UUID` | Ouvre un état de prêt pour `(copyId, loanId)` ; l'absence de LoanClosed n'est probante que sur une source complète |
-| `LoanClosed` | `loanId: UUID` | Ferme le même prêt ; ne prouve pas à lui seul une projection de stock correcte |
+| `LoanClosed` | `loanId: UUID` | Ferme le même prêt ; ne prouve pas à lui seul une état du stock informatique correcte |
 | `ReturnReceived` | `loanId: UUID` | Réception physique du retour ; `returnId` normalisé = `operationId` de cet événement, car le payload partagé ne contient pas de returnId |
-| `ReceiptReceived` | `receiptId: UUID` | Réception physique ; un exemplaire peut être connu par cette source mais avoir une projection `NOT_REGISTERED` |
+| `ReceiptReceived` | `receiptId: UUID` | Réception physique ; un exemplaire peut être connu par cette source mais avoir un état du stock informatique `NOT_REGISTERED` |
 | `TransferDispatched` | `transferId: UUID`, `fromSiteId: site`, `toSiteId: site` | Départ ; source et destination distinctes, siteId correspond au départ |
 | `TransferReceived` | `transferId: UUID`, `fromSiteId: site`, `toSiteId: site` | Arrivée ; même transfert et exemplaire, siteId correspond à la destination |
 | `RepairStarted` | `repairId: UUID` | Dossier de réparation ; conserver aussi operationId, sans inventer une fin de réparation absente |
@@ -67,19 +67,19 @@ Le DDL vérifie les huit types, `payload` objet, les clés communes et les clés
 | `correlationId` | UUID requis | Doit égaler la correlationId du payload original |
 | `outcome` | `APPLIED|QUEUED|FAILED` | Résultat/état observable du traitement, pas une cause diagnostique |
 | `projectedStatus` | Statut de systemStates | État cible tenté ; un FAILED/QUEUED ne prouve pas son application |
-| `siteId` | Code site requis | Site de projection cible |
-| `locationId` | UUID ou null, propriété requise | Lieu de projection cible |
+| `siteId` | Code site requis | Site que la mise à jour du stock informatique doit enregistrer |
+| `locationId` | UUID ou null, propriété requise | Lieu que la mise à jour du stock informatique doit enregistrer |
 
-L'instant de traitement est `source_event.occurred_at` de l'événement d'intégration ; sa visibilité est `recorded_at`. Le payload ne contient ni `processedAt`, ni `businessEventId`, ni `targetProjection`, ni `state` : ce sont des **champs dérivés de l'adaptateur de faits**, pas des noms à imposer au générateur. Dans la projection de faits proposée au cadrage :
+L'instant de traitement est `source_event.occurred_at` de l'événement de mise à jour du stock informatique ; sa visibilité est `recorded_at`. Le payload ne contient ni `processedAt`, ni `businessEventId`, ni `targetProjection`, ni `state` : ce sont des **champs dérivés de l'adaptateur de faits**, pas des noms à imposer au générateur. Dans les faits proposés au cadrage :
 
 - `integrations[].eventId = sourceEventId` ; `businessEventId = payload.originalEventId` ; `targetProjection = "SYSTEM_STATE"`, constante explicite de cet adaptateur ; `state = payload.outcome` ; `processedAt = occurredAt`.
-- `loans[].loanId = payload.loanId`, état OPEN/CLOSED issu du discriminateur ; conserver les deux instants et sourceEventId. Une vue « état courant » se calcule à la date du snapshot, sans détruire les événements.
+- `loans[].loanId = payload.loanId`, état OPEN/CLOSED issu du discriminateur ; conserver les deux instants et sourceEventId. Une vue « état courant » se calcule à la date du dossier de preuves figé, sans détruire les événements.
 - `returns[].returnId = payload.operationId` ; `loanId` inchangé.
 - `receipts[].receiptId = payload.receiptId`, état RECEIVED dérivé de ReceiptReceived.
 - `transfers[]` groupe `(copyId, transferId)` et conserve `sourceEventIds` ordonnés ; sentAt/receivedAt proviennent des événements respectifs, nullable si étape absente. Ne pas trier les événements de tout le réseau par simple ordre d'insertion.
 - `maintenance[].operationId = payload.operationId`, `repairId` conservé dans les preuves, type REPAIR et état STARTED dérivés de RepairStarted. Aucune clôture n'est inférée de l'absence d'autre événement.
 
-Ces noms normalisés sont un **mapping de réalisation** de `../../11-contrat-faits-et-dmn.md` ; l'adaptateur DMN final doit être versionné avec le schéma des faits. Le contexte minimal de `R001` peut être une projection typée de ce snapshot, pas une relecture non figée. Les notes n'entrent pas dans les conditions FEEL.
+Ces noms normalisés sont un **mapping de réalisation** de `../../11-contrat-faits-et-dmn.md` ; l'adaptateur DMN final doit être versionné avec le schéma des faits. Le contexte minimal de `R001` peut contenir des faits typés extraits de ce dossier de preuves figé, pas une relecture non figée. Les notes n'entrent pas dans les conditions FEEL.
 
 ## 3. Contrôles inter-lignes d'import
 
@@ -88,10 +88,10 @@ En plus du DDL :
 1. Racine exacte et présence de tous les tableaux ; UUID valides et uniques ; pas de clés de scénario/oracle ni de champ inconnu. Validation récursive du contrat, pas recherche de sous-chaînes seulement.
 2. Comptes réels comparés au manifeste. Pour demo : 1 200 exemplaires / 120 cas ; tailles des autres profils prises au manifeste, non extrapolées. Une ligne systemStates par exemplaire ; une disponibilité par couple copie/source déclaré ; si les sept sources sont attendues par le profil, vérifier exactement ces sept entrées.
 3. Au moins un symptôme par cas ; même exemplaire partout ; aucune FK manquante. Plusieurs symptômes autorisés. Pas de multiplication d'un cas pour représenter ses causes.
-4. Payloads validés et références d'opérations cohérentes : même exemplaire, transfert cohérent, fromSiteId ≠ toSiteId, locations rattachées au bon site. Original d'intégration existant, non IntegrationProcessed, même correlationId, temps original ≤ temps d'intégration. Les domaines de prêt/réception/réparation ne sont pas interchangés.
+4. Payloads validés et références d'opérations cohérentes : même exemplaire, transfert cohérent, fromSiteId ≠ toSiteId, locations rattachées au bon site. Original de mise à jour du stock informatique existant, non IntegrationProcessed, même correlationId, temps original ≤ temps de mise à jour du stock informatique. Les domaines de prêt/réception/réparation ne sont pas interchangés.
 5. Observation dans le périmètre et la fenêtre de sa collecte ; couverture COMPLETE réellement clôturée. Source COMPLETE couvre la fenêtre interrogée ; une liste filtrée/tronquée n'est pas complète par magie.
 6. `recordedAt >= occurredAt` (SQL), et visibilité source à `capturedAt`/date de référence traitée explicitement. Ne pas antidater une preuve tardive pour « expliquer » le cas. Les faits postérieurs à inventoryReferenceTime ne sont pas utilisés comme preuves d'un état antérieur.
-7. Projection source compatible avec les événements **effectivement APPLIED** ; les incohérences de projection sont précisément les faits simulés, ne pas les « réparer » ni rejeter un écart intentionnel de stock. Contrôler l'intégrité référentielle, pas imposer à l'import qu'il n'existe aucun écart.
+7. État du stock informatique compatible avec les mises à jour **effectivement APPLIED** ; les écarts entre opérations métier et état informatique sont précisément les faits simulés, ne pas les « réparer » ni rejeter un écart intentionnel de stock. Contrôler l'intégrité référentielle, pas imposer à l'import qu'il n'existe aucun écart.
 8. Bootstrap : parsing XML/DMN, un module, une table, une ligne de diagnostic ; hash et decisionId extraits réellement, moteur/fact schema explicités. `decision_row_count=1` est une métadonnée SQL, pas un substitut au comptage XML.
 
 ## 4. Ordre transactionnel d'import runtime
@@ -133,4 +133,4 @@ L'import de `evaluation.corpus` et `case_expectation` se fait **séparément** a
 
 Échec de validation : aucune écriture. Échec SQL : rollback intégral, pas d'époque active partielle. Même datasetId avec empreinte ou métadonnées différentes : conflit explicite ; ce n'est pas une autorisation d'écraser le manifeste. Une époque déjà clôturée ne se rouvre jamais. Un reset prévu par le cadrage recrée le stockage du **seul projet** puis exécute l'import ci-dessus avec une nouvelle époque ; pas d'upsert global sur les sources.
 
-Toute lecture source de Java filtre explicitement l'époque active/autorisée, puis celle du snapshot. Toutes les FK runtime de contexte incluent l'époque. Une FK ne remplace pas cette autorisation : l'historique d'une autre époque ne doit pas être rendu par une route courante.
+Toute lecture source de Java filtre explicitement l'époque active/autorisée, puis celle du dossier de preuves figé. Toutes les FK runtime de contexte incluent l'époque. Une FK ne remplace pas cette autorisation : l'historique d'une autre époque ne doit pas être rendu par une route courante.

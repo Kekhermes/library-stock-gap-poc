@@ -19,7 +19,7 @@ Les preuves sont consultables depuis le diagnostic et les essais de règle. Le c
 
 Sur écran étroit, utiliser onglets ou étapes lisibles plutôt que trois colonnes fixes. Réutiliser les vues existantes, organiser règles/propositions/publications ensemble si cela simplifie la navigation. Lots, multi-causes et comparaison avancée ne sont pas des exigences du parcours initial.
 
-**À prototyper :** structure précise de l'espace règles et intégration du reset avec confirmation. La confirmation avant reset et la conservation de la configuration sont obligatoires ; l'ancien choix « commande locale exclusivement » n'est pas reconfirmé.
+**À prototyper :** structure précise de l'espace règles et mise en place du reset avec confirmation. La confirmation avant reset et la conservation de la configuration sont obligatoires ; l'ancien choix « commande locale exclusivement » n'est pas reconfirmé.
 
 Voir [la roadmap M6–M8](13-roadmap-demo.md). La documentation pédagogique approfondit le fonctionnement hors du parcours court ; il ne faut pas un chat technique généraliste supplémentaire.
 
@@ -48,7 +48,7 @@ Le reset destructif reste une commande locale documentée, pas un bouton discret
 |---|---|---|---|
 | UC01 | Explorer les cas préchargés | Dataset initialisé | Filtrer par site, titre, type d'écart, statut et chemin de diagnostic ; jamais afficher la cause cachée comme filtre opérationnel |
 | UC02 | Ouvrir un dossier | Cas existant | Voir attendu/observé, couverture d'inventaire, chronologie et provenance des données |
-| UC03 | Lancer une analyse | Pas d'analyse active du même cas | Analyse figée sur un snapshot ; diagnostic déterministe ou fallback visible |
+| UC03 | Lancer une analyse | Pas d'analyse active du même cas | Analyse figée sur un dossier de preuves figé ; diagnostic déterministe ou fallback visible |
 | UC04 | Suivre/annuler une investigation | Mission en cours | Progression, outils et limites ; annulation confirmée sans faux résultat final |
 | UC05 | Examiner/accepter/rejeter un diagnostic | Résultat disponible | Acceptation indépendante de toute règle ; rejet motivé et possibilité de nouvel échange/analyse |
 | UC06 | Obtenir une proposition de règle | Diagnostic issu du fallback accepté et connaissances formalisables | Mission de l'agent de règles ; si la preuve est seulement textuelle ou la capacité absente, résultat non publiable expliqué |
@@ -117,7 +117,7 @@ Un changement proposé par l'agent reste un brouillon jusqu'à validation humain
 
 ## 6. Retrait et changements périmés
 
-Le retrait montre la règle concernée, la publication actuelle et l'impact observé sur le corpus. Confirmer produit immédiatement une nouvelle version active ; les analyses en cours restent sur leur snapshot.
+Le retrait montre la règle concernée, la publication actuelle et l'impact observé sur le corpus. Confirmer produit immédiatement une nouvelle version active ; les analyses en cours restent sur leur dossier de preuves figé.
 
 Si une proposition était prête à approuver avant ce retrait, son bouton est désactivé avec explication : « Le référentiel a changé. Réévaluation nécessaire. » La conversation reste consultable.
 

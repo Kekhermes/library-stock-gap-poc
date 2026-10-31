@@ -68,7 +68,7 @@ Les peers additionnels déclarés par les packages frontend doivent être examin
 
 Une vérification finale des licences de tous les artefacts résolus est un gate de livraison. Le présent document n'est ni une analyse juridique exhaustive ni une autorisation d'exploiter les mêmes distributions en entreprise.
 
-## 4. OpenAI : intégration bornée
+## 4. OpenAI : appels contrôlés
 
 - Le modèle reste `gpt-5.6-luna`, sans remplacement silencieux.
 - Deux rôles : investigateur des causes ; agent de règles et de dialogue.

@@ -1,16 +1,61 @@
 # Contrat des faits et des règles DMN/FEEL
 
-## Contrat cible à préciser — 2026-10-31
+## Contrat cible partiellement arbitré — 2026-10-31
 
-[L'interview](04-registre-des-decisions.md) fixe le résultat : le LLM produit les conditions FEEL ; Java sérialise le DMN standard, compile, teste et publie la révision approuvée au runtime. Les détails de syntaxe, schéma et instrumentation ci-dessous restent historiques/proposés jusqu'à l'atelier dédié.
+[L'interview et les décisions N19–N28](04-registre-des-decisions.md) fixent le résultat : le LLM produit les conditions FEEL ; Java sérialise le DMN standard, compile, teste et publie la révision approuvée au runtime. Les vagues d'arbitrage ci-dessous sont validées ; les détails historiques plus bas ne font pas autorité lorsqu'ils les contredisent. Le [glossaire explicite](06-domaine-ddd-et-cycles-de-vie.md) fait référence pour les discussions et les livrables.
+
+### Première vague validée
+
+| Sujet | Décision | Portée initiale |
+|---|---|---|
+| Unité de règle | Une table indépendante par règle métier, une ligne au départ | Identité, version, tests et retrait indépendants ; pas de table commune regroupant tout |
+| Entrées | Faits simples, typés et corrélés par Java | FEEL ne parcourt pas les historiques bruts ; la normalisation Java ne choisit pas la cause |
+| Expressions | Comparaisons simples, booléens, valeurs manquantes | Égalité, différence, ordre, appartenance, and/or ; pas de dates/durées, filtres ou quantifications d'emblée |
+| Insuffisance/conflit | Fallback LLM avec motif visible | L'investigateur peut encore s'abstenir ; une panne moteur reste une erreur technique distincte |
+| Conclusions équivalentes | Diagnostic unique, contributions conservées | Dédupliquer la conclusion tout en gardant toutes les règles et preuves pertinentes |
+
+Une comparaison de valeurs déjà normalisées est autorisée ; l'appartenance à un ensemble de littéraux ne signifie pas autoriser des filtres sur l'historique. Une extension utile devra être explicitement discutée, pas introduite silencieusement par le LLM.
+
+Java peut retrouver le résultat de mise à jour du stock informatique de la bonne opération métier et l'exposer avec sa provenance. Il ne doit pas fournir un booléen `retourNonRepercute` ou une conclusion déjà décidée : la combinaison de conditions qui produit la cause appartient à la règle FEEL générée.
+
+La ligne unique d'une règle ne fixe pas à elle seule la politique DMN `UNIQUE` ou `COLLECT`, ni la définition des conclusions équivalentes. La question des lignes multiples et ce choix technique sont reportés ; R001 existante n'est pas modifiée par cette décision documentaire.
+
+### Deuxième vague validée — données et lecture des conditions
+
+Les règles de la démo disposent d'un petit ensemble de **données observables**, sans diagnostic déjà décidé :
+
+| Données retenues | Sens métier | Provenance à conserver |
+|---|---|---|
+| État du stock informatique | Statut et emplacement indiqués pour l'exemplaire | Situation informatique enregistrée |
+| Lieux et observations d'inventaire | Ce qui a été attendu et constaté physiquement | Scan ou constat, exemplaire, lieu et date |
+| Qualité du constat | Observation fiable, ambiguë ou absente | Données de qualité et éventuelles observations contradictoires |
+| Traces d'opérations métier | Prêt, retour ou réparation enregistrés pour l'exemplaire | Événements métier et leurs identifiants |
+| Résultats de mises à jour correspondantes | Réussite, échec ou attente de la mise à jour liée à la bonne opération métier | Tentatives et lien avec cette opération, pas un échec quelconque dans l'historique |
+| Disponibilité des sources | Ce qui est complet, partiel ou indisponible | Source et période connue |
+
+Les noms techniques, types précis et règles de sélection seront rédigés dans le contrat ; cette liste ne valide pas chaque champ du catalogue historique ci-dessous. Les dates servent à sélectionner et justifier les preuves ; elles ne rajoutent pas de calcul temporel FEEL à la démo.
+
+**Mise à jour reprise :** exposer le résultat de la dernière tentative connue pour la même opération métier. L'historique reste consultable dans le dossier de preuves figé. Si un retour a un échec puis une mise à jour réussie, l'échec ancien ne prouve pas une panne encore active. Si la source ne permet pas de connaître les tentatives suivantes, signaler cette limite au lieu de déclarer la situation certaine.
+
+**Conditions séparées :** chaque condition produite par le LLM a une question métier lisible, son expression FEEL réelle et un résultat d'essai vrai/faux/inconnu. Java sérialise la structure DMN ; il ne fournit pas de réponses préfabriquées par cause. La forme JSON exacte reste ouverte.
+
+**Une colonne et une ligne ne désignent pas la même chose :** une colonne contient une condition ; une ligne contient les valeurs attendues pour les conditions et le résultat associé. Exemple pédagogique de présentation, pas une règle préchargée :
+
+| Retour enregistré ? | Stock encore « prêté » ? | Mise à jour de ce retour échouée ? | Résultat |
+|---|---|---|---|
+| Vrai | Vrai | Vrai | Retour non répercuté |
+
+Pour cette ligne, toutes les conditions doivent être satisfaites. L'expression FEEL et ses preuves sont consultables pour chaque condition. Une condition indispensable inconnue ne doit pas être présentée comme fausse pour fabriquer un résultat certain ; l'insuffisance déclenche le relais vers l'investigateur selon N22.
+
+La démo garde **une seule ligne par table de règle**. Le choix relatif aux lignes multiples, `UNIQUE` ou `COLLECT`, est reporté. La déduplication des contributions de plusieurs règles différentes reste acquise et constitue un autre sujet.
 
 Principes conservés : faits structurés typés et sourcés, aucune IA dans leur préparation déterministe, pas d'oracle ni de conclusion préexistante exigée, aucune fonction hôte ou nouvelle source ajoutée librement par l'agent. Le JSON de proposition décrit des expressions FEEL natives et métadonnées ; il ne doit pas devenir un langage de diagnostic propriétaire avec une méthode par cause.
 
-Le contrat devra permettre une règle simple par famille inconnue reconnaissant trois autres dossiers vierges. Les faits doivent distinguer retour et réparation, corréler l'intégration à la bonne opération et tenir compte d'une reprise réussie. Une absence de source ne devient pas `false`.
+Le contrat devra permettre une règle simple par famille inconnue reconnaissant trois autres dossiers vierges. Les faits doivent distinguer retour et réparation, corréler la mise à jour du stock informatique à la bonne opération métier et tenir compte d'une reprise réussie. Une absence de source ne devient pas `false`.
 
 Le rapport et la trace seront liés au contenu exécuté : types, conditions vraies/fausses/inconnues, décision/ligne, symptômes effectivement couverts et preuves. Le contrat du candidat, les schémas/API, la sérialisation DMN et le rendu UI seront modifiés ensemble ; ce document seul ne livre pas ces contrôles.
 
-**À arbitrer :** sous-ensemble FEEL et politique de table, forme des conditions proposées, catalogue des faits, restrictions, limites d'évaluation et traces. La composition multi-cause avancée n'est pas requise pour le parcours initial. Voir [M0–M3](13-roadmap-demo.md), [l'audit](12-etat-implementation-actuel.md) et [le guide](14-guide-pedagogique.md).
+**À préciser ensuite :** noms/types/provenance et sélection exacte des données retenues, forme JSON des conditions séparées, définition d'équivalence/conflit, restrictions et limites d'évaluation. Les lignes multiples et le choix `UNIQUE`/`COLLECT` sont reportés. Le périmètre FEEL simple et le choix des faits corrélés sont acquis, sans validation implicite de tous les détails. La composition multi-cause avancée n'est pas requise pour le parcours initial. Voir [M0–M3](13-roadmap-demo.md), [l'audit](12-etat-implementation-actuel.md) et [le guide](14-guide-pedagogique.md).
 
 ## Détails historiques — non globalement approuvés
 
@@ -28,12 +73,12 @@ Au seed, exception de simplicité explicitement demandée : **un module, une tab
 
 Les règles n'importent pas arbitrairement d'autres règles actives. Une publication contient le manifeste de toutes les versions évaluables. Cette indépendance facilite le retrait sans casser une chaîne de dépendances implicites.
 
-## 2. Snapshot d'entrée
+## 2. Faits d'entrée
 
 Structure logique candidate :
 
 ```text
-CaseFacts (projections scalaires aplaties pour FEEL/DMN) :
+CaseFacts (faits simples et typés pour FEEL/DMN) :
   - symptomKind : string ("STATUS_MISMATCH", "LOCATION_MISMATCH", "UNEXPECTED_PRESENCE", "MISSING", "COUNT_UNCERTAIN")
   - expectedValue : string (statut ou valeur attendue, ex: "ON_LOAN", "IN_TRANSIT", "ON_SHELF")
   - observedValue : string (statut ou valeur observée, ex: "RECEIVING", "IN_REPAIR")
@@ -48,7 +93,7 @@ CaseFacts (projections scalaires aplaties pour FEEL/DMN) :
   - observationQuality : string ("VALID", "AMBIGUOUS", "REJECTED")
   - latestIntegrationOutcome : string ("FAILED", "APPLIED", "QUEUED")
   - latestIntegrationErrorCode : string (ex: "PROJECTION_WRITE_UNAVAILABLE")
-  - latestProjectedStatus : string (statut visé par la projection)
+  - latestProjectedStatus : string (statut que la mise à jour du stock informatique devait enregistrer)
   - integrationsAvailabilityStatus : string ("COMPLETE", "PARTIAL", "UNAVAILABLE")
   - loansAvailabilityStatus, returnsAvailabilityStatus, transfersAvailabilityStatus, repairsAvailabilityStatus, inventoryAvailabilityStatus : string
   - loansCount, loansClosedCount, returnsCount, transfersDispatchedCount, transfersReceivedCount, repairsCount : integer
@@ -77,7 +122,7 @@ Nouvelle source, nouvel attribut non exposé, nouvel effet externe ou nouvelle f
 - `null` ou indisponibilité ne deviennent pas implicitement `false`.
 - « Aucun retour » nécessite une source complète sur la période interrogée.
 - Un événement postérieur au temps de référence ne prouve pas la situation à ce temps.
-- Un événement métier antérieur enregistré tardivement est conservé avec les deux dates ; son admissibilité dépend de la date de capture du snapshot.
+- Un événement métier antérieur enregistré tardivement est conservé avec les deux dates ; son admissibilité dépend de la date de capture du dossier de preuves figé.
 - Les incertitudes de scan et de périmètre sont des faits de premier ordre, pas des détails cachés dans un log.
 
 Le backend teste les cas limites de la sémantique FEEL retenue. Il ne suppose pas qu'une table est correcte parce que le XML se parse.
@@ -112,13 +157,13 @@ Au niveau de la table de décision DMN, chaque règle doit produire au minimum :
 - `<output id="out_cause" name="causeCode" typeRef="string"/>` : le code de cause normalisé (ex. `"PROJECTION_WRITE_UNAVAILABLE"`, `"LOCATION_DIFFERENCE"`).
 - `<output id="out_epistemic" name="epistemicStatus" typeRef="string"/>` : statut épistémique (`"SUPPORTED"`).
 
-La règle ne retourne ni objet Java arbitraire ni action exécutable. Les références sont vérifiées contre le snapshot ; une référence inventée invalide la sortie. Le moteur ne reçoit pas d'autorisation d'écrire sur le stock.
+La règle ne retourne ni objet Java arbitraire ni action exécutable. Les références sont vérifiées contre le dossier de preuves figé ; une référence inventée invalide la sortie. Le moteur ne reçoit pas d'autorisation d'écrire sur le stock.
 
 Le vocabulaire de causes est un référentiel métier, pas un `enum` Java à enrichir par compilation à chaque règle. Si un nouveau code de cause est nécessaire, l'agent propose sa définition comme métadonnée versionnée dans le même changement ; la validation humaine couvre cette extension. Les aspects utilisés pour détecter les contradictions restent gouvernés et ne peuvent pas être réinventés librement par une proposition.
 
 ## 6. Collecte et résolution de résultats
 
-1. Évaluer toutes les règles du snapshot de publication.
+1. Évaluer toutes les règles du version figée des règles.
 2. Collecter leurs sorties sans dépendre d'un ordre d'arrivée ou d'un « premier gagnant ».
 3. Dédupliquer les conclusions identiques tout en conservant les règles et preuves contributrices.
 4. Comparer les assertions portant sur le même sujet/aspect/périmètre temporel.

@@ -379,27 +379,48 @@ public final class GenerateDataset {
     }
     @SuppressWarnings("unchecked")
     static Map<String, Object> cast(Object value) { return (Map<String, Object>) value; }
+    static String eventLabel(Object eventType) {
+        return switch (String.valueOf(eventType)) {
+            case "LoanOpened" -> "Prêt enregistré (`LoanOpened`)";
+            case "LoanClosed" -> "Prêt clôturé (`LoanClosed`)";
+            case "ReturnReceived" -> "Retour reçu (`ReturnReceived`)";
+            case "ReceiptReceived" -> "Réception enregistrée (`ReceiptReceived`)";
+            case "TransferDispatched" -> "Transfert expédié (`TransferDispatched`)";
+            case "TransferReceived" -> "Transfert reçu (`TransferReceived`)";
+            case "RepairStarted" -> "Réparation engagée (`RepairStarted`)";
+            case "IntegrationProcessed" -> "Mise à jour du stock informatique (`IntegrationProcessed`)";
+            default -> "`" + eventType + "`";
+        };
+    }
     String catalogue() {
         StringBuilder md = new StringBuilder("# Catalogue privé — " + profile + "\n\nGénéré depuis l'oracle de simulation v" + VERSION
-            + ". Réservé aux tests et à l'expert ; ne pas exposer au worker IA.\n\nRéférence : " + REFERENCE + "; seed : " + seed
+            + ". Réservé aux tests et à l'expert ; ne pas exposer au worker IA.\n\n"
+            + "Vocabulaire explicite : une opération métier concerne un exemplaire ; sa mise à jour du stock informatique est représentée par `IntegrationProcessed`. Un cas est un dossier d'écart.\n\n"
+            + "Les extraits JSON restent fidèles aux données générées : leurs noms techniques et anciens libellés sont conservés. `projection` désigne l'état du stock informatique ; `intégration` désigne sa mise à jour, pas un échange Kafka. Voir le [glossaire validé](../../../../06-domaine-ddd-et-cycles-de-vie.md).\n\n"
+            + "Référence : " + REFERENCE + "; seed : " + seed
             + ". Chaque attente est déclarée par le scénario, sans exécuter un moteur diagnostique.\n");
         for (Map<String, Object> c : oracleCases) {
             String copy = (String) c.get("copyId");
-            md.append("\n## Cas ").append(c.get("caseId")).append("\n\n")
+            md.append("\n## Cas ").append(c.get("caseId")).append(" — dossier d'écart\n\n")
                 .append("- Exemplaire : `").append(copy).append("`\n")
                 .append("- Famille privée : ").append(c.get("family")).append(" ; variante : ").append(c.get("variant")).append("\n")
                 .append("- Symptômes : `").append(json(c.get("symptoms"))).append("`\n")
                 .append("- Vérité injectée (non accessible au diagnostic) : `").append(json(c.get("injectedTruth"))).append("`\n")
                 .append("- Diagnostic admissible attendu : `").append(json(c.get("admissible"))).append("`\n")
-                .append("- État projeté : `").append(json(state(copy))).append("`\n\n### Chronologie et preuves\n\n")
+                .append("- État du stock informatique : `").append(json(state(copy))).append("`\n\n### Chronologie et preuves\n\n")
                 .append("| Événement | ID | Occurrence UTC | Enregistrement UTC | Données corrélées |\n|---|---|---|---|---|\n");
             table("sourceEvents").stream().filter(e -> copy.equals(e.get("copyId")))
                 .sorted(Comparator.comparing(e -> (String) e.get("occurredAt"))).forEach(e -> md.append("| ")
-                    .append(e.get("eventType")).append(" | ").append(e.get("sourceEventId")).append(" | ")
+                    .append(eventLabel(e.get("eventType"))).append(" | ").append(e.get("sourceEventId")).append(" | ")
                     .append(e.get("occurredAt")).append(" | ").append(e.get("recordedAt")).append(" | `")
                     .append(json(e.get("payload"))).append("` |\n"));
             for (String name : List.of("observations", "sourceAvailability", "operatorNotes")) {
-                md.append("\n**").append(name).append("**\n");
+                String label = switch (name) {
+                    case "observations" -> "Observations d'inventaire";
+                    case "sourceAvailability" -> "Disponibilité des sources";
+                    default -> "Notes opérateur";
+                };
+                md.append("\n**").append(label).append(" (`").append(name).append("`)**\n");
                 for (Map<String, Object> row : table(name)) if (copy.equals(row.get("copyId"))) md.append("- `").append(json(row)).append("`\n");
             }
             md.append("\n**Références de preuve résolubles**\n\n`").append(json(c.get("evidenceRefs"))).append("`\n");

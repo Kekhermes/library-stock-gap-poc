@@ -3,14 +3,14 @@ package com.library.stockgap.domain.service;
 import com.library.stockgap.domain.model.*;
 import java.util.*;
 
-/** Validation stricte d'un DiagnosticProposed contre le snapshot figé de sa mission. */
+/** Validation stricte d'un DiagnosticProposed contre le dossier de preuves figé de sa mission. */
 public final class AgentDiagnosticAssembler {
     private AgentDiagnosticAssembler() { }
 
     public static DiagnosticRecord assemble(UUID diagnosticId, UUID analysisId, UUID caseId,
                                             Map<String, Object> diagnostic, EvidenceSnapshot snapshot) {
         if (diagnostic == null || snapshot == null || !caseId.equals(snapshot.caseId())) {
-            throw new IllegalArgumentException("Diagnostic ou snapshot de mission invalide");
+            throw new IllegalArgumentException("Diagnostic ou dossier de preuves figé de mission invalide");
         }
         List<Finding> findings = toFindings(diagnostic.get("findings"));
         if (findings.isEmpty()) throw new IllegalArgumentException("Aucun finding recevable");
@@ -46,10 +46,10 @@ public final class AgentDiagnosticAssembler {
         records.addAll(ids(snapshot.observations(), "observationId"));
         records.addAll(ids(snapshot.operatorNotes(), "noteId"));
         for (Finding finding : findings) {
-            if (!snapshot.copyId().equals(finding.subjectCopyId())) throw new IllegalArgumentException("copyId hors snapshot");
-            if (finding.coveredSymptomIds().isEmpty() || !symptoms.containsAll(finding.coveredSymptomIds())) throw new IllegalArgumentException("symptôme hors snapshot");
+            if (!snapshot.copyId().equals(finding.subjectCopyId())) throw new IllegalArgumentException("copyId hors dossier de preuves figé");
+            if (finding.coveredSymptomIds().isEmpty() || !symptoms.containsAll(finding.coveredSymptomIds())) throw new IllegalArgumentException("symptôme hors dossier de preuves figé");
             for (EvidenceRef ref : concat(finding.evidenceRefs(), finding.contradictionRefs())) {
-                if (!snapshot.snapshotId().equals(ref.evidenceSnapshotId()) || !records.contains(ref.recordId())) throw new IllegalArgumentException("preuve hors snapshot");
+                if (!snapshot.snapshotId().equals(ref.evidenceSnapshotId()) || !records.contains(ref.recordId())) throw new IllegalArgumentException("preuve hors dossier de preuves figé");
             }
         }
     }

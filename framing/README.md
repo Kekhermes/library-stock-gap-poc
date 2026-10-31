@@ -10,6 +10,8 @@ Les anciens choix incompatibles de volumétrie, plafonds et SDK ne sont plus pre
 
 ## Autorité des documents
 
+Le [vocabulaire explicite validé](06-domaine-ddd-et-cycles-de-vie.md) fait référence dans les discussions et tous les livrables. Les noms d'API, extraits de données et citations historiques sont conservés avec leur explication ; « snapshot » ne désigne pas indistinctement preuves métier, version des règles et état de synchronisation de l'interface.
+
 1. **Attendu :** [vision actuelle](00-vision-et-exigences.md), [réponses et décisions](04-registre-des-decisions.md), [jeu et scénario](09-donnees-evaluation-et-reset.md).
 2. **Existant vérifié :** [audit](12-etat-implementation-actuel.md), qui ne redéfinit pas l'attendu.
 3. **Passage à la cible :** [roadmap proposée](13-roadmap-demo.md) et ses critères de sortie.
@@ -30,7 +32,7 @@ Les documents distinguent :
 
 | Document | Rôle |
 |---|---|
-| [Revue fournie](archi-review.md) | Source initiale, conservée sans modification |
+| [Revue fournie](archi-review.md) | Source initiale non réécrite ; ses anciens termes sont expliqués par le glossaire |
 | [Vision et exigences](00-vision-et-exigences.md) | Cible actuelle validée, simplification et points ouverts |
 | [Lecture critique](01-lecture-critique.md) | Apports, limites et implications de la revue |
 | [Projet de référence](02-stack-de-reference.md) | Stack réellement inspectée et adaptations nécessaires |

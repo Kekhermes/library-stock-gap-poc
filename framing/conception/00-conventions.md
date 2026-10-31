@@ -8,7 +8,7 @@ Les arbitrages du registre `../04-registre-des-decisions.md` font foi. Les préc
 
 ## Autorités
 
-Java : modèle métier, états durables, snapshots, DMN/KIE, quotas, validation, publications. Python : deux rôles IA via OpenAI Agents SDK, investigateur puis agent de règles. Vue : REST/SSE. Redpanda : Kafka. PostgreSQL : persistance métier.
+Java : modèle métier, états durables, dossiers de preuves figés, DMN/KIE, quotas, validation, publications. Python : deux rôles IA via OpenAI Agents SDK, investigateur puis agent de règles. Vue : REST/SSE. Redpanda : Kafka. PostgreSQL : persistance métier.
 
 Pas de correction de stock, RAG, Keycloak, Valkey, Z3 ou orchestrateur supplémentaire. Création et révision exclusivement par agent, création ancrée dans diagnostic accepté issu du fallback ; retrait direct possible par Admin. Publication atomique et historique immuable. Une seule règle initiale R001, une ligne.
 
@@ -40,7 +40,7 @@ Le fichier représente des données sources normalisées, pas un export d'entit�
 
 ## Familles de simulation
 
-Dix familles, douze cas chacune dans le profil demo : localisation même site, prêt non projeté, retour non projeté, transfert incohérent, réception non intégrée, réparation non projetée, inventaire incomplet, retard d'intégration, absence inexpliquée, deux causes contrôlées.
+Dix familles, douze cas chacune dans le profil demo : localisation même site, prêt non projeté, retour non projeté, transfert incohérent, réception non intégrée, réparation non projetée, inventaire incomplet, retard de mise à jour du stock informatique, absence inexpliquée, deux causes contrôlées.
 
 1 200 exemplaires et 120 cas demo, autres exemplaires normaux. Variantes de validation et holdout séparées du jeu demo ; témoins négatifs et données insuffisantes explicitement étiquetés uniquement dans l'oracle. Les profils validation/holdout peuvent être plus petits, avec leurs comptes exacts dans leur manifeste.
 
@@ -50,7 +50,7 @@ Le générateur hors ligne est Java standard, sans logique diagnostique dans l'o
 
 Topics : `stock-gap.agent.commands.v1`, `stock-gap.agent.events.v1`, `stock-gap.agent.dead-letter.v1`. Clé : missionId. Contrats JSON Schema versionnés, événements sans secret et sans oracle.
 
-Enveloppe : eventId, eventType, schemaVersion, occurredAt, datasetEpoch, correlationId, causationId, missionId, attempt, ruleSetVersion, evidenceSnapshotId, sequence, payload ; contextes caseId, analysisId, conversationId, turnId, proposalId, proposalRevision selon le type. Les missions de révision de règle sans nouveau cas réfèrent un diagnostic d'origine et son snapshot ; ne pas inventer un cas courant.
+Enveloppe : eventId, eventType, schemaVersion, occurredAt, datasetEpoch, correlationId, causationId, missionId, attempt, ruleSetVersion, evidenceSnapshotId, sequence, payload ; contextes caseId, analysisId, conversationId, turnId, proposalId, proposalRevision selon le type. Les missions de révision de règle sans nouveau cas réfèrent un diagnostic d'origine et son dossier de preuves figé ; ne pas inventer un cas courant.
 
 Types : InvestigationRequested, RuleSynthesisRequested, RuleRevisionRequested, ExpertTurnRequested, CancellationRequested, MissionStarted, ToolObservationRecorded, TextChunkProduced, DiagnosticProposed, RuleChangeProposed, RuleChangeNotProposed, MissionFailed, MissionCancelled. Tout type doit disposer d'un payload explicite et d'un exemple. `RuleChangeNotProposed` est un résultat métier terminal normal (aucun changement utile, preuves insuffisantes ou capacité non supportée), distinct d'une panne. Pour le chat, le dernier `TextChunkProduced` doit être identifié comme final afin de terminer le tour sans proposer de règle artificielle.
 

@@ -20,7 +20,7 @@ Les termes R2/R3 sont des repères pédagogiques, pas des identifiants imposés 
 
 Conserver seulement le fonds et les événements nécessaires à ces dix dossiers, au lieu d'imposer 1 200 exemplaires. Conserver le schéma et la stack existants. Chaque dossier a une histoire courte, une seule cause et des preuves structurées suffisantes pour la règle future.
 
-Retour : prêt antérieurement projeté, clôture/retour réellement enregistrés, échec corrélé de projection, présence physique admissible, état informatique encore prêté. Réparation : ordre et présence en atelier, échec corrélé de projection, état informatique resté au rayon. Localisation : observation unique fiable ailleurs dans le même site, sans second symptôme à expliquer.
+Retour : prêt antérieurement projeté, clôture/retour réellement enregistrés, échec corrélé de mise à jour du stock informatique, présence physique admissible, état informatique encore prêté. Réparation : ordre et présence en atelier, échec corrélé de mise à jour du stock informatique, état informatique resté au rayon. Localisation : observation unique fiable ailleurs dans le même site, sans second symptôme à expliquer.
 
 Les quatre exemplaires d'une famille varient par identifiants et détails non causaux, mais partagent les faits suffisants à une règle simple. Les trois analogues ne sont pas transmis comme exemples d'apprentissage à l'investigateur ni à l'agent de règles avant la publication ; ils servent à prouver la réutilisation.
 
@@ -28,7 +28,7 @@ Les familles des données et leurs attentes sont connues du concepteur, pas du c
 
 ### Tests hors liste de dossiers
 
-Corpus technique séparé et réduit : positifs nouveaux, négatifs proches et faits inconnus. Pour une règle de retour, inclure notamment une projection finalement appliquée, un échec portant sur une autre opération, des sources incomplètes et un cas de réparation. Le corpus ne crée pas une quatrième famille dans la liste de démo.
+Corpus technique séparé et réduit : positifs nouveaux, négatifs proches et faits inconnus. Pour une règle de retour, inclure notamment une mise à jour du stock informatique finalement appliquée, un échec portant sur une autre opération, des sources incomplètes et un cas de réparation. Le corpus ne crée pas une quatrième famille dans la liste de démo.
 
 Java exécute réellement le candidat et le référentiel avant/après. Le rapport détaille les résultats ; aucune métrique de tests n'est dérivée du seul succès de compilation. Les trois analogues réservés sont contrôlés après publication et ne servent pas à corriger secrètement la règle.
 
@@ -78,13 +78,13 @@ Répartition proposée : dix familles de douze cas. L'équilibre est pédagogiqu
 | Famille | Cas | Attente pédagogique |
 |---|---:|---|
 | Localisation différente dans le même site | 12 | Une partie simple couverte par la règle initiale ; variantes ambiguës exclues de sa portée |
-| Prêt effectué, projection de stock non mise à jour | 12 | Croiser prêt actif et incident d'intégration |
+| Prêt effectué, état du stock informatique non mis à jour | 12 | Croiser prêt actif et incident de mise à jour du stock informatique |
 | Retour reçu, statut encore prêté | 12 | Première acquisition de règle par la boucle |
-| Transfert expédié/reçu, projection incohérente | 12 | Recoupement de plusieurs sites et chronologie |
+| Transfert expédié/reçu, état du stock informatique incohérent | 12 | Recoupement de plusieurs sites et chronologie |
 | Réception physique non intégrée | 12 | Distinguer propriété du fonds et présence observée |
 | Mise en réparation non répercutée | 12 | État métier différent d'une simple absence |
 | Inventaire incomplet ou collecte défaillante | 12 | Refuser de conclure à une disparition |
-| Retard d'intégration et cohérence temporelle | 12 | Distinguer transition attendue et défaut persistant |
+| Retard de mise à jour du stock informatique et cohérence temporelle | 12 | Distinguer transition attendue et défaut persistant |
 | Absence inexpliquée avec preuves insuffisantes | 12 | Abstention correcte ; aucune invention de vol |
 | Combinaisons contrôlées de deux anomalies | 12 | Diagnostic partiel puis composition compatible |
 
@@ -96,7 +96,7 @@ Les autres familles de la proposition initiale, notamment identifiants corrompus
 
 Conclusion : **écart de localisation étayé**, recommandation de vérifier le rangement et l'affectation. Ne pas prétendre prouver quel opérateur a commis une erreur ou quelle procédure a échoué.
 
-Le snapshot assure les préconditions de qualité (identité connue, scan non ambigu, dates cohérentes). La table DMN reste minimale : même site et emplacement différent. Si les observations sont ambiguës ou le cas comporte un autre symptôme inexpliqué, cette règle ne suffit pas et le fallback s'applique.
+Le dossier de preuves figé assure les préconditions de qualité (identité connue, scan non ambigu, dates cohérentes). La table DMN reste minimale : même site et emplacement différent. Si les observations sont ambiguës ou le cas comporte un autre symptôme inexpliqué, cette règle ne suffit pas et le fallback s'applique.
 
 Cette règle initiale est un cas pédagogique bootstrap explicitement identifié. Elle ne sert pas à justifier de futures créations manuelles dans l'application. **Le seed contient un seul module/règle, une seule ligne de décision active.** Les garde-fous de typage et de publication ne sont pas comptés comme des règles de diagnostic cachées.
 
@@ -106,13 +106,13 @@ Le générateur part d'une histoire cohérente puis applique une perturbation d�
 
 Chaque scénario spécifie :
 - état initial et événements métier ;
-- perturbation de projection/collecte ;
+- perturbation de mise à jour du stock informatique ou collecte ;
 - observations visibles et sources incomplètes ;
 - vérité injectée réservée à l'oracle ;
 - conclusions admissibles compte tenu des seules preuves exposées ;
 - variante positive, négatif proche et variante insuffisamment documentée.
 
-Les journaux d'intégration utilisent de vraies corrélations d'événements simulés, pas des messages « le scénario est X ». Les identifiants, noms, ordre de génération et notes ne doivent pas dévoiler la famille cachée.
+Les journaux de mise à jour du stock informatique utilisent de vraies corrélations d'événements simulés, pas des messages « le scénario est X ». Les identifiants, noms, ordre de génération et notes ne doivent pas dévoiler la famille cachée.
 
 Les titres et textes peuvent être synthétiques et variés, mais la logique de génération et l'oracle ne sont pas produits par un LLM.
 
@@ -211,6 +211,6 @@ Séquence attendue :
 3. Cascade déterministe/agentique réelle et reprise sur panne.
 4. Chat, propositions, validation et publication runtime.
 5. Parcours complets, retraits, lots et démonstration.
-6. Reset, tests d'intégration et e2e, contrôle de secrets/licences puis revue finale bornée.
+6. Reset, tests entre composants et e2e, contrôle de secrets/licences puis revue finale bornée.
 
 Aucun de ces gates d'implémentation n'a été exécuté pendant le cadrage ; ils constituent les critères du travail à autoriser ensuite.

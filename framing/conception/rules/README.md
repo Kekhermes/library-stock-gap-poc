@@ -8,7 +8,7 @@ Cette règle constate une localisation différente. Elle ne prétend ni démontr
 
 ## Entrées : transformation sans raisonnement IA
 
-Le schéma `R001-input.schema.json` est fermé. Sa construction ne consulte que le snapshot figé :
+Le schéma `R001-input.schema.json` est fermé. Sa construction ne consulte que le dossier de preuves figé :
 
 | Entrée | Provenance |
 |---|---|
@@ -36,7 +36,7 @@ Décider que le cas est entièrement expliqué relève du service de combinaison
 
 ## Vérification réelle effectuée
 
-Le modèle a été chargé et évalué par Apache KIE `10.2.0` sous Java `21.0.12.1`, sur la machine de conception. Huit tests vérifient le cas nominal, même emplacement, autre site, qualité fausse/inconnue et lieux/sites manquants. Cette exécution ne valide pas encore l'intégration Spring Boot ni le runtime cible Java 25.
+Le modèle a été chargé et évalué par Apache KIE `10.2.0` sous Java `21.0.12.1`, sur la machine de conception. Huit tests vérifient le cas nominal, même emplacement, autre site, qualité fausse/inconnue et lieux/sites manquants. Cette exécution ne valide pas encore l'assemblage avec Spring Boot ni le runtime cible Java 25.
 
 Le harnais `../verification/VerifyBootstrapDmn.java` utilise `org.kie.dmn.core.internal.utils.DMNRuntimeBuilder`, identifié dans l'artefact réel. **Il s'agit d'une API interne utilisée seulement pour vérifier cette ressource** ; encapsuler/adopter une API appropriée avant d'en faire une dépendance de production. Aucun backend n'est livré par ce test.
 

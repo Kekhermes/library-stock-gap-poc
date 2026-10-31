@@ -8,7 +8,7 @@ Ces décisions prévalent sur les lignes historiques incompatibles conservées p
 |---|---|---|
 | N01 | LLM réels pour les deux agents ET Discussion Expert | Pas de réponses préfabriquées dans le parcours applicatif ; tests hors ligne clairement séparés |
 | N02 | Règles gérées dynamiquement au runtime, feature essentielle | Publication utilisée dès l'analyse suivante sans rebuild/redémarrage |
-| N03 | Consultations successives via outils bornés | Le snapshot complet à outil unique actuel ne suffit pas à la cible |
+| N03 | Consultations successives via outils bornés | Le dossier de preuves figé complet à outil unique actuel ne suffit pas à la cible |
 | N04 | Chat : expliquer les preuves, corriger/réévaluer, construire/affiner une règle | Pas de simple stockage de messages ; effet métier explicite et traçable |
 | N05 | Accepter le diagnostic puis approuver la règle testée | Deux actes humains, jamais une publication par texte libre |
 | N06 | Dix dossiers : deux couverts par R001, quatre retours et quatre réparations | Tous vierges au reset ; un apprentissage par famille doit reconnaître les trois autres dossiers |
@@ -25,13 +25,32 @@ Ces décisions prévalent sur les lignes historiques incompatibles conservées p
 | N17 | Rapport d'échec renvoyé à l'agent ; correction automatique bornée | Nouvelles révisions/test, arrêt visible si refus persistant |
 | N18 | Aucun plafond à déterminer pour l'instant : « open bar » | Les anciens budgets ne font plus autorité ; mesure et bornage des corrections demeurent |
 
+### Arbitrage DMN/FEEL — première vague du 2026-10-31
+
+| ID | Choix validé | Raison et conséquence |
+|---|---|---|
+| N19 | Une table indépendante par règle métier, une ligne au départ | Lecture simple, version/tests/retrait propres à chaque règle ; table commune écartée |
+| N20 | Faits simples, typés et corrélés par Java | FEEL décide sur des preuves normalisées ; parcours des historiques en FEEL et approche mixte écartés du périmètre initial |
+| N21 | Comparaisons simples, booléens et tests de valeurs manquantes | Égalité, différence, ordre, appartenance et and/or ; dates/durées, filtres et quantifications ne sont pas ajoutés d'emblée |
+| N22 | Fallback LLM sur fait indispensable inconnu ou conclusions incompatibles | Motif visible ; investigation pouvant s'abstenir ; panne de compilation/exécution distincte du fallback métier |
+| N23 | Un diagnostic unique pour des conclusions étayées équivalentes | Conserver toutes les règles et preuves contributrices ; priorité choisissant arbitrairement une seule règle écartée |
+| N24 | Utiliser les termes explicites clarifiés dans les discussions ET les livrables | Opération métier, mise à jour du stock informatique, dossier de preuves figé ; distinguer bibliothèque simulée, application d'analyse et moyens de diagnostic ; identifiants techniques conservés |
+| N25 | Petit ensemble de données pour les règles | État du stock informatique, lieux et observations, qualité, traces enregistrées de prêt/retour/réparation, résultats des mises à jour correspondantes et disponibilité des sources ; noms techniques précis encore à rédiger |
+| N26 | Dernière tentative connue pour la même opération métier | Conserver l'historique dans les preuves ; une reprise réussie interdit de présenter l'ancien échec comme encore actif ; signaler les sources incomplètes |
+| N27 | Conditions séparées avec question métier et résultat | Une expression FEEL réelle par condition ; essai montrant vrai, faux ou inconnu ; Java ne préfabrique pas les réponses métier |
+| N28 | Une seule combinaison de conditions par règle pour la démo | Une colonne décrit une condition ; une ligne exprime les valeurs attendues et le résultat ; question des lignes multiples et choix UNIQUE/COLLECT reportés |
+
+Ces choix précisent [le contrat des faits et de DMN](11-contrat-faits-et-dmn.md). Ils ne valident pas encore les noms/types exacts des faits, la forme JSON des conditions, la définition précise d'une équivalence/conflit ni les limites d'évaluation. Le choix technique UNIQUE/COLLECT n'est pas validé ; il est reporté avec la question des lignes multiples.
+
+Le [vocabulaire explicite](06-domaine-ddd-et-cycles-de-vie.md) est validé après clarification des termes ; il fait référence pour la rédaction et les prochaines questions. Le terme technique `snapshot` désigne le dossier de preuves figé dans ce contexte, pas une copie complète de PostgreSQL. Un changement de règle ou un appel d'outil n'est pas une opération métier de bibliothèque.
+
 Le découpage exact **2 + 4 + 4** vient de la précision de Kevin, pas de la proposition initiale d'une boucle unique. Chacune des deux familles inconnues doit pouvoir être apprise indépendamment, dans l'ordre choisi par le démonstrateur.
 
-**OUVERTS :** détail FEEL et sérialisation, catalogue des outils, SDK d'orchestration, nombre de reprises, prototype UI. **Non exécutés pendant l'audit :** appels OpenAI réels et reset. L'interview ne vaut pas autorisation générale de modifier l'application.
+**OUVERTS :** noms/types/provenance exacts des faits, JSON/sérialisation des conditions, équivalence/conflit et limites d'évaluation ; catalogue des outils, SDK d'orchestration, nombre de reprises et prototype UI. **REPORTÉS :** lignes multiples et choix UNIQUE/COLLECT. **Non exécutés pendant l'audit :** appels OpenAI réels et reset. L'interview ne vaut pas autorisation générale de modifier l'application.
 
 ## Historique — 2026-10-24
 
-Les décisions de volumétrie, quotas et SDK ci-dessous sont historiques lorsqu'elles contredisent N01–N18. Elles expliquent le cadrage initial ; elles ne sont pas des exigences supplémentaires à réaliser.
+Les décisions de volumétrie, quotas, SDK et expressivité ci-dessous sont historiques lorsqu'elles contredisent N01–N23. Elles expliquent le cadrage initial ; elles ne sont pas des exigences supplémentaires à réaliser.
 
 ## Règle de gestion
 
@@ -55,7 +74,7 @@ Décisions recueillies par questionnaire interactif. Conséquences : l'exemplair
 
 | ID | Décision explicite | Conséquence |
 |---|---|---|
-| A06 | Inventaire à date de référence fixe, activité suspendue pendant les scans ; historiques et retards d'intégration conservés | Pas de reconstruction de mouvements concurrents pendant les scans dans le périmètre initial. |
+| A06 | Inventaire à date de référence fixe, activité suspendue pendant les scans ; historiques et retards de mise à jour du stock informatique conservés | Pas de reconstruction de mouvements concurrents pendant les scans dans le périmètre initial. |
 | A07 | Données structurées et quelques notes opérateur en texte libre, sans RAG | Prévoir des outils de lecture ciblée des notes ; décider ce qui est admissible comme prédicat déterministe. |
 | B01 | Cause étayée ou hypothèses explicitement incertaines, avec preuves et recommandations | La conclusion n'est pas obligatoirement une cause unique ; ne pas inventer de confiance numérique calibrée. |
 | B04 | Fallback automatique, visible, borné par un budget et annulable | Définir la suffisance du diagnostic, les motifs de fallback et les limites d'exécution. |
@@ -71,7 +90,7 @@ Ces décisions sont validées ; leurs modalités d'exécution détaillées reste
 | B03 | DMN/FEEL avec moteur Java existant | Ne pas construire un DSL propriétaire ; définir les entrées, le sous-ensemble autorisé et la politique d'application. Le moteur exact reste à sélectionner. |
 | B07 | Types, tests positifs/négatifs et replay avant/après ; vérification formelle reportée | Z3 et toute promesse de preuve SMT sont hors premier périmètre. |
 | B06 | Deux actes distincts dans le même espace : accepter le diagnostic, puis approuver/publier le changement de règles | L'acceptation d'un cas ne vaut pas approbation de sa généralisation. |
-| B09 | Publication atomique des créations/révisions/retraits ; nouvelles analyses sur la nouvelle version, analyses en cours sur leur version initiale | Snapshot de référentiel par exécution et concurrence optimiste sur publication. |
+| B09 | Publication atomique des créations/révisions/retraits ; nouvelles analyses sur la nouvelle version, analyses en cours sur leur version initiale | version figée des règles par exécution et concurrence optimiste sur publication. |
 
 Motif exprimé pour B03 : Kevin préfère un langage décisionnel existant à un DSL dont les méthodes/opérateurs restent à définir. DMN/FEEL ne dispense pas de spécifier les faits d'entrée et les capacités de calcul autorisées.
 
@@ -92,7 +111,7 @@ Motif exprimé pour B03 : Kevin préfère un langage décisionnel existant à un
 | B11 | Orchestration agentique : un agent avec phases distinctes ou plusieurs rôles spécialisés ? |
 | B12 | Quand et comment une règle devient-elle obsolète ou à réexaminer ? |
 
-**Proposition à discuter :** une publication atomique porte sur un ensemble de créations/révisions/retraits et sur une version de référentiel de départ. L'approbation devient périmée si le contenu, le rapport de tests ou le référentiel de départ change. Les analyses déjà en cours gardent leur snapshot ; celles démarrant après publication utilisent la nouvelle version.
+**Proposition à discuter :** une publication atomique porte sur un ensemble de créations/révisions/retraits et sur une version de référentiel de départ. L'approbation devient périmée si le contenu, le rapport de tests ou le référentiel de départ change. Les analyses déjà en cours gardent leur dossier de preuves figé ; celles démarrant après publication utilisent la nouvelle version.
 
 ## Vague C — cas d'usage et UX/UI
 
@@ -133,7 +152,7 @@ Motif exprimé pour B03 : Kevin préfère un langage décisionnel existant à un
 - Glossaire, contextes métier, agrégats, invariants et règles de dépendances.
 - Cycles de vie séparés : cas, exécution, diagnostic, proposition, version de règle, publication.
 - Source de vérité métier Java et responsabilité exacte du service Python.
-- Modèles de données, snapshots de preuves et traçabilité des analyses.
+- Modèles de données, dossiers de preuves figés et traçabilité des analyses.
 - Contrats REST/Kafka/SSE ; identités de corrélation, versions de payload et ordre des messages.
 - Commit métier/publication Kafka : outbox ou mécanisme alternatif justifié ; déduplication des résultats.
 - Résultats tardifs, annulations, rejeu, redémarrages et traitement des propositions devenues périmées.

@@ -12,7 +12,7 @@ Ce dossier est une **référence de réalisation**, pas une migration installée
 | `04-import-et-faits.md` | Mapping de chaque tableau JSON, ordre d'import, normalisation temporelle et corrélations |
 | `05-dictionnaire.md` | Chaque table/colonne, type, nullabilité, provenance, FK, contraintes et index |
 | `06-relations.md` | ER Mermaid exhaustif, dérivé de toutes les FK du DDL |
-| `07-transactions-et-invariants.md` | Transactions, quotas, courses, limites SQL/application, scénarios de tests d'intégration |
+| `07-transactions-et-invariants.md` | Transactions, quotas, courses, limites SQL/application, scénarios de tests entre composants |
 | `verify_model.py` | Parseur SQL/PLpgSQL, revue statique des clés/types/documentation ; génération du dictionnaire/ER sur stdout |
 | `test_model.py` | Tests locaux de contrat, variantes négatives, couverture du mapping et garde-fous statiques |
 | `verification-results.json` | Sortie réelle de la vérification statique |
@@ -24,18 +24,18 @@ Références normatives : `../00-conventions.md`, `../../06-domaine-ddd-et-cycle
 
 1. **Jeu de données → instance → sources.** `datasetId` identifie le fichier déterministe, `datasetEpoch` une importation vivante. Une nouvelle époque n'altère ni la seed ni le temps métier. Tous les identifiants enfants sont qualifiés par époque pour permettre une réimportation des mêmes UUID sans collision ni rattachement à l'ancienne instance.
 2. **Exemplaire → cas → symptômes.** Un dossier porte sur exactement un exemplaire et possède son propre `inventoryReferenceTime`. Une époque représente la campagne unique du contrat partagé ; unicité `(datasetEpoch, copyId)` des dossiers. Le modèle ne crée pas artificiellement des sessions de scan/campagnes absentes du fichier. Si plusieurs campagnes doivent cohabiter dans un même jeu à l'avenir, ajouter explicitement une identité de campagne et faire évoluer cette unicité.
-3. **Sources → snapshot → analyse → diagnostic → acceptation.** Les sources importées et symptômes sont immuables ; `gap_case` n'est que l'état de workflow associé au `source_case`. Une analyse fige un snapshot et une publication. Les preuves sont capturées, pas relues dans un état mutable au fil de l'agent. Le diagnostic proposé, sa révision, son acceptation et une éventuelle publication de règle sont des actes différents.
-4. **Règle → versions → publications.** Une identité de règle ne dit pas si elle est active. L'applicabilité vient du manifeste complet d'une publication. Une proposition possède des révisions immuables avec opérations et tests. Le brouillon DMN est dans l'opération ; `rule_version` est la version validée matérialisée à la publication, ce qui évite un faux état mutable `DRAFT` sur un artefact publié.
+3. **Sources → dossier de preuves figé → analyse → diagnostic → acceptation.** Les sources importées et symptômes sont immuables ; `gap_case` n'est que l'état de workflow associé au `source_case`. Une analyse fige un dossier de preuves figé et une publication. Les preuves sont capturées, pas relues dans un état mutable au fil de l'agent. Le diagnostic proposé, sa révision, son acceptation et une éventuelle publication de règle sont des actes différents.
+4. **Règle → versions → publications.** Une identité de règle ne dit pas si elle est active. L'applicabilité vient du manifeste complet d'une publication. Une proposition possède des révisions immuables avec opérations métier et tests. Le brouillon DMN est dans l'opération ; `rule_version` est la version validée matérialisée à la publication, ce qui évite un faux état mutable `DRAFT` sur un artefact publié.
 5. **Mission → tentatives → réservations.** Une mission est une limite fonctionnelle et budgétaire, une tentative un lease technique. Retry ne recrée pas le budget. Le worker Python ne possède ni tables métier ni accès SQL. Tous ses résultats sont des propositions que Java valide avant adoption.
 6. **Dialogue → tours → messages.** Le seul rôle humain est **Admin**. Investigateur et agent de règles sont des rôles techniques, pas des utilisateurs supplémentaires. Un message, même « approuvé », n'appelle jamais la commande de publication.
-7. **Évaluation isolée.** Attentes de simulation, perturbations injectées, familles et labels restent dans `evaluation`. Le runtime peut conserver un `causeCode` **inféré et étayé** dans le diagnostic ou la métadonnée d'une règle conformément au contrat Finding ; ce n'est jamais une cause attendue importée depuis l'oracle. Aucun `expectedCause`, `scenarioFamily` ou vérité injectée dans les faits, missions, snapshots ou sources runtime.
+7. **Évaluation isolée.** Attentes de simulation, perturbations injectées, familles et labels restent dans `evaluation`. Le runtime peut conserver un `causeCode` **inféré et étayé** dans le diagnostic ou la métadonnée d'une règle conformément au contrat Finding ; ce n'est jamais une cause attendue importée depuis l'oracle. Aucun `expectedCause`, `scenarioFamily` ou vérité injectée dans les faits, missions, dossiers de preuves figés ou sources runtime.
 
 ```mermaid
 flowchart LR
   DS[Jeu stable] --> EP[Époque runtime]
   EP --> SRC[Sources immuables]
   SRC --> CAS[Cas : un exemplaire, plusieurs symptômes]
-  CAS --> SNP[Snapshot figé]
+  CAS --> SNP[dossier de preuves figé]
   SNP --> ANA[Analyse + publication figée]
   ANA --> DIA[Diagnostic proposé]
   DIA --> ACC[Acceptation Admin]
@@ -85,4 +85,4 @@ Les droits SQL ne savent pas distinguer « requête de l'Admin » d'un « résul
 
 ## Portée de la vérification
 
-Les commandes réellement utilisées et leurs sorties sont consignées dans `verification-results.json`, `verification-tests.txt` et `08-verification.md`. Le parseur PostgreSQL/PLpgSQL valide la syntaxe, la revue statique vérifie les cibles de FK/types/clés et la présence de documentation. **Aucune base n'a été créée, aucun service démarré, aucun SQL exécuté contre un serveur**. Ce n'est donc pas une preuve d'application DDL, de droits effectifs, de plans d'exécution ou de comportement concurrent. Les essais d'intégration attendus sont explicités dans `07-transactions-et-invariants.md`.
+Les commandes réellement utilisées et leurs sorties sont consignées dans `verification-results.json`, `verification-tests.txt` et `08-verification.md`. Le parseur PostgreSQL/PLpgSQL valide la syntaxe, la revue statique vérifie les cibles de FK/types/clés et la présence de documentation. **Aucune base n'a été créée, aucun service démarré, aucun SQL exécuté contre un serveur**. Ce n'est donc pas une preuve d'application DDL, de droits effectifs, de plans d'exécution ou de comportement concurrent. Les essais de mise à jour du stock informatique attendus sont explicités dans `07-transactions-et-invariants.md`.

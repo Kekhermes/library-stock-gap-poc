@@ -24,7 +24,7 @@ Acquis : déterministe en premier ; fallback automatique visible, borné et annu
 
 Les mécanismes détaillés ci-dessous sont **PROPOSÉS**, sauf mention contraire.
 
-**Décisions du 2026-10-24 :** DMN/FEEL avec moteur Java existant ; notes pour l'investigation uniquement et conditions déterministes sur faits structurés sans IA ; validation par types, tests et replay, sans Z3 dans le premier périmètre ; deux actes humains distincts pour diagnostic et changement de règles ; publication atomique avec snapshots conservés par les analyses en cours. Apache KIE embarqué est retenu. Collecter les règles applicables, combiner les conclusions compatibles et déclencher le fallback sur conflit, couverture partielle ou hypothèse insuffisamment étayée. Les types d'entrée et le sous-ensemble FEEL restent à spécifier en détail.
+**Décisions du 2026-10-24 :** DMN/FEEL avec moteur Java existant ; notes pour l'investigation uniquement et conditions déterministes sur faits structurés sans IA ; validation par types, tests et replay, sans Z3 dans le premier périmètre ; deux actes humains distincts pour diagnostic et changement de règles ; publication atomique avec dossiers de preuves figés conservés par les analyses en cours. Apache KIE embarqué est retenu. Collecter les règles applicables, combiner les conclusions compatibles et déclencher le fallback sur conflit, couverture partielle ou hypothèse insuffisamment étayée. Les types d'entrée et le sous-ensemble FEEL restent à spécifier en détail.
 
 ## 2. Contrat de résultat proposé
 
@@ -54,7 +54,7 @@ Proposition : les deux voies consultent les mêmes sources métier versionnées 
 
 Un fait dérivé comporte valeur, type, provenance et état de disponibilité. Distinguer `FALSE` de `UNKNOWN` : « aucun prêt trouvé dans une source complète » n'est pas « source des prêts indisponible ».
 
-Le catalogue des faits doit exprimer des propriétés générales : prêt actif à la date de référence, réception antérieure, événement d'intégration rejeté corrélé à une opération, présence observée ailleurs. Éviter les faits déjà diagnostiques comme `causeEstRetourNonIntegre`, qui cacheraient la règle apprise dans le code Java.
+Le catalogue des faits doit exprimer des propriétés générales : prêt actif à la date de référence, réception antérieure, événement de mise à jour du stock informatique rejeté corrélé à une opération métier, présence observée ailleurs. Éviter les faits déjà diagnostiques comme `causeEstRetourNonIntegre`, qui cacheraient la règle apprise dans le code Java.
 
 ## 4. Notes libres : une frontière déterminante
 
@@ -134,7 +134,7 @@ Le diagnostic du cas et l'approbation d'une règle généralisée sont deux déc
 
 ## 9. Sens précis de l'effet immédiat
 
-**VALIDÉ :** après confirmation de publication, toute analyse nouvellement démarrée prend la nouvelle version active ; une analyse déjà commencée conserve son snapshot et l'affiche.
+**VALIDÉ :** après confirmation de publication, toute analyse nouvellement démarrée prend la nouvelle version active ; une analyse déjà commencée conserve son dossier de preuves figé et l'affiche.
 
 L'activation prépare d'abord une version évaluable, puis effectue le basculement transactionnel. En cas d'échec de préparation, la version active reste inchangée. Les demandes concurrentes basées sur une ancienne version reçoivent un conflit explicite.
 

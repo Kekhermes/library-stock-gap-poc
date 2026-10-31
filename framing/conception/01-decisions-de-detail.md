@@ -48,7 +48,7 @@ Ces décisions de détail rendent le cadrage réalisable. Elles n'autorisent pas
 
 **Raison :** Kevin réalise lui-même le projet avec ses outils ; les ressources doivent lui permettre d'implémenter, non lui imposer une application commencée par un autre outil.
 
-**Conséquence :** résultats de validation documentaire/fixtures distincts de tests d'intégration du futur produit. Les outils Python de vérification ne portent aucune logique métier runtime.
+**Conséquence :** résultats de validation documentaire/fixtures distincts de tests entre composants du futur produit. Les outils Python de vérification ne portent aucune logique métier runtime.
 
 ## ADR-07 — Versions de contrat et compatibilité
 

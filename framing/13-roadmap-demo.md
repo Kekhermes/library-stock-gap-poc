@@ -38,7 +38,7 @@ Fixer le contrat des conditions FEEL produites par le LLM, la table DMN sériali
 
 Adapter le seed/générateur existant et les ressources applicatives : deux localisations, quatre retours, quatre réparations. Conserver uniquement les événements et le fonds nécessaires. Ne pas simplement filtrer l'écran tout en conservant 120 dossiers comme modèle de démo.
 
-Les sources restent plausibles, à temps de référence fixe, avec opérations et intégrations corrélées. Un seul symptôme principal par dossier et preuves suffisantes pour les deux règles futures. Oracle et catalogue pédagogique hors outils/prompts ; aucun nom de famille cachée n'est un fait de diagnostic.
+Les sources restent plausibles, à temps de référence fixe, avec opérations métier et mises à jour du stock informatique corrélées. Un seul symptôme principal par dossier et preuves suffisantes pour les deux règles futures. Oracle et catalogue pédagogique hors outils/prompts ; aucun nom de famille cachée n'est un fait de diagnostic.
 
 Réutiliser le reset existant et fournir une vérification simple. Les fixtures négatives/incomplètes restent dans le corpus technique, séparées des dix dossiers.
 
@@ -46,7 +46,7 @@ Réutiliser le reset existant et fournir une vérification simple. Les fixtures 
 
 ## M2 — Des faits qui ne connaissent pas déjà le diagnostic
 
-Retirer les conclusions forcées et revalider les règles héritées qui en dépendent. Stabiliser un catalogue de faits génériques : identité, qualité/unicité d'observation, état attendu, événement métier, résultat d'intégration corrélé, disponibilité des sources et temporalité.
+Retirer les conclusions forcées et revalider les règles héritées qui en dépendent. Stabiliser un catalogue de faits génériques : identité, qualité/unicité d'observation, état attendu, événement métier, résultat de mise à jour du stock informatique corrélé, disponibilité des sources et temporalité.
 
 Choisir les preuves admissibles plutôt que le premier scan. Distinguer valeur fausse, inconnue et source incomplète. Ne pas ajouter `isRetourNonProjete` ou une méthode équivalente qui ferait le diagnostic dans Java avant FEEL.
 
@@ -64,7 +64,7 @@ Rapport lié à la proposition/révision, à son contenu, au manifeste, au corpu
 
 ## M4 — Missions sûres et observables
 
-Uniformiser mission/snapshot/époque/lease/fencing pour tous les outils, diagnostics, propositions et réponses de chat. Mettre adoption et déduplication dans une transaction cohérente ; ne pas marquer un résultat appliqué avant son effet métier. Gérer ack/rejeu, expiration, heartbeat ou autre stratégie justifiée, et annulation avec résultats tardifs sans effet.
+Uniformiser mission/dossier de preuves figé/époque/lease/fencing pour tous les outils, diagnostics, propositions et réponses de chat. Mettre adoption et déduplication dans une transaction cohérente ; ne pas marquer un résultat appliqué avant son effet métier. Gérer ack/rejeu, expiration, heartbeat ou autre stratégie justifiée, et annulation avec résultats tardifs sans effet.
 
 Conserver les traces utiles : rôle, modèle réellement appelé, versions de prompt et contexte, outils/arguments autorisés, observations, synthèses courtes, erreurs, essais, tokens et durées. Additionner toutes les sorties rejetées/corrigées et les retries lorsque leur usage est observable ; indiquer explicitement une comptabilité incomplète plutôt que zéro fictif.
 
@@ -74,7 +74,7 @@ Rendre les plafonds historiques non prescriptifs et la configuration conforme à
 
 ## M5 — Deux agents distincts, vraiment génératifs
 
-L'investigateur consulte successivement les preuves via outils Java bornés au snapshot. Il choisit ses consultations ; le code ne suit pas un script qui reconnaît secrètement les familles. Diagnostic structuré sourcé, abstention possible et contrôles Python/Java.
+L'investigateur consulte successivement les preuves via outils Java bornés au dossier de preuves figé. Il choisit ses consultations ; le code ne suit pas un script qui reconnaît secrètement les familles. Diagnostic structuré sourcé, abstention possible et contrôles Python/Java.
 
 L'agent de règles reçoit le diagnostic complet accepté, les preuves autorisées, les faits disponibles, la version de base et le contexte d'échange. Le LLM propose réellement les conditions FEEL et métadonnées ; Java sérialise le DMN standard sans choisir les conditions ni substituer une règle prédéfinie. Le gabarit contient seulement la structure.
 

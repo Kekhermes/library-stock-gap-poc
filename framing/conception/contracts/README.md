@@ -26,7 +26,7 @@ Les scripts utilisent Python standard, `jsonschema` et `referencing` déjà disp
 
 Les résultats réels de validation sont conservés sous `test-results/`. Les captures RED/GREEN montrent les échecs intentionnels avant implémentation du validateur puis les tests réussis. `validation.json` est le rapport du dernier contrôle exécuté ; ne pas confondre ses résultats avec les fixtures métier.
 
-**Portée honnête des vérifications :** validation réelle des métaschémas et des instances avec `Draft202012Validator` et `FormatChecker`, résolution locale des `$ref`, contrôles structurels OpenAPI/AsyncAPI et mutations négatives. Aucun validateur officiel OpenAPI/AsyncAPI n'est installé/utilisé ici. Le contrôle personnalisé n'est pas une certification officielle de ces formats. Aucun test HTTP réel, Kafka, PostgreSQL, KIE/DMN, quota distribué ou sécurité réseau n'a été exécuté. Les invariants transactionnels décrits doivent devenir des tests d'intégration de l'application.
+**Portée honnête des vérifications :** validation réelle des métaschémas et des instances avec `Draft202012Validator` et `FormatChecker`, résolution locale des `$ref`, contrôles structurels OpenAPI/AsyncAPI et mutations négatives. Aucun validateur officiel OpenAPI/AsyncAPI n'est installé/utilisé ici. Le contrôle personnalisé n'est pas une certification officielle de ces formats. Aucun test HTTP réel, Kafka, PostgreSQL, KIE/DMN, quota distribué ou sécurité réseau n'a été exécuté. Les invariants transactionnels décrits doivent devenir des tests entre composants de l'application.
 
 ## Conventions essentielles
 
@@ -35,7 +35,7 @@ Les résultats réels de validation sont conservés sous `test-results/`. Les ca
 - Versions positives ; compteurs et index de chunks peuvent être nuls. Dates UTC avec `Z`.
 - `datasetId` identifie un jeu reproductible, `datasetEpoch` une charge runtime. Ne jamais remplacer l'un par l'autre.
 - `RuleChange` est une union fermée `CREATE|REVISE|RETIRE`. La création et la révision passent exclusivement par l'agent ; le retrait peut aussi être confirmé directement par Admin. Aucun endpoint de saisie de DMN ou de conditions par Admin.
-- Les huit types `SourceEvent` sont des faits sources, **pas** des messages Kafka d'agent. Le contrat des payloads sources proposé ici est une projection typée ; l'importeur doit adapter les données brutes à ces clés sans ajouter d'oracle.
+- Les huit types `SourceEvent` sont des faits sources, **pas** des messages Kafka d'agent. Le contrat des payloads sources proposé ici est une représentation typée ; l'importeur doit adapter les données brutes à ces clés sans ajouter d'oracle.
 - Les `$ref` ne sortent jamais de `contracts/`. Les schémas sont indépendants de l'ordre de création des ressources par d'autres intervenants.
 
 ## Couverture UX

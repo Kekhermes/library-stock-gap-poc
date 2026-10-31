@@ -4,6 +4,29 @@
 
 Répartition Java/Python/Vue validée ; conception détaillée ci-dessous **PROPOSÉE pour la revue finale**. DDD sert ici à protéger des invariants, pas à multiplier les services ou les interfaces.
 
+## Vocabulaire explicite validé — 2026-10-31
+
+Ces termes sont utilisés dans les discussions et les livrables du projet. Les identifiants techniques existants restent inchangés ; ils sont accompagnés de leur sens métier lorsqu'ils sont présentés.
+
+Trois niveaux distincts : **bibliothèque simulée** (actions et données métier), **application d'analyse** (dossiers et preuves), **moyens de diagnostic** (règles DMN/FEEL et agents LLM). Les prêts, retours et pannes de mise à jour sont représentés dans les données fictives ; notre application les analyse, sans effectuer ces actions ni corriger le stock.
+
+| Terme à utiliser | Définition | Ancien terme ou identifiant technique |
+|---|---|---|
+| Opération métier | Action concernant un exemplaire : prêt, retour, déplacement ou réparation ; son enregistrement fournit une trace consultable | « Opération » seul est évité ; ce n'est ni un appel d'outil ni un changement de règle |
+| Mise à jour du stock informatique | Traitement qui répercute une opération métier dans l'état informatique de l'exemplaire ; il peut réussir, échouer ou rester en attente | « Intégration » dans les données de bibliothèque ; `IntegrationProcessed` |
+| État du stock informatique | Situation et emplacement indiqués par le système de bibliothèque | « Projection de stock », `systemState` |
+| Observation d'inventaire | Scan ou constat physique daté, avec lieu et qualité ; ce n'est pas une vérité garantie | `observations` |
+| Dossier d'écart | Dossier d'un exemplaire dont les données informatiques et les observations présentent une divergence à analyser | « Cas », `caseId` |
+| Dossier de preuves figé | Copie des données disponibles pour une analyse d'un dossier : état informatique, observations, événements, notes et disponibilité des sources | « Snapshot de preuves », `EvidenceSnapshot`, `snapshotId`, `get_case_snapshot` |
+| Version figée des règles | Publication et versions de règles conservées comme référence de l'analyse | « Snapshot de référentiel » ; distinct du dossier de preuves |
+| État de synchronisation de l'interface | Ensemble des états applicatifs et curseur utilisés pour ouvrir ou reprendre le flux de notifications | `SyncSnapshot`, `/api/sync-snapshot` ; distinct d'un dossier de preuves |
+| Fait utilisable par une règle | Valeur structurée extraite des preuves sans LLM, avec type et provenance ; pas une cause déjà décidée | Entrée de DMN/FEEL |
+| Diagnostic | Conclusion expliquée à partir des preuves, avec limites et recommandations | Distinct d'un fait et d'une correction du stock |
+
+Exemple : un retour est enregistré, sa mise à jour du stock informatique échoue, l'exemplaire est observé au comptoir mais reste indiqué comme prêté. L'analyse fige ces preuves, puis recherche une explication. Le dossier de preuves figé n'est ni une sauvegarde de toute la base, ni un diagnostic, ni une garantie de vérité ou de complétude.
+
+Un « test entre composants » désigne une vérification de l'assemblage logiciel ; un échange Kafka désigne le transport d'une mission ou d'un résultat. Ni l'un ni l'autre n'est une mise à jour du stock informatique de la bibliothèque simulée.
+
 ## 1. Langage métier
 
 - **Exemplaire** : objet physique identifiable, distinct d'une notice bibliographique.
@@ -51,7 +74,7 @@ Déploiement : ces contextes résident dans le même backend Spring Boot, organi
 | Racine | Contenu et références | Invariants principaux |
 |---|---|---|
 | `GapCase` | Identité exemplaire/campagne, symptômes, liens vers analyses, diagnostic accepté courant | Unicité du cas par campagne/exemplaire ; pas d'écrasement des analyses passées ; une seule analyse métier active par cas dans le POC |
-| `AnalysisRun` | Snapshot des preuves, version du référentiel, étapes, conclusions, mission associée | Référentiel et données figés ; une transition terminale n'est pas réouverte par un résultat tardif ; annulation ≠ diagnostic négatif |
+| `AnalysisRun` | Dossier de preuves figé, version du référentiel, étapes, conclusions, mission associée | Référentiel et données figés ; une transition terminale n'est pas réouverte par un résultat tardif ; annulation ≠ diagnostic négatif |
 | `Rule` | Identité stable, versions immuables, provenance diagnostic et proposition | Pas de modification en place d'une version publiée ; pas de création/révision manuelle par l'Admin |
 | `RuleChangeProposal` | Base du référentiel, révision du brouillon, opérations CREATE/REVISE/RETIRE, tests et approbation | Création ancrée dans un diagnostic accepté ; révision liée à une règle et à ses cas d'origine ; toute modification invalide les validations dépendantes |
 | `RuleSetPublication` | Version, manifeste ruleId/versionId, rapport de validation, approbation | Une publication est complète et immuable ; le pointeur actif change atomiquement ; aucun retrait ne supprime l'historique |
@@ -121,7 +144,7 @@ L'approbation et la mise à jour du pointeur actif doivent être dans la même t
 
 ### Versions de règles
 
-Une version est `DRAFT` tant qu'elle appartient à une proposition ; après publication elle est immuable. Son applicabilité est déterminée par le manifeste de la publication, pas par un booléen mutable réécrivant son histoire. « Active », « remplacée » et « retirée » sont des projections dans le référentiel courant.
+Une version est `DRAFT` tant qu'elle appartient à une proposition ; après publication elle est immuable. Son applicabilité est déterminée par le manifeste de la publication, pas par un booléen mutable réécrivant son histoire. « Active », « remplacée » et « retirée » décrivent son applicabilité dans le référentiel courant.
 
 ## 5. Modèle de données logique proposé
 
@@ -149,4 +172,4 @@ Stocker les DMN originaux, leur empreinte, la version du moteur, le schéma des 
 
 ## 7. Décisions encore à finaliser
 
-Sémantique de combinaison des règles et couverture multi-symptômes ; bornes des lots et quotas ; granularité des snapshots ; sous-ensemble DMN/FEEL ; détails UX de retrait et de diagnostic indéterminé. Les noms de classes/tables sont des contrats de conception proposés, pas du code déjà livré.
+Sémantique de combinaison des règles et couverture multi-symptômes ; bornes des lots et quotas ; granularité des dossiers de preuves figés ; sous-ensemble DMN/FEEL ; détails UX de retrait et de diagnostic indéterminé. Les noms de classes/tables sont des contrats de conception proposés, pas du code déjà livré.

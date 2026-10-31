@@ -98,7 +98,7 @@ public class AgentEventConsumer {
                 throw new IllegalArgumentException("Mission, lease ou fencing token non actif");
             }
             var snapshot = analysisRepository.findSnapshot(epoch, snapshotId)
-                .orElseThrow(() -> new IllegalArgumentException("Snapshot introuvable"));
+                .orElseThrow(() -> new IllegalArgumentException("Dossier de preuves figé introuvable"));
             DiagnosticRecord record = AgentDiagnosticAssembler.assemble(diagId, analysisId, caseId, diagData, snapshot);
 
             analysisRepository.insertDiagnosticRevision(epoch, record, "INVESTIGATOR", 1);

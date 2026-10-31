@@ -8,7 +8,7 @@ Préserver les décisions actuelles : dix dossiers vierges 2 + 4 + 4, deux agent
 
 ## Ce dossier est une entrée de travail, pas un projet déjà développé
 
-Tu peux transmettre la racine `framing/conception/` à un outil de code. Les contrats et fixtures y sont concrets ; les snippets de transactions restent à implémenter. La conception ne dispense pas des tests d'intégration du futur backend.
+Tu peux transmettre la racine `framing/conception/` à un outil de code. Les contrats et fixtures y sont concrets ; les snippets de transactions restent à implémenter. La conception ne dispense pas des tests entre composants du futur backend.
 
 **Ne transmets jamais automatiquement à un agent runtime les dossiers privés d'oracle, de catalogue ou de holdout.** Ils servent aux développeurs et à l'évaluation, pas au diagnostic en production du POC.
 
@@ -18,7 +18,7 @@ Tu peux transmettre la racine `framing/conception/` à un outil de code. Les con
 |---|---|---|---|
 | 1. Socle local | Stack du cadrage, conventions, modèle SQL | Java/Spring, Vue, Python worker, PostgreSQL, Redpanda, réseau localhost | Build, santé des services et aucun secret embarqué |
 | 2. Import des sources | Export Java et dictionnaire JSON→SQL | Jeu demo chargé, epoch créée, exactement R001 active | Compteurs, FK, contrôle d'oracle inaccessible, reset reproduisible |
-| 3. Analyse déterministe | DMN réel, input schema, sorties et snapshots | Cas simple évalué avec preuve/version | Cas nominal, nulls, observation contradictoire, couverture partielle |
+| 3. Analyse déterministe | DMN réel, input schema, sorties et dossiers de preuves figés | Cas simple évalué avec preuve/version | Cas nominal, nulls, observation contradictoire, couverture partielle |
 | 4. Orchestration durable | Contrats Kafka, états, outbox/inbox, leases | Mission roundtrip avec worker factice explicitement de test | Doublons, crash, tentative périmée, annulation, reset |
 | 5. Investigateur réel | Prompt et outils de lecture | Fallback OpenAI sur un cas réel du dataset | Autorisation explicite de coût, références vérifiées, abstention |
 | 6. Agent de règles | Prompt, proposition DMN, prévalidation | Création/révision et non-proposition explicite | Tests, négatifs, replay, aucun droit de publication dans Python |
@@ -69,7 +69,7 @@ Ne pas faire fonctionner un test en assouplissant silencieusement `additionalPro
 
 ## Risques à traiter tôt
 
-1. Cohérence entre sources, snapshots et temps de référence.
+1. Cohérence entre sources, dossiers de preuves figés et temps de référence.
 2. Contexte des références de preuve et portée des outils.
 3. Expressivité FEEL utile sans extension Java libre.
 4. Sémantique de conflits et couverture multi-symptômes.

@@ -48,7 +48,7 @@ Un proposalId dans une commande de synthèse est une **identité de candidat ré
 | Type | Sens | Contexte | Effet métier après validation Java |
 |---|---|---|---|
 | InvestigationRequested | Java → worker | INVESTIGATION | réclamer mission investigateur ; pas de résultat immédiat |
-| RuleSynthesisRequested | Java → worker | RULE_CASE | synthèse depuis diagnostic fallback accepté et snapshot d'origine |
+| RuleSynthesisRequested | Java → worker | RULE_CASE | synthèse depuis diagnostic fallback accepté et dossier de preuves figé d'origine |
 | RuleRevisionRequested | Java → worker | RULE_HISTORY | révision à partir de la règle/version et origine historique |
 | ExpertTurnRequested | Java → worker | l'un des trois, rôle cohérent | un seul tour lié à la conversation |
 | CancellationRequested | Java → worker | contexte de la mission | signal d'arrêt best effort ; Java a déjà adopté la décision |
@@ -106,4 +106,4 @@ Une réexécution depuis quarantaine est une décision locale explicite : revér
 
 Le reset est un outil local hors API : arrêter producteurs/workers, invalider les baux, renouveler datasetEpoch dans la transaction d'import, recréer/purger les topics et les volumes du POC selon la procédure autorisée, réinitialiser les offsets dédiés, puis redémarrer. Même si un ancien message survit à une purge partielle, le contrôle d'epoch l'empêche d'être adopté. Conserver un petit audit technique de rejet d'anciennes epochs sans réintroduire leurs données dans l'état métier courant. Ne jamais faire confiance au seul nom de topic ou à un timestamp pour identifier le jeu chargé.
 
-Les événements source du runtime (`LoanOpened`, `LoanClosed`, `ReturnReceived`, `ReceiptReceived`, `TransferDispatched`, `TransferReceived`, `RepairStarted`, `IntegrationProcessed`) sont lus par les outils snapshot ; ils ne deviennent pas des commandes ou résultats de ces topics.
+Les événements source du runtime (`LoanOpened`, `LoanClosed`, `ReturnReceived`, `ReceiptReceived`, `TransferDispatched`, `TransferReceived`, `RepairStarted`, `IntegrationProcessed`) sont lus par les outils dossier de preuves figé ; ils ne deviennent pas des commandes ou résultats de ces topics.

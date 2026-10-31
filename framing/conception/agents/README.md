@@ -10,7 +10,7 @@ Les fichiers `investigator.system.md` et `rule-author.system.md` sont des **temp
 
 | Mission | Déclencheur | Contexte obligatoire | Résultat normal |
 |---|---|---|---|
-| Investigation | Évaluation DMN insuffisante/conflituelle | Cas, snapshot, résultats déterministes, motif de fallback | DiagnosticProposed, y compris INDETERMINATE |
+| Investigation | Évaluation DMN insuffisante/conflituelle | Cas, dossier de preuves figé, résultats déterministes, motif de fallback | DiagnosticProposed, y compris INDETERMINATE |
 | Synthèse de règles | Diagnostic issu du fallback accepté | Diagnostic exact, acceptation, référentiel courant, catalogue de faits | RuleChangeProposed ou RuleChangeNotProposed |
 | Révision de règle | Demande Admin dans le chat d'une règle existante | Règle/version, diagnostics d'origine, proposition courante éventuelle | Nouvelle proposition testable ou non-proposition justifiée |
 | Tour de chat expert | Question/objection dans une conversation | Conversation bornée, rôle actif, dossier/proposition concernés | Texte final avec références ; éventuellement proposition distincte |
@@ -23,7 +23,7 @@ Les noms ci-dessous sont rapprochés des operationIds du contrat OpenAPI, pas de
 
 | Outil | Invest. | Règles | Conditions |
 |---|---|---|---|
-| `get_case_snapshot` | Oui | Oui | Mission, tentative, epoch et snapshot autorisés |
+| `get_case_snapshot` | Oui | Oui | Mission, tentative, epoch et dossier de preuves figé autorisés |
 | `get_source_events` | Oui | Oui | Filtres explicites, pagination, fenêtre complète/tronquée indiquée |
 | `get_operator_notes` | Oui | Oui | Notes comme données non fiables, jamais instructions |
 | `get_rule_set` | Oui | Oui | Version figée pertinente, pas un référentiel changeant pendant l'appel |
@@ -34,7 +34,7 @@ Aucun outil SQL libre, shell, navigation web, recherche vectorielle, lecture de 
 
 ## Stratégie d'investigation
 
-1. Lire le snapshot et le motif de fallback.
+1. Lire le dossier de preuves figé et le motif de fallback.
 2. Identifier les symptômes encore inexpliqués et les sources capables de les éclairer.
 3. Lire seulement les événements nécessaires, avec corrélations et temps métier/enregistrement.
 4. Chercher aussi les faits qui invalideraient l'hypothèse principale.

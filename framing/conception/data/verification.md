@@ -1,6 +1,14 @@
 # Vérification effective des ressources de données
 
-## Résultats
+## Actualisation du vocabulaire — 2026-10-31
+
+Le rendu des catalogues emploie désormais « opération métier », « mise à jour du stock informatique » et « état du stock informatique ». Les extraits JSON, identifiants, codes et valeurs métier restent inchangés ; une légende explique les noms techniques conservés. Le [glossaire validé](../../06-domaine-ddd-et-cycles-de-vie.md) fait référence.
+
+Contrôles exécutés pour cette actualisation : compilation `javac --release 17 -Xlint:all`, génération des trois profils en répertoire temporaire, comparaison octet pour octet des JSON runtime et oracles avec les fichiers livrés, comptage des sections de catalogue et recalcul des neuf empreintes des manifestes. Tous passent. Seuls les catalogues et leur SHA-256 dans chaque manifeste ont été remplacés ; aucune donnée métier ni oracle n'a été modifié.
+
+Les mesures et empreintes ci-dessous décrivent la livraison historique, avant ce changement de rendu. La suite historique de 16 tests n'a pas été relancée pour cette actualisation ; la comparaison ciblée confirme l'absence de changement des données métier. Les empreintes actuelles des fichiers sont celles des manifestes, pas celles de cette archive.
+
+## Résultats historiques
 
 - Compilation réelle : `javac --release 17 -Xlint:all` réussie, sans avertissement ; classes en scratch, aucune classe dans le dépôt.
 - Commande de suite : `python /home/kek/projects/library-stock-gap-ai-poc/framing/conception/seed/test_dataset.py`.

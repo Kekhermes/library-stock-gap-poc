@@ -1,7 +1,7 @@
 """Worker agentique GPT pour le diagnostic des écarts de stock.
 
 Le worker ne possède aucune connexion SQL : GPT doit appeler l'outil borné
-``get_case_snapshot``. Le backend Java contrôle l'accès au snapshot et persiste
+``get_case_snapshot``. Le backend Java contrôle l'accès au dossier de preuves figé et persiste
 ensuite uniquement une sortie JSON validée localement.
 """
 import json
@@ -139,7 +139,7 @@ def observe_snapshot(producer: Producer, envelope: dict[str, Any], lease_token: 
     snapshot = get_case_snapshot(str(envelope["missionId"]), str(envelope["evidenceSnapshotId"]), lease_token)
     send_kafka_event(producer, "ToolObservationRecorded", envelope, {
         "contextKind": "INVESTIGATION", "leaseToken": lease_token, "fencingToken": fencing_token,
-        "toolName": "get_case_snapshot", "observations": ["Snapshot de preuves lu par l'agent GPT."],
+        "toolName": "get_case_snapshot", "observations": ["Dossier de preuves figé lu par l'agent GPT."],
     })
     return snapshot
 
@@ -164,14 +164,14 @@ def _validate_grounding(diagnostic: Diagnostic, snapshot: dict[str, Any], snapsh
     }
     for finding in diagnostic.findings:
         if finding.subjectCopyId != copy_id:
-            raise ValueError("Le diagnostic vise un exemplaire différent du snapshot")
+            raise ValueError("Le diagnostic vise un exemplaire différent du dossier de preuves figé")
         if not set(finding.coveredSymptomIds).issubset(symptom_ids):
-            raise ValueError("Le diagnostic cite un symptôme absent du snapshot")
+            raise ValueError("Le diagnostic cite un symptôme absent du dossier de preuves figé")
         for reference in [*finding.evidenceRefs, *finding.contradictionRefs]:
             if reference.recordId not in record_ids:
-                raise ValueError("Le diagnostic cite une preuve absente du snapshot")
+                raise ValueError("Le diagnostic cite une preuve absente du dossier de preuves figé")
             if reference.evidenceSnapshotId not in (None, snapshot_id):
-                raise ValueError("Le diagnostic cite un autre snapshot")
+                raise ValueError("Le diagnostic cite un autre dossier de preuves figé")
 
 
 def run_gpt_investigation(producer: Producer, envelope: dict[str, Any], lease_token: str, fencing_token: int) -> tuple[Diagnostic, dict[str, int]]:
@@ -181,7 +181,7 @@ def run_gpt_investigation(producer: Producer, envelope: dict[str, Any], lease_to
     mission_id, snapshot_id = str(envelope["missionId"]), str(envelope["evidenceSnapshotId"])
     tool = {
         "type": "function", "name": "get_case_snapshot",
-        "description": "Lit le snapshot de preuves figé du dossier. Aucun autre outil n'est autorisé.",
+        "description": "Lit le dossier de preuves figé pour cette analyse. Aucun autre outil n'est autorisé.",
         "parameters": {"type": "object", "properties": {}, "additionalProperties": False},
         "strict": True,
     }
@@ -212,7 +212,7 @@ def run_gpt_investigation(producer: Producer, envelope: dict[str, Any], lease_to
         repair = client.responses.create(
             model=OPENAI_MODEL,
             previous_response_id=final.id,
-            input="Ta sortie a été rejetée : " + str(error) + ". Corrige-la. evidenceRefs/contradictionRefs ne peuvent contenir que les sourceEventId, observationId ou noteId réellement présents dans le snapshot, et evidenceSnapshotId doit être le snapshot courant.",
+            input="Ta sortie a été rejetée : " + str(error) + ". Corrige-la. evidenceRefs/contradictionRefs ne peuvent contenir que les sourceEventId, observationId ou noteId réellement présents dans le dossier de preuves figé, et evidenceSnapshotId doit identifier ce même dossier de preuves.",
             instructions=SYSTEM_PROMPT,
             text={"format": {"type": "json_schema", "name": "stock_gap_diagnostic", "strict": True, "schema": schema}},
         )
@@ -267,13 +267,13 @@ def handle_rule_synthesis(producer: Producer, envelope: dict[str, Any]) -> None:
         context = envelope.get("payload", {})
         client = OpenAI(api_key=OPENAI_API_KEY, max_retries=2, timeout=60)
         prompt = """Tu es l'agent de synthèse de règles DMN pour le diagnostic d'écarts de stock.
-Propose une UNIQUE règle DMN CREATE à partir du diagnostic accepté et du snapshot de preuves.
+Propose une UNIQUE règle DMN CREATE à partir du diagnostic accepté et du dossier de preuves figé.
 
 ATTENTION CRITIQUE - ANALYSE DÉTERMINISTE PRÉ-LLM :
 Cette règle DMN sera exécutée par le moteur KIE lors de l'analyse déterministe pré-LLM sur des dossiers VIERGES (A_ANALYSER), AVANT toute analyse LLM ou humaine.
 Par conséquent :
 1. NE JAMAIS inclure dans les inputData ni dans les conditions : diagnosticConclusion, acceptedDiagnosticConclusion, ou tout champ lié à un diagnostic déjà posé.
-2. La règle doit être GÉNÉRALE et exprimer le mécanisme causal sous-jacent (par ex. corréler un échec d'intégration avec le statut physique observé), sans figer d'identifiants uniques (pas de copyId, pas de barcode, pas de dates absolues).
+2. La règle doit être GÉNÉRALE et exprimer le mécanisme causal sous-jacent (par ex. corréler un échec de mise à jour du stock informatique avec le statut physique observé), sans figer d'identifiants uniques (pas de copyId, pas de barcode, pas de dates absolues).
 
 CONTRAT DES FAITS D'ENTRÉE DISPONIBLES DANS LE CONTEXTE DMN :
 - symptomKind (string, ex: "STATUS_MISMATCH", "LOCATION_MISMATCH")

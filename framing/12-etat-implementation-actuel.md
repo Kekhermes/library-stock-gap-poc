@@ -30,7 +30,7 @@ L'état en cours peut évoluer après cette observation. Les conteneurs et les f
 | Fonction | État | Sources principales |
 |---|---|---|
 | Cascade DMN puis mission d'investigation | Implémentée ; couverture complète ou fallback | [Orchestration](../backend/src/main/java/com/library/stockgap/domain/service/AnalysisOrchestrationService.java), [déterministe](../backend/src/main/java/com/library/stockgap/domain/service/DeterministicAnalysisService.java) |
-| Investigation GPT | Deux appels Responses API, outil snapshot forcé, correction de sortie possible | [Worker](../agents/worker.py) |
+| Investigation GPT | Deux appels Responses API, outil dossier de preuves figé forcé, correction de sortie possible | [Worker](../agents/worker.py) |
 | Synthèse GPT | Diagnostic accepté `SUPPORTED` → mission → génération XML DMN → prévalidation | [Orchestration](../backend/src/main/java/com/library/stockgap/domain/service/AnalysisOrchestrationService.java), [worker](../agents/worker.py), [consommateur](../backend/src/main/java/com/library/stockgap/infrastructure/kafka/AgentEventConsumer.java) |
 | Discussion Expert | Lecture/stockage des messages, sans mission LLM | [API Admin](../backend/src/main/java/com/library/stockgap/web/AdminApiController.java), [dossier Vue](../frontend/src/views/CaseDossierView.vue) |
 | Publication runtime | Matérialisation de version, copie du manifeste, mise à jour transactionnelle du pointeur actif | [Référentiel](../backend/src/main/java/com/library/stockgap/infrastructure/persistence/RuleRepository.java), [moteur](../backend/src/main/java/com/library/stockgap/domain/service/DmnEngineService.java) |
@@ -61,7 +61,7 @@ L'investigateur a un unique outil obligatoire `get_case_snapshot`, appelé une f
 
 ### F04 — Élevé : synthèse insuffisamment ancrée dans le diagnostic accepté
 
-[acceptDiagnostic](../backend/src/main/java/com/library/stockgap/domain/service/AnalysisOrchestrationService.java) transmet des identifiants et la conclusion globale, pas les findings, assertions et références du diagnostic accepté. Le worker relit un snapshot, puis demande au LLM le XML entier.
+[acceptDiagnostic](../backend/src/main/java/com/library/stockgap/domain/service/AnalysisOrchestrationService.java) transmet des identifiants et la conclusion globale, pas les findings, assertions et références du diagnostic accepté. Le worker relit un dossier de preuves figé, puis demande au LLM le XML entier.
 
 La cible exige le diagnostic complet accepté, son contexte de preuves, la proposition/règle discutée et les conditions FEEL produites par le LLM. Java doit sérialiser la structure, pas choisir la causalité.
 
@@ -73,7 +73,7 @@ La base est lue sans bloquer une proposition devenue périmée ; la publication 
 
 ### F06 — Élevé : suffisance, qualité et erreurs DMN trop permissives
 
-[facts](../backend/src/main/java/com/library/stockgap/domain/service/DeterministicAnalysisService.java) prend le premier symptôme et le premier scan ; qualité `VALID` ne garantit pas unicité/cohérence. Les faits de dernière intégration ne réalisent pas une corrélation explicite avec l'opération métier à expliquer.
+[facts](../backend/src/main/java/com/library/stockgap/domain/service/DeterministicAnalysisService.java) prend le premier symptôme et le premier scan ; qualité `VALID` ne garantit pas unicité/cohérence. Les faits de dernière mise à jour du stock informatique ne réalisent pas une corrélation explicite avec l'opération métier à expliquer.
 
 [DmnEngineService](../backend/src/main/java/com/library/stockgap/domain/service/DmnEngineService.java) peut adapter une sortie chaîne en finding `SUPPORTED`, attribue tous les symptômes à chaque finding et fournit des références de preuves vides. Le service de couverture raisonne par types de symptômes sans contrôler suffisamment le degré d'étayage ni les conflits.
 
@@ -81,7 +81,7 @@ Une compilation/évaluation défaillante peut devenir absence de match ; le char
 
 ### F07 — Élevé : adoption des résultats et reprise non uniformes
 
-La voie diagnostic contrôle mission/snapshot/lease/fencing. La voie proposition et les endpoints internes spécialisés n'appliquent pas la même protection : voir [consommateur](../backend/src/main/java/com/library/stockgap/infrastructure/kafka/AgentEventConsumer.java) et [API worker](../backend/src/main/java/com/library/stockgap/web/InternalWorkerController.java).
+La voie diagnostic contrôle mission/dossier de preuves figé/lease/fencing. La voie proposition et les endpoints internes spécialisés n'appliquent pas la même protection : voir [consommateur](../backend/src/main/java/com/library/stockgap/infrastructure/kafka/AgentEventConsumer.java) et [API worker](../backend/src/main/java/com/library/stockgap/web/InternalWorkerController.java).
 
 L'[inbox](../backend/src/main/java/com/library/stockgap/infrastructure/persistence/InboxRepository.java) marque `APPLIED` avant l'effet métier, dans une transaction distincte du consommateur qui attrape les exceptions. Un échec après cette inscription peut empêcher un rejeu utile. Le worker utilise l'autocommit Kafka. Les leases durent 90 secondes sans heartbeat worker implémenté ; les appels/retries fournisseur peuvent dépasser cette durée.
 
@@ -144,7 +144,7 @@ L’analyse suit désormais ce flux :
 
 ```text
 Commande Admin
-  → snapshot de preuves figé
+  → dossier de preuves figé
   → règles DMN actives (Apache KIE)
       → couverture complète : diagnostic DMN, état A_REVOIR
       → aucune règle/couverture partielle : AGENT_PENDING
@@ -153,7 +153,7 @@ Commande Admin
            → diagnostic agentique validé ou état FAILED
 ```
 
-Un second clic n’est pas nécessaire pour lancer GPT. Une nouvelle analyse annule l’analyse et la mission actives du même dossier avant de créer un nouveau snapshot.
+Un second clic n’est pas nécessaire pour lancer GPT. Une nouvelle analyse annule l’analyse et la mission actives du même dossier avant de créer un nouveau dossier de preuves figé.
 
 Les seuls motifs de fallback déterministe actuellement produits sont `NO_RULE_MATCH` et `PARTIAL_COVERAGE`. La combinaison de conclusions compatibles, la détection de conflits inter-règles et les motifs plus riches du cadrage restent à réaliser.
 
@@ -173,9 +173,9 @@ Les écrans de propositions, publications et démonstration guidée décrits dan
 
 Le worker utilise le client Python OpenAI et la **Responses API**, pas OpenAI Agents SDK.
 
-Il n’a pas de connexion SQL. Pour une investigation il doit appeler une fois `get_case_snapshot`, puis rendre un JSON Schema strict. Python et Java refusent une sortie qui cible un autre exemplaire, cite un symptôme absent, ou référence une preuve absente/issue d’un autre snapshot.
+Il n’a pas de connexion SQL. Pour une investigation il doit appeler une fois `get_case_snapshot`, puis rendre un JSON Schema strict. Python et Java refusent une sortie qui cible un autre exemplaire, cite un symptôme absent, ou référence une preuve absente/issue d’un autre dossier de preuves figé.
 
-La lecture du snapshot global exige le jeton worker, une mission active, un lease non expiré et le snapshot associé à la mission. L’adoption Kafka vérifie aussi mission, analyse, snapshot, lease et fencing token.
+La lecture du dossier de preuves figé global exige le jeton worker, une mission active, un lease non expiré et le dossier de preuves figé associé à la mission. L’adoption Kafka vérifie aussi mission, analyse, dossier de preuves figé, lease et fencing token.
 
 Limites actuelles : les endpoints internes spécialisés (événements, prêts, retours, transferts, notes et règles) ne portent pas encore la même vérification fine de mission/lease. Le token par défaut de développement doit être remplacé avant tout usage hors poste local. Les quotas enregistrés en base (300 s, 8 appels LLM, 16 outils, 32k tokens entrée, 8k sortie) ne sont pas encore imposés durant l’appel.
 
@@ -185,7 +185,7 @@ Les règles actives sont versionnées et le catalogue/détail est consultable. L
 
 **Correction par inspection du code le 2026-10-31 :** le worker traite maintenant `InvestigationRequested` et `RuleSynthesisRequested`. L'acceptation d'un diagnostic agentique `SUPPORTED` déclenche une mission de synthèse ; le worker appelle réellement la Responses API OpenAI pour produire un brouillon XML DMN, puis demande sa prévalidation Java. Cela décrit un chemin implémenté, pas une preuve de réussite de bout en bout avec OpenAI.
 
-Le contexte transmis à la synthèse contient les identifiants d'origine et la conclusion globale, mais pas les findings ni les preuves du diagnostic accepté ; le snapshot est relu séparément. La révision conversationnelle reste absente : l'endpoint de chat enregistre le message sans appeler de LLM ni déclencher une mission de dialogue. L'investigation reste limitée à un appel obligatoire de l'outil `get_case_snapshot`, pas à une exploration progressive des sources.
+Le contexte transmis à la synthèse contient les identifiants d'origine et la conclusion globale, mais pas les findings ni les preuves du diagnostic accepté ; le dossier de preuves figé est relu séparément. La révision conversationnelle reste absente : l'endpoint de chat enregistre le message sans appeler de LLM ni déclencher une mission de dialogue. L'investigation reste limitée à un appel obligatoire de l'outil `get_case_snapshot`, pas à une exploration progressive des sources.
 
 La prévalidation actuelle compile le DMN mais n’exécute pas le corpus de replay/généralisation décrit dans le cadrage. Les métriques de validation sont synthétiques ; une publication ne vérifie pas encore suffisamment le lien rapport/proposition/révision. Les documents `05`, `06`, `07`, `09` et `11` restent la cible fonctionnelle, pas une affirmation de livraison complète.
 

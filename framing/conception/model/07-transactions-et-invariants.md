@@ -42,7 +42,7 @@ BEGIN
 COMMIT ; renvoyer 202
 ```
 
-Le snapshot ne varie plus. Une collecte supplémentaire par l'agent lit uniquement le bundle de ce snapshot via les outils autorisés. Une extension réelle du périmètre de preuves nécessite un **nouveau snapshot/analyse**, pas une mutation du précédent. Le hash lie aussi l'ensemble des références : pas d'ajout tardif d'une référence à une collection déjà utilisée.
+Le dossier de preuves figé ne varie plus. Une collecte supplémentaire par l'agent lit uniquement le bundle de ce dossier de preuves figé via les outils autorisés. Une extension réelle du périmètre de preuves nécessite un **nouveau dossier de preuves figé/analyse**, pas une mutation du précédent. Le hash lie aussi l'ensemble des références : pas d'ajout tardif d'une référence à une collection déjà utilisée.
 
 Un job Java durable retrouve les `analysis_run.QUEUED` après redémarrage. Il adopte `DETERMINISTIC_RUNNING` par CAS, compile/reconstruit la publication P en cache jetable, puis évalue **toutes** ses règles. Les traces enregistrent les règles/lignes, preuves, symptômes couverts, contradictions et motif de fallback.
 
@@ -154,7 +154,7 @@ La réanalyse conserve les acceptations précédentes ; la FK composite garantit
 
 Un résultat `RuleChangeProposed` est adopté seulement d'une mission RULE_SYNTHESIS/RULE_REVISION autorisée (ou du rôle agent de règles d'un tour explicitement autorisé par le contrat). Java ne crée pas des conditions FEEL « à la place » de l'agent.
 
-Sous verrou proposition : insérer `proposal_revision N+1` + toutes ses opérations en une transaction, avec mission d'auteur, snapshot d'origine, diagnostic d'origine si création, publication de base et hash canonique complet. Avancer `current_revision`, état DRAFT, version++. L'ancienne révision et ses rapports restent intacts. Une révision issue de la règle R001 peut n'avoir aucun diagnostic de création bootstrap ; elle doit néanmoins désigner explicitement ses preuves de contexte, jamais inventer un diagnostic accepté. Les nouvelles règles exigent un diagnostic accepté issu du fallback.
+Sous verrou proposition : insérer `proposal_revision N+1` + toutes ses opérations en une transaction, avec mission d'auteur, dossier de preuves figé d'origine, diagnostic d'origine si création, publication de base et hash canonique complet. Avancer `current_revision`, état DRAFT, version++. L'ancienne révision et ses rapports restent intacts. Une révision issue de la règle R001 peut n'avoir aucun diagnostic de création bootstrap ; elle doit néanmoins désigner explicitement ses preuves de contexte, jamais inventer un diagnostic accepté. Les nouvelles règles exigent un diagnostic accepté issu du fallback.
 
 CREATE : UUID de règle neuf, version 1, origine valide. REVISE : règle existante, version attendue membre du référentiel de base, version nouvelle monotone non déjà utilisée, provenance du diagnostic/règle d'origine. RETIRE : règle existante et version attendue ; retrait coordonné justifié. Une opération par ruleId dans une révision ; créer puis retirer la même règle dans la même proposition est rejeté.
 
@@ -205,13 +205,13 @@ Un retrait composé avec créations/révisions peut aussi venir d'une propositio
 
 ## 9. Dialogue et SSE
 
-Sous verrou conversation : vérifier contexte et révision visée, aucun tour actif ; allouer turn_no, insérer tour QUEUED, message Admin, mission EXPERT_TURN (snapshot autorisé, publication figée), outbox et reçu. La contrainte partielle interdit un deuxième tour actif, y compris depuis un autre onglet. Les réponses visent le tour et la révision exacts ; un brouillon révisé entretemps reçoit une réponse historique, pas une réapplication implicite. Le contenu d'un message ne vaut jamais commande de publication.
+Sous verrou conversation : vérifier contexte et révision visée, aucun tour actif ; allouer turn_no, insérer tour QUEUED, message Admin, mission EXPERT_TURN (dossier de preuves figé autorisé, publication figée), outbox et reçu. La contrainte partielle interdit un deuxième tour actif, y compris depuis un autre onglet. Les réponses visent le tour et la révision exacts ; un brouillon révisé entretemps reçoit une réponse historique, pas une réapplication implicite. Le contenu d'un message ne vaut jamais commande de publication.
 
 **SSE :** allouer `cursor=last_cursor+1` sous verrou de `sse_stream`, insérer l'événement et commiter avec le changement métier. Ne pas utiliser simplement un `bigserial` : deux transactions pourraient commiter dans l'ordre inverse de leurs numéros, et un client sauter le plus petit. Le verrou compteur conservé jusqu'au commit donne l'ordre nécessaire.
 
 `Last-Event-ID` est `datasetEpoch:cursor`. Une époque différente, un curseur supérieur au dernier connu ou inférieur à `retained_from-1` impose une resynchronisation REST explicite. Un curseur disponible reprend `cursor > dernierVu ORDER BY cursor`. Plusieurs onglets ont leurs propres curseurs client, pas un curseur SQL global consommé destructivement.
 
-Pour initialiser une vue sans trou : lecture cohérente de l'état REST **et du watermark SSE dans le même snapshot de transaction**, puis replay des événements après ce watermark ; ou abonnement avec buffer avant lecture REST puis déduplication explicite. Une simple « lecture REST puis connexion SSE depuis maintenant » perdrait les changements intermédiaires. La rétention met à jour retained_from et supprime le préfixe correspondant dans une transaction verrouillant sse_stream. Si une connexion devient trop lente, demander resync au lieu de prétendre avoir rejoué les événements supprimés. Heartbeats SSE non durables ; chunks regroupés ; déconnexion navigateur ≠ annulation.
+Pour initialiser une vue sans trou : lecture cohérente de l'état REST **et du watermark SSE dans le même dossier de preuves figé de transaction**, puis replay des événements après ce watermark ; ou abonnement avec buffer avant lecture REST puis déduplication explicite. Une simple « lecture REST puis connexion SSE depuis maintenant » perdrait les changements intermédiaires. La rétention met à jour retained_from et supprime le préfixe correspondant dans une transaction verrouillant sse_stream. Si une connexion devient trop lente, demander resync au lieu de prétendre avoir rejoué les événements supprimés. Heartbeats SSE non durables ; chunks regroupés ; déconnexion navigateur ≠ annulation.
 
 ## 10. Reset : protocole d'exploitation, pas un DELETE applicatif
 
@@ -260,12 +260,12 @@ La recréation des volumes, SQL et Kafka n'est pas une transaction distribuée :
 
 | Invariant | SQL livré | Java/importeur/exploitation restant obligatoire |
 |---|---|---|
-| Types, nullabilité, intégrité de liens connus | PK/NOT NULL/FK/UNIQUE/CHECK ; ère dans les clés | Autorisation d'accès à l'époque/snapshot de la mission |
+| Types, nullabilité, intégrité de liens connus | PK/NOT NULL/FK/UNIQUE/CHECK ; ère dans les clés | Autorisation d'accès à l'époque/dossier de preuves figé de la mission |
 | Source immuable et import fermé | UPDATE/DELETE refusés ; INSERT source interdit après sealed_at | Complétude avant clôture, exclusion des champs cachés/texte fuyant ; owners/TRUNCATE hors frontière |
 | Un cas par exemplaire/campagne unique | UNIQUE époque/copy ; copy NOT NULL ; symptômes enfants | Au moins un symptôme ; attribution correcte du temps de référence |
 | Projection cohérente du lieu/site | FK composite system_state/location/site | Sens métier de NOT_REGISTERED, incohérences de stock non « réparées » |
 | Payload source discriminé | Enum + objet JSON + clés par type | Schéma complet, UUID/date/corrélations imbriqués, chronologie ; CHECK présence n'est pas typage intégral |
-| Snapshot et diagnostic immuables | UPDATE/DELETE des lignes interdits | Fermeture de la collection evidence_reference après création, hash du bundle, résolution source_key, absence de références inventées |
+| Dossier de preuves figé et diagnostic immuables | UPDATE/DELETE des lignes interdits | Fermeture de la collection evidence_reference après création, hash du bundle, résolution source_key, absence de références inventées |
 | Une analyse/tour/tentative active | Index partiels uniques | Graphe des transitions, contexte immuable, terminal jamais rouvert ; le DDL seul autoriserait certains UPDATE incohérents |
 | Quota et leases | Limites configurées, tentative max2, slots 1/2, compteurs non négatifs | Sommes/réservations atomiques, deadline réelle, token actuel, expiration, contrôle de tous les chemins outils |
 | Règles uniquement agents | Provenance FK mission, types author_kind et exception bootstrap | Vérifier rôle effectif de la mission, diagnostic accepté en fallback, aucun endpoint manuel CREATE/REVISE |
@@ -280,14 +280,14 @@ La recréation des volumes, SQL et Kafka n'est pas une transaction distribuée :
 
 Les contraintes utilisent SQL à trois valeurs : une CHECK qui retourne NULL passe. Les branches conditionnelles sensibles exigent donc explicitement `IS NOT NULL` (notamment versions de CREATE/REVISE) ; le schéma JSON valide aussi ces obligations. Les contraintes définies sur des colonnes JSON ne remplacent pas des FK vers les données imbriquées.
 
-## 13. Tests d'intégration à réaliser ultérieurement dans une base dédiée
+## 13. Tests entre composants à réaliser ultérieurement dans une base dédiée
 
 Ces tests sont des critères, **pas des résultats exécutés dans ce dossier**. Les tests locaux livrés vérifient seulement syntaxe, structure et contrat.
 
 - Appliquer 01 puis 02 en base PostgreSQL18 jetable ; contrôler tous les droits avec `SET ROLE` non owner. Runtime doit échouer sur `SELECT evaluation.case_expectation`, INSERT/UPDATE de source après clôture et TRUNCATE.
 - Importer les vrais profils ; comparer comptes/manifeste/hash ; rollback d'import volontaire à mi-parcours laisse aucun pointeur actif partiel.
 - Deux connexions : lancer même cas, publier deux propositions sur même base, retirer pendant publication, claim simultané, expirer une tentative puis envoyer ancien résultat. Vérifier les lignes finales et non seulement les codes HTTP.
-- Insérer FK d'autre époque/cas, membre de règle inconnu, snapshot d'un autre cas, slot3, sixième item de lot : refus SQL attendu.
+- Insérer FK d'autre époque/cas, membre de règle inconnu, dossier de preuves figé d'un autre cas, slot3, sixième item de lot : refus SQL attendu.
 - Fermer publication puis tenter INSERT/UPDATE/DELETE membre et UPDATE de publication : refus ; pointer publication ouverte : refus. Tenter un manifeste vide bootstrap : refus **importeur**, pas SQL.
 - Agent propose preuve absente, XML interdit, cause sans diagnostic d'origine, validation stale : refus Java et absence de nouvelle publication.
 - Crash contrôlé avant/après commit/ack outbox/inbox ; vérifier doublons sans double acceptation/publication et budget UNKNOWN conservé.

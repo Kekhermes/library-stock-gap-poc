@@ -10,7 +10,7 @@ Interface en français, claire et sobre, densité de poste d'analyse sans masque
 |---|---|---|
 | `/` | Vue d'ensemble | Compteurs de cas, missions, propositions et référentiel actif |
 | `/cases` | Liste filtrable | Cas paginés ; filtres site, titre, symptôme, statut ; jamais famille cachée |
-| `/cases/:caseId` | Dossier trois panneaux | Cas, analyse sélectionnée, snapshot, diagnostic, conversation et proposition |
+| `/cases/:caseId` | Dossier trois panneaux | Cas, analyse sélectionnée, dossier de preuves figé, diagnostic, conversation et proposition |
 | `/batches/:batchId` | Suivi d'un petit lot | Enfants, résultats individuels, progression et annulation |
 | `/rules` | Catalogue | Règles actives ou retirées, versions, derniers rapports |
 | `/rules/:ruleId` | Fiche lecture seule | Métadonnées, DMN/FEEL, exemples, historique et dialogue de révision |
@@ -39,7 +39,7 @@ Les boutons de création/édition manuelle de règles n'existent pas. Une demand
 2. **Centre — résultat et connaissance** : diagnostic, preuves et symptômes couverts ; ensuite proposition DMN et rapport. Les deux approbations sont séparées visuellement.
 3. **Droite — échange** : rôle actif, messages, demandes de précision et révisions ; barre d'état de la mission, annulation et quota.
 
-Cliquer sur une preuve ouvre son objet exact dans le snapshot de l'analyse, jamais la version « actuelle » d'une source différente. Recharger un dossier garde la sélection par `analysisId` dans l'URL/query state lorsque possible.
+Cliquer sur une preuve ouvre son objet exact dans le dossier de preuves figé de l'analyse, jamais la version « actuelle » d'une source différente. Recharger un dossier garde la sélection par `analysisId` dans l'URL/query state lorsque possible.
 
 ## Matrice des actions
 
@@ -60,7 +60,7 @@ Cliquer sur une preuve ouvre son objet exact dans le snapshot de l'analyse, jama
 
 Conserver les données serveur dans des stores séparés par entité et version. Ne pas appliquer aveuglément un événement à une ancienne route : vérifier identifiant, epoch et séquence/version.
 
-Le protocole de snapshot/cursor du contrat SSE protège contre le trou entre lecture REST et connexion. Un événement sert à mettre à jour une projection sûre ou à invalider/refetch une ressource. Après reset/curseur expiré, abandonner l'ancien cache et relire un snapshot complet.
+Le protocole d'état de synchronisation de l'interface et de curseur du contrat SSE protège contre le trou entre lecture REST et connexion. Un événement sert à mettre à jour l'état affiché ou à invalider/relire une ressource. Après reset ou expiration du curseur, abandonner l'ancien cache et relire l'état de synchronisation de l'interface, pas un dossier de preuves métier.
 
 Les boutons n'affichent « terminé » qu'après l'état durable correspondant, pas après un 202. Après timeout HTTP ambigu d'une commande, réutiliser son idempotency key ou relire son résultat avant de générer une nouvelle commande.
 

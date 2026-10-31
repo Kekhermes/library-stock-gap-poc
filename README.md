@@ -2,9 +2,11 @@
 
 POC pédagogique d'analyse hybride des écarts de stock d'une bibliothèque : règles DMN en premier, investigation OpenAI en fallback, puis capitalisation en nouvelles règles au runtime.
 
-Java/Spring Boot possède les états, snapshots, validations et publications. Python consulte les preuves et propose diagnostics/règles sans accès SQL libre ni droit de publication. Vue présente les dossiers, règles et échanges.
+Java/Spring Boot possède les états, dossiers de preuves figés, validations et publications. Python consulte les preuves et propose diagnostics/règles sans accès SQL libre ni droit de publication. Vue présente les dossiers, règles et échanges.
 
 ## État et cible
+
+Le [glossaire métier](framing/06-domaine-ddd-et-cycles-de-vie.md) définit les termes communs : opération métier de bibliothèque, mise à jour du stock informatique et dossier de preuves figé. La bibliothèque simulée, l'application d'analyse et ses moyens de diagnostic sont trois niveaux distincts.
 
 L'[audit du 2026-10-31](framing/12-etat-implementation-actuel.md) distingue le code livré de la cible. L'investigation et la synthèse XML DMN possèdent des appels OpenAI réels ; **Discussion Expert n'appelle pas encore de LLM**, et les métriques de tests/replay des propositions sont encore synthétiques. Le jeu actuel contient 120 dossiers, pas les dix de la nouvelle démo.
 
@@ -38,7 +40,7 @@ L'acceptation d'un diagnostic agentique `SUPPORTED` déclenche actuellement une 
 
 - La clé OpenAI reste dans `.env`, exclu de Git.
 - Le worker ne peut ni exécuter du shell, ni interroger PostgreSQL, ni corriger le stock.
-- Les sorties GPT doivent citer uniquement des symptômes et identifiants de preuve présents dans le snapshot ; toute référence inventée est rejetée.
+- Les sorties GPT doivent citer uniquement des symptômes et identifiants de preuve présents dans le dossier de preuves figé ; toute référence inventée est rejetée.
 - Une erreur d'investigation est visible et relançable ; la reprise de synthèse/chat reste à compléter.
 - Le diagnostic est une aide probabiliste : l'acceptation humaine ne déclenche aucune correction automatique.
 - Les doubles OpenAI des tests hors ligne ne sont pas des résultats de démonstration. Les appels réels restent variables ; aucun échec ne doit être masqué par un résultat préfabriqué.

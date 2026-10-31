@@ -37,7 +37,7 @@ export const useStockGapStore = defineStore('stockGap', {
           this.activeRules = data.activeRules || [];
         }
       } catch (e) {
-        console.error('Erreur sync snapshot', e);
+        console.error('Erreur de synchronisation de l’interface', e);
       }
     },
 

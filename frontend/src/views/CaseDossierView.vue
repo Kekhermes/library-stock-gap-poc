@@ -125,7 +125,7 @@
               <div>
                 <div class="eyebrow">Cascade hybride</div>
                 <div class="agent-progress__title">Investigation GPT en cours</div>
-                <div class="agent-progress__copy">La première passe DMN est terminée. L’agent analyse maintenant le snapshot de preuves figé.</div>
+                <div class="agent-progress__copy">La première passe DMN est terminée. L’agent analyse maintenant le dossier de preuves figé.</div>
               </div>
               <span class="badge badge-purple">AGENT</span>
             </div>

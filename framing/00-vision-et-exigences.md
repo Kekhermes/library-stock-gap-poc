@@ -50,7 +50,7 @@ La stack est conservée : Vue/Pinia/Router, Java/Spring Boot, PostgreSQL, Apache
 
 OpenAI existant, modèle configurable ; l'identifiant réellement accessible doit être vérifié avec le fournisseur, sans recopier une affirmation historique comme preuve actuelle. L'application locale envoie les données nécessaires aux inférences à un service distant. Aucun secret dans le navigateur ou les traces.
 
-Java reste propriétaire des états, snapshots, validations et publications. Python consulte et propose ; pas d'accès SQL libre, d'écriture de stock, de shell ou de droit de publication. Les règles déterministes utilisent des faits structurés calculés **sans LLM**, sans oracle ni conclusion fabriquée.
+Java reste propriétaire des états, dossiers de preuves figés, validations et publications. Python consulte et propose ; pas d'accès SQL libre, d'écriture de stock, de shell ou de droit de publication. Les règles déterministes utilisent des faits structurés calculés **sans LLM**, sans oracle ni conclusion fabriquée.
 
 Pas de RAG, Keycloak, Valkey, multi-instance ou correction de stock dans ce périmètre. DDD sert les invariants ; il ne justifie pas de multiplier les services ou les écrans.
 

@@ -18,7 +18,7 @@ Une règle généralise des conditions pertinentes : elle ne mémorise pas le co
 
 ```mermaid
 flowchart TD
-  A[Dossier non analysé] --> B[Snapshot de preuves et version des règles]
+  A[Dossier non analysé] --> B[dossier de preuves figé et version des règles]
   B --> C[Évaluation DMN sans LLM]
   C -->|Suffisamment couvert| D[Diagnostic déterministe]
   C -->|Non couvert| E[Investigateur OpenAI et outils de preuves]
@@ -44,7 +44,7 @@ flowchart TD
 | Node 22 et Nginx | Node construit Vue ; Nginx sert les assets et relaie API/SSE | Séparer build et serveur ; routes UI sur index HTML, buffering SSE désactivé, `/internal` non exposé | [Image frontend](../frontend/Dockerfile), [proxy](../frontend/nginx.conf) |
 | Java / Spring Boot | API, orchestration, états métier, validations et transactions | Une autorité métier indépendante des réponses du modèle | [POM](../backend/pom.xml), [orchestration](../backend/src/main/java/com/library/stockgap/domain/service/AnalysisOrchestrationService.java) |
 | Maven | Résolution, compilation et tests Java | Construire le backend et exécuter ses vérifications reproductibles | [POM](../backend/pom.xml) |
-| Spring JDBC, PostgreSQL, Jackson | Persistance relationnelle et représentation JSON | Garder sources, snapshots, messages, versions et rapports ; lire les JSON via des types/parseurs | [Référentiel de règles](../backend/src/main/java/com/library/stockgap/infrastructure/persistence/RuleRepository.java), [POM](../backend/pom.xml) |
+| Spring JDBC, PostgreSQL, Jackson | Persistance relationnelle et représentation JSON | Garder sources, dossiers de preuves figés, messages, versions et rapports ; lire les JSON via des types/parseurs | [Référentiel de règles](../backend/src/main/java/com/library/stockgap/infrastructure/persistence/RuleRepository.java), [POM](../backend/pom.xml) |
 | Flyway | Migrations de schéma | Recréer une structure compatible au démarrage ; ce n'est pas le générateur de données | [Dépendances](../backend/pom.xml) |
 | Apache KIE, DMN, FEEL | Compilation et évaluation des décisions | Exécuter des règles déclaratives versionnées sans appel LLM | [Moteur](../backend/src/main/java/com/library/stockgap/domain/service/DmnEngineService.java), [R001](../backend/src/main/resources/rules/R001-v1.dmn) |
 | Python, client OpenAI, Responses API | Appels LLM et exécution des missions IA | Séparer le travail génératif des droits métier | [Worker](../agents/worker.py), [dépendances](../agents/requirements.txt) |
@@ -61,19 +61,21 @@ La stack actuelle n'utilise pas OpenAI Agents SDK, JPA ou Liquibase dans les che
 
 ## 4. Simuler les sources sans simuler l'intelligence
 
-Les événements de bibliothèque sont fictifs mais cohérents : prêt, retour, réparation et traitement d'intégration. Une projection est la vue informatique calculée à partir des opérations. Si une opération est enregistrée mais son écriture de projection échoue, situation informatique et réalité physique peuvent diverger.
+Les événements de bibliothèque sont fictifs mais cohérents : prêt, retour, réparation et traitement de mise à jour du stock informatique. L'état du stock informatique reflète les opérations métier dont la mise à jour a été appliquée. Si une opération métier est enregistrée mais que sa mise à jour du stock informatique échoue, situation informatique et réalité physique peuvent diverger.
 
-L'événement métier et le journal d'intégration doivent être corrélés. Un échec quelconque dans l'historique ne prouve pas que le dernier retour n'a pas été répercuté : une reprise plus récente peut avoir réussi.
+Le [glossaire validé](06-domaine-ddd-et-cycles-de-vie.md) distingue la bibliothèque simulée, l'application d'analyse et ses moyens de diagnostic. Un dossier de preuves figé n'est ni une copie de toute la base, ni un diagnostic, ni l'état de synchronisation de l'interface.
+
+L'événement métier et le journal de mise à jour du stock informatique doivent être corrélés. Un échec quelconque dans l'historique ne prouve pas que le dernier retour n'a pas été répercuté : une reprise plus récente peut avoir réussi.
 
 L'oracle décrit la perturbation introduite et les résultats admissibles pour l'évaluation. Il ne doit jamais être un outil de l'agent ou un champ de faits DMN. Les labels de démonstration restent dans le guide, pas dans les preuves fournies au modèle.
 
 **EXISTANT :** [générateur de conception](conception/seed/README.md) et [import applicatif](../backend/src/main/java/com/library/stockgap/domain/service/DatasetSeedService.java), avec grand jeu 120 dossiers. **CIBLE :** les mêmes frontières, données ramenées aux dix dossiers et corpus technique séparé.
 
-## 5. Snapshot et faits : deux objets différents
+## 5. Dossier de preuves figé et faits : deux objets différents
 
-Un **snapshot** fige les preuves d'une analyse : données, références et temps de capture. Il empêche d'expliquer rétroactivement une analyse ancienne avec des sources modifiées.
+Un **dossier de preuves figé** fige les preuves d'une analyse : données, références et temps de capture. Il empêche d'expliquer rétroactivement une analyse ancienne avec des sources modifiées.
 
-Les **faits DMN** sont des entrées typées dérivées sans IA depuis ces preuves : lieux attendus/observés, qualité du scan, disponibilité d'une source, opération et résultat d'intégration. Chaque valeur doit conserver sa provenance.
+Les **faits DMN** sont des entrées typées dérivées sans IA depuis ces preuves : lieux attendus/observés, qualité du scan, disponibilité d'une source, opération et résultat de mise à jour du stock informatique. Chaque valeur doit conserver sa provenance.
 
 `false` signifie que la condition est fausse sur des données admissibles ; `unknown`/`null` signifie qu'elle ne peut pas être établie. Une source absente n'est pas une liste complète vide. Une note humaine n'est pas silencieusement transformée en fait général réutilisable.
 
@@ -101,9 +103,9 @@ Un rôle d'agent associe instructions, contexte, modèle et outils autorisés. D
 
 Un **outil** est une fonction applicative proposée au modèle. Le modèle demande son appel ; Python vérifie les arguments et Java autorise les données effectivement retournées. L'agent ne reçoit pas un shell ou une connexion SQL parce qu'il sait écrire du texte.
 
-La **sortie structurée** contraint la forme JSON. Elle ne prouve pas la vérité des assertions. Pydantic et Java doivent aussi vérifier que sujet, symptômes et preuves appartiennent au snapshot, et que mission et tentative sont encore valides.
+La **sortie structurée** contraint la forme JSON. Elle ne prouve pas la vérité des assertions. Pydantic et Java doivent aussi vérifier que sujet, symptômes et preuves appartiennent au dossier de preuves figé, et que mission et tentative sont encore valides.
 
-**EXISTANT :** outil snapshot forcé, diagnostic JSON et synthèse XML. **CIBLE :** choix de consultations successives, synthèses intermédiaires factuelles, diagnostic accepté complet transmis au second rôle, proposition de conditions FEEL et retour des erreurs de tests pour correction.
+**EXISTANT :** outil dossier de preuves figé forcé, diagnostic JSON et synthèse XML. **CIBLE :** choix de consultations successives, synthèses intermédiaires factuelles, diagnostic accepté complet transmis au second rôle, proposition de conditions FEEL et retour des erreurs de tests pour correction.
 
 Les prompts réellement utilisés sont actuellement définis dans [le worker](../agents/worker.py). Les [templates de conception](conception/agents/README.md) sont des ressources historiques, pas des preuves qu'ils sont chargés au runtime. Versionner et documenter les prompts effectifs à chaque évolution.
 

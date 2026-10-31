@@ -4,7 +4,7 @@
 
 La stack et les frontières Java/Python/Vue sont conservées selon [la vision actuelle](00-vision-et-exigences.md). Les mécanismes détaillés ci-dessous restent des propositions historiques, pas une liste de fonctionnalités livrées : voir [l'audit](12-etat-implementation-actuel.md).
 
-La cible privilégie dix dossiers, deux acquisitions indépendantes, outils successifs et chat réel. Les conditions FEEL sont produites par le LLM puis sérialisées en DMN standard par Java. L'adoption du SDK Agents n'est pas reconfirmée ; la Responses API actuelle constitue l'existant, pas une intégration automatiquement interchangeable.
+La cible privilégie dix dossiers, deux acquisitions indépendantes, outils successifs et chat réel. Les conditions FEEL sont produites par le LLM puis sérialisées en DMN standard par Java. L'adoption du SDK Agents n'est pas reconfirmée ; la Responses API actuelle constitue l'existant, pas une connexion automatiquement interchangeable.
 
 Les contrats seront réconciliés avec le code au jalon correspondant de [la roadmap](13-roadmap-demo.md), notamment tours expert, révisions, traces, missions et publication liée au rapport. Pas de nouveaux services par principe, de budgets historiques imposés ni de suppression de volumes comme unique solution de reset.
 
@@ -39,7 +39,7 @@ L'oracle est dans un schéma/stockage séparé dont le rôle SQL de l'applicatio
 | Accepter un diagnostic | REST transactionnel | Décision métier courte, verrouillage optimiste |
 | Approuver/publier un changement préparé | REST transactionnel après préparation | Réponse contient la publication active ou un conflit explicite |
 | Lancer une mission Python | Kafka | Découpler l'exécution longue de la requête navigateur |
-| Interroger les preuves pendant une mission | REST Python → Java | Outils de lecture ciblés sur snapshot ; pas d'accès SQL libre |
+| Interroger les preuves pendant une mission | REST Python → Java | Outils de lecture ciblés sur dossier de preuves figé ; pas d'accès SQL libre |
 | Retourner proposition/résultat Python | Kafka | Validation et adoption par Java ; résultats corrélés et dédupliqués |
 | Informer Vue | SSE Java → navigateur | Progression unidirectionnelle, historique durable accessible par REST |
 
@@ -57,7 +57,7 @@ sequenceDiagram
   participant P as Python
   A->>V: Analyser le cas
   V->>J: POST analyse
-  J->>D: Run + snapshot + travail à exécuter
+  J->>D: Run + dossier de preuves figé + travail à exécuter
   J-->>V: 202 + runId
   J->>J: Évaluation DMN
   alt Diagnostic suffisant
@@ -67,7 +67,7 @@ sequenceDiagram
     J->>D: Mission + outbox
     J->>K: Commande d'investigation
     K->>P: Mission
-    P->>J: Lire preuves du snapshot
+    P->>J: Lire preuves du dossier de preuves figé
     J-->>P: Faits et sources
     P->>K: Diagnostic proposé
     K->>J: Résultat
@@ -119,7 +119,7 @@ Les chunks de texte sont regroupés pour ne pas transformer chaque token en év�
 - **Annulation** : marqueur métier consultable avant les outils et appels suivants ; arrêt best effort de l'appel réseau en cours. Après adoption de l'annulation, un résultat tardif ne publie rien.
 - **Reset** : nouvel `datasetEpoch` et remise à zéro des topics/volumes du POC empêchent d'adopter des résultats d'un ancien jeu.
 
-Les outils REST internes sont limités à la mission et au snapshot déclarés. Une identité technique interne simple peut être configurée sans introduire de persona utilisateur ou de fournisseur d'identité. Pas d'accès du worker aux opérations d'approbation/publication.
+Les outils REST internes sont limités à la mission et au dossier de preuves figé déclarés. Une identité technique interne simple peut être configurée sans introduire de persona utilisateur ou de fournisseur d'identité. Pas d'accès du worker aux opérations d'approbation/publication.
 
 ## 6. REST proposé
 

@@ -35,7 +35,7 @@ Les versions ci-dessous sont **déclarées dans le projet de référence**, pas 
 
 `SaeEventListener.onSaeEvent` consomme ce topic puis republie le JSON sur un canal Valkey `bg:events:{userId}`.
 
-`BgTaskEmitterRegistry.onMessage` transmet le message au `SseEmitter` enregistré pour cet utilisateur. Sans connexion active, le message est abandonné ; `register` reçoit un snapshot initial de tâches en cours. L'enregistrement remplace l'ancien emitter du même utilisateur.
+`BgTaskEmitterRegistry.onMessage` transmet le message au `SseEmitter` enregistré pour cet utilisateur. Sans connexion active, le message est abandonné ; `register` reçoit un état initial des tâches en cours. L'enregistrement remplace l'ancien emitter du même utilisateur.
 
 Ce chemin est une inspiration pour la progression visible, **pas un contrat de reprise ou de livraison à recopier tel quel**. Le nouveau POC doit notamment permettre plusieurs vues/onglets et retrouver l'état durable après reconnexion.
 

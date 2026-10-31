@@ -14,9 +14,9 @@ Un exemplaire prêté n'est pas attendu en rayon. Une zone non inventoriée n'es
 
 ### Temps et périmètre
 
-**VALIDÉ le 2026-10-24 :** inventaire à date de référence fixe, activité suspendue pendant les scans ; historiques et retards d'intégration conservés. Les mouvements concurrents pendant les scans ne font pas partie du premier périmètre.
+**VALIDÉ le 2026-10-24 :** inventaire à date de référence fixe, activité suspendue pendant les scans ; historiques et retards de mise à jour du stock informatique conservés. Les mouvements concurrents pendant les scans ne font pas partie du premier périmètre.
 
-Proposition technique : conserver temps de l'événement métier et temps de son enregistrement, couverture de l'inventaire, provenance des observations et version du snapshot analysé. Définir séparément la date de référence métier et la date de gel des données collectées, pour représenter une intégration tardive sans modifier silencieusement une analyse passée.
+Proposition technique : conserver temps de l'événement métier et temps de son enregistrement, couverture de l'inventaire, provenance des observations et version du dossier de preuves figé analysé. Définir séparément la date de référence métier et la date de gel des données collectées, pour représenter une mise à jour du stock informatique tardive sans modifier silencieusement une analyse passée.
 
 **VALIDÉ :** sources structurées et quelques notes opérateur libres, sans RAG. Leur consultation doit être ciblée par exemplaire, opération et fenêtre temporelle. Le rôle des notes dans les conditions exécutables des règles reste ouvert.
 
@@ -41,7 +41,7 @@ Ce tableau n'impose pas encore des agrégats DDD ni un découpage de tables. Les
 - Transferts expédiés/reçus et observations des différents emplacements.
 - Réparations, retraits et affectations aux réserves.
 - Couverture d'inventaire, scans, doublons et incidents de lecture.
-- Journaux d'intégration : succès, rejet, retard, duplication, corrélation d'événements.
+- Journaux de mise à jour du stock informatique : succès, rejet, retard, duplication, corrélation d'événements.
 - Éventuellement notes opérateur courtes : à arbitrer, car elles changent le besoin d'interprétation sémantique.
 
 Un journal technique peut attester un événement rejeté ; il ne doit pas contenir une étiquette « cause attendue » artificiellement écrite par le générateur.
@@ -52,7 +52,7 @@ Les signaux ci-dessous étayent des hypothèses ; ils ne suffisent pas tous, iso
 
 | Famille | Écart observable | Recoupement utile | Négatif proche à prévoir |
 |---|---|---|---|
-| Prêt effectué, projection informatique non mise à jour | Attendu en rayon, non observé | Prêt actif antérieur au cutoff et rejet du traitement associé | Prêt annulé ou commencé après le cutoff |
+| Prêt effectué, état du stock informatique non mis à jour | Attendu en rayon, non observé | Prêt actif antérieur au cutoff et rejet du traitement associé | Prêt annulé ou commencé après le cutoff |
 | Retour reçu, situation encore « prêté » | Présence physique inattendue | Scan de retour, référence du prêt et mise à jour en échec | Scan de retour du mauvais exemplaire |
 | Transfert non finalisé informatiquement | Manque au départ, présence à l'arrivée | Expédition, réception et chronologie concordantes | Transfert réellement encore en cours |
 | Mauvais rangement | Absence à l'emplacement prévu, présence ailleurs | Même identifiant scanné dans une autre zone | Changement d'emplacement autorisé mais récent |
@@ -73,7 +73,7 @@ Cette liste n'est pas un engagement à tout implémenter. Retenir un noyau repr�
 
 1. Générer un monde cohérent : exemplaires, emplacements, activité et calendrier.
 2. Produire une chronologie métier vraisemblable : prêt, retour, transfert, réception, etc.
-3. Introduire des perturbations contrôlées sur certaines projections ou observations : retard, perte, duplication, mauvais rattachement, couverture partielle.
+3. Introduire des perturbations contrôlées sur certaines mises à jour du stock informatique ou observations : retard, perte, duplication, mauvais rattachement, couverture partielle.
 4. Matérialiser séparément la situation informatique et l'inventaire observé.
 5. Charger les cas d'écart avant l'utilisation de l'application ; inclure aussi des témoins sains pour les tests de faux positifs.
 6. Conserver la cause injectée et les attentes dans un oracle d'évaluation isolé des chemins de diagnostic.

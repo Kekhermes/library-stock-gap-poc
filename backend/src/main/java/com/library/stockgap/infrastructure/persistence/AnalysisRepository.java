@@ -62,7 +62,7 @@ public class AnalysisRepository {
                 Timestamp.from(Instant.now()), factsJson, bundleJson, sha
             );
         } catch (Exception e) {
-            throw new RuntimeException("Erreur insertion snapshot", e);
+            throw new RuntimeException("Erreur d'enregistrement du dossier de preuves figé", e);
         }
     }
 
