@@ -18,6 +18,9 @@ import javax.xml.stream.XMLStreamConstants;
 
 @Repository
 public class RuleRepository {
+    public void invalidatePendingProposals(UUID epoch, UUID caseId) {
+        jdbcTemplate.update("UPDATE runtime.rule_change_proposal p SET status = 'STALE', lock_version = lock_version + 1 WHERE p.dataset_epoch = ? AND p.status NOT IN ('PUBLISHED','REJECTED','STALE') AND EXISTS (SELECT 1 FROM runtime.proposal_revision r JOIN runtime.evidence_snapshot s ON s.dataset_epoch = r.dataset_epoch AND s.snapshot_id = r.origin_snapshot_id WHERE r.dataset_epoch = p.dataset_epoch AND r.proposal_id = p.proposal_id AND s.case_id = ?)", epoch, caseId);
+    }
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
 

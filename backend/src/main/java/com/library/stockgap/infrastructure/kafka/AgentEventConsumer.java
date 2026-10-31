@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -47,6 +48,7 @@ public class AgentEventConsumer {
     }
 
     @KafkaListener(topics = "${stockgap.topics.events:stock-gap.agent.events.v1}", groupId = "${spring.kafka.consumer.group-id:stock-gap-backend}")
+    @Transactional
     public void consumeEvent(String message) {
         try {
             Map<String, Object> envelope = objectMapper.readValue(message, Map.class);
@@ -56,15 +58,30 @@ public class AgentEventConsumer {
             UUID missionId = UUID.fromString((String) envelope.get("missionId"));
             int attempt = ((Number) envelope.getOrDefault("attempt", 1)).intValue();
             long sequence = ((Number) envelope.getOrDefault("sequence", 1)).longValue();
+            Map<String, Object> payload = (Map<String, Object>) envelope.get("payload");
+            if (payload == null || !(payload.get("fencingToken") instanceof Number fence)
+                    || !(envelope.get("ruleSetVersion") instanceof Number version)
+                    || !missionRepository.lockActiveEvent(epoch, missionId, uuidOrNull(envelope, "evidenceSnapshotId"),
+                        uuidOrNull(payload, "leaseToken"), attempt, fence.intValue(), version.intValue(),
+                        uuidOrNull(envelope, "analysisId"), uuidOrNull(envelope, "caseId"), eventType)) {
+                log.info("Résultat ignoré : époque, mission, tentative ou contexte non actif ({})", eventId);
+                inboxRepository.recordLate(eventId,epoch,missionId,attempt,sequence,eventType);
+                return;
+            }
 
             // Check deduplication
+            var context = missionRepository.activeContext(epoch, missionId, uuidOrNull(payload, "leaseToken"));
+            if ("EXPERT_TURN".equals(context.get("kind"))) {
+                if (!Objects.equals(uuidOrNull(envelope, "conversationId"), context.get("conversation_id"))
+                        || !Objects.equals(uuidOrNull(envelope, "turnId"), context.get("turn_id"))) return;
+                if (eventType.equals("RuleChangeProposed") && (!"RULE_AGENT".equals(context.get("agent_role")) || context.get("origin_acceptance_id") == null)) return;
+                if (eventType.equals("TextChunkProduced") && !Objects.equals(payload.get("senderRole"), context.get("agent_role"))) return;
+            }
             boolean isNew = inboxRepository.recordAndCheckIfNew(eventId, epoch, missionId, attempt, sequence, eventType, envelope);
             if (!isNew) {
                 log.info("Événement Kafka déjà traité ou doublon: {}", eventId);
                 return;
             }
-
-            Map<String, Object> payload = (Map<String, Object>) envelope.get("payload");
 
             switch (eventType) {
                 case "DiagnosticProposed" -> handleDiagnosticProposed(epoch, envelope, payload);
@@ -76,9 +93,15 @@ public class AgentEventConsumer {
                 case "MissionFailed" -> handleMissionFailed(epoch, missionId, uuidOrNull(envelope, "analysisId"), uuidOrNull(envelope, "caseId"));
                 default -> log.debug("Événement Kafka ignoré: {}", eventType);
             }
+            Map<String, Object> trace = new LinkedHashMap<>();
+            for (String key : List.of("toolName", "observations", "usage", "reason", "contextKind", "isFinal", "message", "failureType", "httpStatus", "providerCode")) {
+                if (payload.get(key) != null) trace.put(key, payload.get(key));
+            }
+            missionRepository.recordTrace(epoch, missionId, attempt, eventId, eventType, trace);
 
         } catch (Exception e) {
             log.error("Erreur traitement message Kafka: {}", e.getMessage(), e);
+            throw new IllegalStateException("Adoption de l'événement impossible ; transaction annulée", e);
         }
     }
 
@@ -110,7 +133,7 @@ public class AgentEventConsumer {
             sseHubService.publishEvent(epoch, "DiagnosticReady", "Diagnostic", diagId.toString(),
                 Map.of("diagnosticId", diagId, "analysisId", analysisId, "caseId", caseId,
                     "conclusion", record.conclusion().name()));
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             // Un diagnostic agent non conforme ne doit jamais laisser l'analyse pendante:
             // l'échec est visible et le cas redevient analysable.
             log.error("Diagnostic agent rejeté (analyse {}, cas {}): {}", analysisId, caseId, e.getMessage(), e);
@@ -133,6 +156,7 @@ public class AgentEventConsumer {
             }
         } catch (Exception nested) {
             log.error("Échec du marquage d'échec pour analyse {}: {}", analysisId, nested.getMessage(), nested);
+            throw new IllegalStateException("Échec du diagnostic non persisté", nested);
         }
     }
 
@@ -166,14 +190,17 @@ public class AgentEventConsumer {
 
         Map<String, Object> dmnObj = (Map<String, Object>) draft.get("dmn");
         String dmnXml = (String) dmnObj.get("content");
-        String targetRuleId = op.equals("CREATE") ? UUID.randomUUID().toString() : "R001";
+        String targetRuleId = op.equals("CREATE") ? UUID.randomUUID().toString() : Objects.toString(change.get("targetRuleId"), "");
+        if (!Set.of("CREATE", "REVISE").contains(op) || targetRuleId.isBlank()) throw new IllegalArgumentException("Changement de règle non autorisé");
+        var mission = missionRepository.activeContext(epoch, missionId, uuidOrNull(payload, "leaseToken"));
+        if ("EXPERT_TURN".equals(mission.get("kind"))) ruleRepository.invalidatePendingProposals(epoch, uuidOrNull(envelope, "caseId"));
 
         ruleRepository.insertProposal(epoch, proposalId, originDiagId, snapshotId, missionId,
             op, targetRuleId, ruleName, causeCode, covered, rationale, dmnXml, baseVer);
 
         // Prevalidate proposal automatically
         var validationReport = ruleGovernanceService.validateProposal(epoch, proposalId, 1, dmnXml);
-        missionRepository.markMissionCompleted(epoch, missionId);
+        if (!"EXPERT_TURN".equals(mission.get("kind"))) missionRepository.markMissionCompleted(epoch, missionId);
         String proposalStatus = validationReport.passed() ? "READY_FOR_APPROVAL" : validationReport.status().equals("STALE") ? "STALE" : "CHANGES_REQUIRED";
 
         sseHubService.publishEvent(epoch, "ProposalChanged", "Proposal", proposalId.toString(),
@@ -195,9 +222,22 @@ public class AgentEventConsumer {
             String text = (String) payload.get("text");
             boolean isFinal = Boolean.TRUE.equals(payload.get("isFinal"));
             if (isFinal) {
-                conversationRepository.addMessage(epoch, convId, "RULE_AGENT", text, Collections.emptyList());
+                String role = payload.get("senderRole").toString();
+                List<com.library.stockgap.domain.model.EvidenceRef> refs = new ArrayList<>();
+                var snapshot = analysisRepository.findSnapshot(epoch, uuidOrNull(envelope, "evidenceSnapshotId")).orElseThrow();
+                Set<String> allowed = new HashSet<>();
+                for (var record : snapshot.sourceEvents()) allowed.add(record.get("sourceEventId").toString());
+                for (var record : snapshot.observations()) allowed.add(record.get("observationId").toString());
+                for (var record : snapshot.operatorNotes()) allowed.add(record.get("noteId").toString());
+                if (payload.get("references") instanceof List<?> raw) for (Object item : raw) {
+                    Map<?, ?> ref = (Map<?, ?>) item;
+                    if (!allowed.contains(Objects.toString(ref.get("recordId"), ""))) throw new IllegalArgumentException("Référence de dialogue inventée");
+                    refs.add(new com.library.stockgap.domain.model.EvidenceRef(ref.get("source").toString(), UUID.fromString(ref.get("recordId").toString()), snapshot.snapshotId(), Objects.toString(ref.get("fieldPath"), null)));
+                }
+                conversationRepository.addMessage(epoch, convId, role, text, refs);
+                missionRepository.markMissionCompleted(epoch, uuidOrNull(envelope, "missionId"));
                 sseHubService.publishEvent(epoch, "ConversationMessageChanged", "Conversation", convId.toString(),
-                    Map.of("conversationId", convId, "text", text, "sender", "RULE_AGENT"));
+                    Map.of("conversationId", convId, "text", text, "sender", role));
             }
         }
     }

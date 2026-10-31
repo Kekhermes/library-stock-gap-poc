@@ -5,8 +5,10 @@ import CaseDossierView from '../views/CaseDossierView.vue';
 import RulesView from '../views/RulesView.vue';
 import RuleDetailView from '../views/RuleDetailView.vue';
 import SystemView from '../views/SystemView.vue';
+import DemoView from '../views/DemoView.vue';
 
 const routes = [
+  { path: '/demo', name: 'Demo', component: DemoView },
   { path: '/', name: 'Overview', component: OverviewView },
   { path: '/cases', name: 'Cases', component: CasesView },
   { path: '/cases/:caseId', name: 'CaseDossier', component: CaseDossierView },

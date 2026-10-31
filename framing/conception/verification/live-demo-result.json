@@ -1,0 +1,1123 @@
+{
+  "startedAt": "2026-10-31T13:40:19.375Z",
+  "realOpenAI": true,
+  "steps": [
+    {
+      "name": "bootstrap-dmn",
+      "at": "2026-10-31T13:40:20.347Z",
+      "caseId": "c17e8338-98a4-3da5-9eaa-b82ff4f073f9"
+    },
+    {
+      "name": "bootstrap-dmn",
+      "at": "2026-10-31T13:40:20.401Z",
+      "caseId": "96d7187f-171b-31b4-8f43-4e19970f5b00"
+    },
+    {
+      "name": "learn-real-rule",
+      "at": "2026-10-31T13:41:40.891Z",
+      "caseId": "69e6308d-3025-381c-84cb-fe067e864bcd",
+      "diagnosticId": "c6afd441-b99d-4942-bbc9-4e0a96eee2bf",
+      "cause": [
+        "PROJECTION_WRITE_UNAVAILABLE"
+      ],
+      "ruleId": "8031277f-6e97-4e6a-b92e-2f5824431d2f",
+      "ruleName": "Échec d’écriture de projection après réception d’un retour",
+      "publication": 2,
+      "reportId": "0c60dfe9-9006-452d-9165-763b0749cdba",
+      "positive": 4,
+      "negative": 30
+    },
+    {
+      "name": "chat-real",
+      "at": "2026-10-31T13:41:49.823Z",
+      "role": "INVESTIGATOR",
+      "missionId": "b2020277-1e6f-4713-aaf8-403b73abe326",
+      "text": "Diagnostic : SUPPORTED.\n\nL’écart est un écart de projection de statut, et non une preuve d’une disparition physique de l’exemplaire. Les journaux montrent que le prêt a été clôturé le 2026-09-28 à 08:50:35Z, puis que le retour a été reçu à 08:51:05Z. Le traitement d’intégration de ce retour a ensuite échoué avec le code PROJECTION_WRITE_UNAVAILABLE ; le statut projeté est resté RECEIVING. Une observation d’inventaire valide, réalisée le 2026-09-30 à 11:55:00Z, confirme le statut observé RECEIVING. Le dossier compare cette observation au statut attendu ON_LOAN et signale donc un STATUS_MISMATCH.\n\nLa cause retenue est PROJECTION_WRITE_UNAVAILABLE : l’écriture de la projection a échoué après la réception du retour. Les preuves consultées ne montrent aucune tentative ultérieure réussie ni correction de la projection avant la date de référence. Les contrôles recommandés sont de vérifier l’existence d’une nouvelle tentative après l’échec et de contrôler la cohérence de la projection avec LoanClosed et ReturnReceived.\n\nAucune règle n’est créée ni publiée."
+    },
+    {
+      "name": "chat-real",
+      "at": "2026-10-31T13:41:58.414Z",
+      "role": "RULE_AGENT",
+      "missionId": "a5f17866-121e-4dd2-8879-a12f7f78a4de",
+      "text": "Les conditions évitent les faux positifs en exigeant la conjonction de tous les critères métier, et non le seul écart de statut :\n\n- `symptomKind = \"STATUS_MISMATCH\"` limite la règle aux écarts de statut, sans couvrir les écarts de localisation.\n- `latestBusinessEventType = \"ReturnReceived\"` distingue explicitement un retour d’une réparation, d’un transfert ou d’une autre opération.\n- `integrationsAvailabilityStatus = \"COMPLETE\"` exclut les dossiers où la source d’intégration est incomplète ou inconnue.\n- `latestIntegrationOutcome = \"FAILED\" and latestIntegrationErrorCode = \"PROJECTION_WRITE_UNAVAILABLE\"` exige un échec actif et le code causal précis ; une intégration réussie, mise en file ou sans erreur ne déclenche donc pas la règle.\n- `latestProjectedStatus = observedStatus` vérifie que le statut observé correspond bien à la projection issue du dernier traitement, plutôt qu’à une observation isolée ou incohérente.\n- `observedStatus != expectedStatus` confirme l’écart réellement signalé.\n\nCette combinaison distingue donc le retour d’une réparation, écarte les reprises réussies et les mises à jour encore en attente, refuse les sources incomplètes et ne conclut que lorsqu’un échec d’écriture de projection explique effectivement l’écart observé. Les tests exécutés ont confirmé l’absence de faux positifs sur les localisations différentes, les sources incomplètes, les traitements en file, les mises à jour d’autres opérations, les réparations et les observations ambiguës. La règle n’est ni modifiée ni publiée ici."
+    },
+    {
+      "name": "chat-real",
+      "at": "2026-10-31T13:42:23.606Z",
+      "role": "RULE_AGENT",
+      "missionId": "b247c616-7cad-4d2b-8729-b28b35f246ea",
+      "text": "Je propose une révision testable de la règle publiée, sans publication. Les questions métier sont reformulées pour expliciter l’écart de statut, la réception d’un retour, la complétude de la source, l’échec actif d’écriture de projection et la cohérence entre projection et observation. Les attentes et la cause restent inchangées. Les tests exécutés confirment l’absence de faux positifs sur les réparations, autres opérations, reprises réussies, traitements en file, sources incomplètes et observations ambiguës."
+    },
+    {
+      "name": "refine-real-rule",
+      "at": "2026-10-31T13:42:23.666Z",
+      "ruleId": "8031277f-6e97-4e6a-b92e-2f5824431d2f",
+      "publication": 3,
+      "reportId": "239edfe8-1c8b-4def-9158-aa4f15bac210"
+    },
+    {
+      "name": "analogue-dmn",
+      "at": "2026-10-31T13:42:23.716Z",
+      "caseId": "2fe877a6-fe6b-3134-8a9c-02b3dbe13dc4",
+      "ruleId": "8031277f-6e97-4e6a-b92e-2f5824431d2f",
+      "origin": "DMN"
+    },
+    {
+      "name": "analogue-dmn",
+      "at": "2026-10-31T13:42:23.756Z",
+      "caseId": "5a200d90-2008-3e74-a773-f50a226020c8",
+      "ruleId": "8031277f-6e97-4e6a-b92e-2f5824431d2f",
+      "origin": "DMN"
+    },
+    {
+      "name": "analogue-dmn",
+      "at": "2026-10-31T13:42:23.792Z",
+      "caseId": "26975d89-ec8a-3b27-8b3e-5fda65565af8",
+      "ruleId": "8031277f-6e97-4e6a-b92e-2f5824431d2f",
+      "origin": "DMN"
+    },
+    {
+      "name": "actual-agent-measures",
+      "at": "2026-10-31T13:42:23.797Z",
+      "caseId": "69e6308d-3025-381c-84cb-fe067e864bcd",
+      "measurements": [
+        {
+          "kind": "INVESTIGATION",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 1,
+            "toolCalls": 1,
+            "inputTokens": 787,
+            "outputTokens": 15,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "INVESTIGATION",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 2,
+            "toolCalls": 2,
+            "inputTokens": 2370,
+            "outputTokens": 117,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "INVESTIGATION",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 2,
+            "toolCalls": 3,
+            "inputTokens": 2370,
+            "outputTokens": 117,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "INVESTIGATION",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 2,
+            "toolCalls": 4,
+            "inputTokens": 2370,
+            "outputTokens": 117,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "INVESTIGATION",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 2,
+            "toolCalls": 5,
+            "inputTokens": 2370,
+            "outputTokens": 117,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "INVESTIGATION",
+          "event": "DiagnosticProposed",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 3,
+            "toolCalls": 5,
+            "inputTokens": 6744,
+            "outputTokens": 1237,
+            "accountingComplete": true,
+            "elapsedMilliseconds": 18279
+          }
+        },
+        {
+          "kind": "RULE_SYNTHESIS",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 1,
+            "toolCalls": 1,
+            "inputTokens": 10129,
+            "outputTokens": 1113,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "RULE_SYNTHESIS",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 2,
+            "toolCalls": 2,
+            "inputTokens": 21410,
+            "outputTokens": 2054,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "RULE_SYNTHESIS",
+          "event": "RuleChangeProposed",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 2,
+            "toolCalls": 2,
+            "inputTokens": 21410,
+            "outputTokens": 2054,
+            "accountingComplete": true,
+            "elapsedMilliseconds": 25375
+          }
+        },
+        {
+          "kind": "EXPERT_TURN",
+          "event": "TextChunkProduced",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 1,
+            "toolCalls": 0,
+            "inputTokens": 128459,
+            "outputTokens": 754,
+            "accountingComplete": true,
+            "elapsedMilliseconds": 8862
+          }
+        },
+        {
+          "kind": "EXPERT_TURN",
+          "event": "TextChunkProduced",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 1,
+            "toolCalls": 0,
+            "inputTokens": 129580,
+            "outputTokens": 709,
+            "accountingComplete": true,
+            "elapsedMilliseconds": 8433
+          }
+        },
+        {
+          "kind": "EXPERT_TURN",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 2,
+            "toolCalls": 1,
+            "inputTokens": 262561,
+            "outputTokens": 1974,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "EXPERT_TURN",
+          "event": "RuleChangeProposed",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 2,
+            "toolCalls": 1,
+            "inputTokens": 262561,
+            "outputTokens": 1974,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "EXPERT_TURN",
+          "event": "TextChunkProduced",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 2,
+            "toolCalls": 1,
+            "inputTokens": 262561,
+            "outputTokens": 1974,
+            "accountingComplete": true,
+            "elapsedMilliseconds": 24607
+          }
+        }
+      ]
+    },
+    {
+      "name": "chat-real",
+      "at": "2026-10-31T13:42:31.586Z",
+      "role": "INVESTIGATOR",
+      "missionId": "46dbe701-432d-4323-8dee-5f6eab01eeb8",
+      "text": "La précision est prise en compte : **LoanClosed ne suffit pas à établir une réception physique**. Ici, le diagnostic repose séparément sur l’événement métier `ReturnReceived`, enregistré le 2026-09-28 à 08:51:05Z. Le traitement d’intégration correspondant a échoué avec `PROJECTION_WRITE_UNAVAILABLE` et a laissé la projection à `RECEIVING`. L’observation d’inventaire valide du 2026-09-30 à 11:55:00Z confirme le statut observé `RECEIVING`, différent du statut attendu `ON_LOAN`.\n\nAinsi, la cause `PROJECTION_WRITE_UNAVAILABLE` reste **SUPPORTED**, mais elle est établie par la séquence `ReturnReceived` → échec de mise à jour de projection → observation `RECEIVING`, et non par `LoanClosed` seul. Les preuves consultées ne montrent pas de nouvelle tentative réussie ni de mise à jour ultérieure de cette opération avant la date de référence."
+    },
+    {
+      "name": "expert-reassessment-real",
+      "at": "2026-10-31T13:42:51.714Z",
+      "caseId": "69e6308d-3025-381c-84cb-fe067e864bcd",
+      "analysisId": "754d87c5-0b65-425e-af89-10b8b1742c87",
+      "diagnosticId": "8dc265fa-6b97-4ebc-9d2e-aa19a5b48a10",
+      "humanNotes": 4,
+      "conclusion": "SUPPORTED"
+    },
+    {
+      "name": "learn-real-rule",
+      "at": "2026-10-31T13:43:38.357Z",
+      "caseId": "eb92ea0b-0ef5-3b39-b901-7b266fbe4818",
+      "diagnosticId": "45e7e2d0-da1a-45db-8a0f-f98e1fc6e7c0",
+      "cause": [
+        "PROJECTION_WRITE_UNAVAILABLE"
+      ],
+      "ruleId": "44fa80ae-6498-4a37-b62f-b1fd7a2d20d1",
+      "ruleName": "Échec d’écriture de projection lors d’une réparation",
+      "publication": 4,
+      "reportId": "0163126e-c742-4a4e-bc18-1f0da6092b58",
+      "positive": 4,
+      "negative": 30
+    },
+    {
+      "name": "analogue-dmn",
+      "at": "2026-10-31T13:43:38.399Z",
+      "caseId": "ecd72a2c-7bca-3a79-91fa-aac21b3d8811",
+      "ruleId": "44fa80ae-6498-4a37-b62f-b1fd7a2d20d1",
+      "origin": "DMN"
+    },
+    {
+      "name": "analogue-dmn",
+      "at": "2026-10-31T13:43:38.433Z",
+      "caseId": "bf16e182-3c1b-3fe4-ada6-0cb72519e0e5",
+      "ruleId": "44fa80ae-6498-4a37-b62f-b1fd7a2d20d1",
+      "origin": "DMN"
+    },
+    {
+      "name": "analogue-dmn",
+      "at": "2026-10-31T13:43:38.473Z",
+      "caseId": "9b96b71c-12f1-3353-9420-1698ad17f08c",
+      "ruleId": "44fa80ae-6498-4a37-b62f-b1fd7a2d20d1",
+      "origin": "DMN"
+    },
+    {
+      "name": "actual-agent-measures",
+      "at": "2026-10-31T13:43:38.479Z",
+      "caseId": "eb92ea0b-0ef5-3b39-b901-7b266fbe4818",
+      "measurements": [
+        {
+          "kind": "INVESTIGATION",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 1,
+            "toolCalls": 1,
+            "inputTokens": 789,
+            "outputTokens": 15,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "INVESTIGATION",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 2,
+            "toolCalls": 2,
+            "inputTokens": 2402,
+            "outputTokens": 162,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "INVESTIGATION",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 2,
+            "toolCalls": 3,
+            "inputTokens": 2402,
+            "outputTokens": 162,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "INVESTIGATION",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 2,
+            "toolCalls": 4,
+            "inputTokens": 2402,
+            "outputTokens": 162,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "INVESTIGATION",
+          "event": "DiagnosticProposed",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 3,
+            "toolCalls": 4,
+            "inputTokens": 5668,
+            "outputTokens": 1116,
+            "accountingComplete": true,
+            "elapsedMilliseconds": 15811
+          }
+        },
+        {
+          "kind": "RULE_SYNTHESIS",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 1,
+            "toolCalls": 1,
+            "inputTokens": 11540,
+            "outputTokens": 958,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "RULE_SYNTHESIS",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 2,
+            "toolCalls": 2,
+            "inputTokens": 24077,
+            "outputTokens": 1861,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "RULE_SYNTHESIS",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 3,
+            "toolCalls": 3,
+            "inputTokens": 37556,
+            "outputTokens": 2584,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "RULE_SYNTHESIS",
+          "event": "RuleChangeProposed",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 3,
+            "toolCalls": 3,
+            "inputTokens": 37556,
+            "outputTokens": 2584,
+            "accountingComplete": true,
+            "elapsedMilliseconds": 29569
+          }
+        }
+      ]
+    },
+    {
+      "name": "runtime-retirement",
+      "at": "2026-10-31T13:43:38.499Z",
+      "ruleId": "8031277f-6e97-4e6a-b92e-2f5824431d2f",
+      "publication": 5
+    },
+    {
+      "name": "learn-real-rule",
+      "at": "2026-10-31T13:44:13.912Z",
+      "caseId": "eb92ea0b-0ef5-3b39-b901-7b266fbe4818",
+      "diagnosticId": "3c3d35e9-00d0-4583-bd5b-6a7b5245ca1f",
+      "cause": [
+        "PROJECTION_WRITE_UNAVAILABLE"
+      ],
+      "ruleId": "2a91bf0e-8eb0-4a3b-b397-83bda4ad49ec",
+      "ruleName": "Échec d’écriture de projection après démarrage d’une réparation",
+      "publication": 2,
+      "reportId": "9698ca4b-2be6-4672-ad6a-5247968da73d",
+      "positive": 4,
+      "negative": 30
+    },
+    {
+      "name": "analogue-dmn",
+      "at": "2026-10-31T13:44:13.947Z",
+      "caseId": "ecd72a2c-7bca-3a79-91fa-aac21b3d8811",
+      "ruleId": "2a91bf0e-8eb0-4a3b-b397-83bda4ad49ec",
+      "origin": "DMN"
+    },
+    {
+      "name": "analogue-dmn",
+      "at": "2026-10-31T13:44:13.982Z",
+      "caseId": "bf16e182-3c1b-3fe4-ada6-0cb72519e0e5",
+      "ruleId": "2a91bf0e-8eb0-4a3b-b397-83bda4ad49ec",
+      "origin": "DMN"
+    },
+    {
+      "name": "analogue-dmn",
+      "at": "2026-10-31T13:44:14.013Z",
+      "caseId": "9b96b71c-12f1-3353-9420-1698ad17f08c",
+      "ruleId": "2a91bf0e-8eb0-4a3b-b397-83bda4ad49ec",
+      "origin": "DMN"
+    },
+    {
+      "name": "actual-agent-measures",
+      "at": "2026-10-31T13:44:14.017Z",
+      "caseId": "eb92ea0b-0ef5-3b39-b901-7b266fbe4818",
+      "measurements": [
+        {
+          "kind": "INVESTIGATION",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 1,
+            "toolCalls": 1,
+            "inputTokens": 789,
+            "outputTokens": 15,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "INVESTIGATION",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 2,
+            "toolCalls": 2,
+            "inputTokens": 2400,
+            "outputTokens": 161,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "INVESTIGATION",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 2,
+            "toolCalls": 3,
+            "inputTokens": 2400,
+            "outputTokens": 161,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "INVESTIGATION",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 2,
+            "toolCalls": 4,
+            "inputTokens": 2400,
+            "outputTokens": 161,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "INVESTIGATION",
+          "event": "DiagnosticProposed",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 3,
+            "toolCalls": 4,
+            "inputTokens": 5663,
+            "outputTokens": 1106,
+            "accountingComplete": true,
+            "elapsedMilliseconds": 15606
+          }
+        },
+        {
+          "kind": "RULE_SYNTHESIS",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 1,
+            "toolCalls": 1,
+            "inputTokens": 9793,
+            "outputTokens": 814,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "RULE_SYNTHESIS",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 2,
+            "toolCalls": 2,
+            "inputTokens": 20439,
+            "outputTokens": 1532,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "RULE_SYNTHESIS",
+          "event": "RuleChangeProposed",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 2,
+            "toolCalls": 2,
+            "inputTokens": 20439,
+            "outputTokens": 1532,
+            "accountingComplete": true,
+            "elapsedMilliseconds": 18775
+          }
+        }
+      ]
+    },
+    {
+      "name": "learn-real-rule",
+      "at": "2026-10-31T13:44:55.944Z",
+      "caseId": "69e6308d-3025-381c-84cb-fe067e864bcd",
+      "diagnosticId": "678041be-7f6c-4000-9656-e0a706bb9f4d",
+      "cause": [
+        "PROJECTION_WRITE_UNAVAILABLE"
+      ],
+      "ruleId": "eac2ccbf-2819-4e9b-8527-0f65f8b9b7a8",
+      "ruleName": "Échec d’écriture de projection après réception d’un retour",
+      "publication": 3,
+      "reportId": "a65ec3a9-122d-4efa-a594-dba2e53a42dc",
+      "positive": 4,
+      "negative": 30
+    },
+    {
+      "name": "analogue-dmn",
+      "at": "2026-10-31T13:44:55.981Z",
+      "caseId": "2fe877a6-fe6b-3134-8a9c-02b3dbe13dc4",
+      "ruleId": "eac2ccbf-2819-4e9b-8527-0f65f8b9b7a8",
+      "origin": "DMN"
+    },
+    {
+      "name": "analogue-dmn",
+      "at": "2026-10-31T13:44:56.020Z",
+      "caseId": "5a200d90-2008-3e74-a773-f50a226020c8",
+      "ruleId": "eac2ccbf-2819-4e9b-8527-0f65f8b9b7a8",
+      "origin": "DMN"
+    },
+    {
+      "name": "analogue-dmn",
+      "at": "2026-10-31T13:44:56.053Z",
+      "caseId": "26975d89-ec8a-3b27-8b3e-5fda65565af8",
+      "ruleId": "eac2ccbf-2819-4e9b-8527-0f65f8b9b7a8",
+      "origin": "DMN"
+    },
+    {
+      "name": "actual-agent-measures",
+      "at": "2026-10-31T13:44:56.059Z",
+      "caseId": "69e6308d-3025-381c-84cb-fe067e864bcd",
+      "measurements": [
+        {
+          "kind": "INVESTIGATION",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 1,
+            "toolCalls": 1,
+            "inputTokens": 787,
+            "outputTokens": 15,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "INVESTIGATION",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 2,
+            "toolCalls": 2,
+            "inputTokens": 2366,
+            "outputTokens": 142,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "INVESTIGATION",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 2,
+            "toolCalls": 3,
+            "inputTokens": 2366,
+            "outputTokens": 142,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "INVESTIGATION",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 2,
+            "toolCalls": 4,
+            "inputTokens": 2366,
+            "outputTokens": 142,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "INVESTIGATION",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 2,
+            "toolCalls": 5,
+            "inputTokens": 2366,
+            "outputTokens": 142,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "INVESTIGATION",
+          "event": "DiagnosticProposed",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 3,
+            "toolCalls": 5,
+            "inputTokens": 6761,
+            "outputTokens": 1458,
+            "accountingComplete": true,
+            "elapsedMilliseconds": 18439
+          }
+        },
+        {
+          "kind": "RULE_SYNTHESIS",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 1,
+            "toolCalls": 1,
+            "inputTokens": 11769,
+            "outputTokens": 924,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "RULE_SYNTHESIS",
+          "event": "ToolObservationRecorded",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 2,
+            "toolCalls": 2,
+            "inputTokens": 24501,
+            "outputTokens": 1870,
+            "accountingComplete": true
+          }
+        },
+        {
+          "kind": "RULE_SYNTHESIS",
+          "event": "RuleChangeProposed",
+          "usage": {
+            "model": "gpt-5.6-luna",
+            "llmCalls": 2,
+            "toolCalls": 2,
+            "inputTokens": 24501,
+            "outputTokens": 1870,
+            "accountingComplete": true,
+            "elapsedMilliseconds": 22479
+          }
+        }
+      ]
+    },
+    {
+      "name": "inverse-order",
+      "at": "2026-10-31T13:44:56.059Z",
+      "passed": true
+    }
+  ],
+  "events": [
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:1"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:2"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:3"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:4"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:5"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:6"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:7"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:8"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:9"
+    },
+    {
+      "eventType": "DiagnosticReady",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:10"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:11"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:12"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:13"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:14"
+    },
+    {
+      "eventType": "ValidationCompleted",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:15"
+    },
+    {
+      "eventType": "ProposalChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:16"
+    },
+    {
+      "eventType": "PublicationActivated",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:17"
+    },
+    {
+      "eventType": "ProposalChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:18"
+    },
+    {
+      "eventType": "ConversationMessageChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:19"
+    },
+    {
+      "eventType": "ConversationMessageChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:20"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:21"
+    },
+    {
+      "eventType": "ValidationCompleted",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:22"
+    },
+    {
+      "eventType": "ProposalChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:23"
+    },
+    {
+      "eventType": "ConversationMessageChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:24"
+    },
+    {
+      "eventType": "PublicationActivated",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:25"
+    },
+    {
+      "eventType": "ProposalChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:26"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:27"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:28"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:29"
+    },
+    {
+      "eventType": "ConversationMessageChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:30"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:31"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:32"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:33"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:34"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:35"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:36"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:37"
+    },
+    {
+      "eventType": "DiagnosticReady",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:38"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:39"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:40"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:41"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:42"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:43"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:44"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:45"
+    },
+    {
+      "eventType": "DiagnosticReady",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:46"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:47"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:48"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:49"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:50"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:51"
+    },
+    {
+      "eventType": "ValidationCompleted",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:52"
+    },
+    {
+      "eventType": "ProposalChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:53"
+    },
+    {
+      "eventType": "PublicationActivated",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:54"
+    },
+    {
+      "eventType": "ProposalChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:55"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:56"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:57"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:58"
+    },
+    {
+      "eventType": "PublicationActivated",
+      "cursor": "648a0df7-d7c7-485d-8201-a3ca1a6de13e:59"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:1"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:2"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:3"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:4"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:5"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:6"
+    },
+    {
+      "eventType": "DiagnosticReady",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:7"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:8"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:9"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:10"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:11"
+    },
+    {
+      "eventType": "ValidationCompleted",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:12"
+    },
+    {
+      "eventType": "ProposalChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:13"
+    },
+    {
+      "eventType": "PublicationActivated",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:14"
+    },
+    {
+      "eventType": "ProposalChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:15"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:16"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:17"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:18"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:19"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:20"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:21"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:22"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:23"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:24"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:25"
+    },
+    {
+      "eventType": "DiagnosticReady",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:26"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:27"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:28"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:29"
+    },
+    {
+      "eventType": "MissionChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:30"
+    },
+    {
+      "eventType": "ValidationCompleted",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:31"
+    },
+    {
+      "eventType": "ProposalChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:32"
+    },
+    {
+      "eventType": "PublicationActivated",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:33"
+    },
+    {
+      "eventType": "ProposalChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:34"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:35"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:36"
+    },
+    {
+      "eventType": "AnalysisChanged",
+      "cursor": "7cf709f0-1b33-4839-973b-89de43526e35:37"
+    }
+  ],
+  "passed": true,
+  "restoredEpoch": "3e0f6775-6a37-4dbc-9aa9-24d0c43ea275",
+  "finishedAt": "2026-10-31T13:44:56.134Z"
+}

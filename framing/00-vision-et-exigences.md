@@ -66,6 +66,8 @@ Après publication, les résultats DMN attendus sur les trois analogues de chaqu
 
 ## Points ouverts
 
+Les points ci-dessous ont depuis été réalisés pour la démo : contrat FEEL, types/faits, conditions séparées et essai, catalogue d'outils, corrections bornées, autorisation/reprise/annulation, Responses API, espace règles et parcours guidé. La recette OpenAI complète a réussi. Ces lignes conservent l'historique de cadrage ; voir [la livraison et ses limites](12-etat-implementation-actuel.md).
+
 - Atelier DMN/FEEL : sous-ensemble autorisé, représentation des conditions LLM, faits typés, traces par condition et sécurisation de l'évaluation.
 - Catalogue précis des outils des deux rôles, nombre de corrections et modalités d'annulation/reprise.
 - Choix du SDK d'orchestration : la Responses API existe ; adopter Agents SDK n'est pas une exigence reconfirmée.

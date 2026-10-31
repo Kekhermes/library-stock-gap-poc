@@ -36,15 +36,20 @@ public class ConversationRepository {
             epoch, convId, caseId, Timestamp.from(Instant.now())
         );
 
-        // Create turn 1
-        UUID turnId = UUID.randomUUID();
-        jdbcTemplate.update(
-            "INSERT INTO runtime.conversation_turn (dataset_epoch, turn_id, conversation_id, turn_no, status, created_at) " +
-            "VALUES (?, ?, ?, 1, 'WAITING_EXPERT', ?)",
-            epoch, turnId, convId, Timestamp.from(Instant.now())
-        );
-
         return convId;
+    }
+
+    @Transactional
+    public UUID startTurn(UUID epoch, UUID conversationId, String role, String text) {
+        if (!Set.of("INVESTIGATOR", "RULE_AGENT").contains(role) || text == null || text.isBlank() || text.length() > 4000) throw new IllegalArgumentException("Rôle ou message invalide");
+        var conversation = jdbcTemplate.queryForMap("SELECT next_turn_no FROM runtime.expert_conversation WHERE dataset_epoch = ? AND conversation_id = ? FOR UPDATE", epoch, conversationId);
+        Integer running = jdbcTemplate.queryForObject("SELECT count(*) FROM runtime.conversation_turn WHERE dataset_epoch = ? AND conversation_id = ? AND status IN ('QUEUED','RUNNING')", Integer.class, epoch, conversationId);
+        if (running != null && running > 0) throw new IllegalStateException("Un tour expert est déjà en cours");
+        UUID turn = UUID.randomUUID();
+        jdbcTemplate.update("INSERT INTO runtime.conversation_turn (dataset_epoch, turn_id, conversation_id, turn_no, agent_role, status, created_at) VALUES (?, ?, ?, ?, ?, 'QUEUED', now())", epoch, turn, conversationId, ((Number) conversation.get("next_turn_no")).intValue(), role);
+        jdbcTemplate.update("UPDATE runtime.expert_conversation SET next_turn_no = next_turn_no + 1 WHERE dataset_epoch = ? AND conversation_id = ?", epoch, conversationId);
+        addMessage(epoch, conversationId, "Admin", text, List.of());
+        return turn;
     }
 
     public List<ChatMessageRecord> getMessages(UUID epoch, UUID conversationId) {
@@ -99,7 +104,7 @@ public class ConversationRepository {
             turnId = UUID.randomUUID();
             jdbcTemplate.update(
                 "INSERT INTO runtime.conversation_turn (dataset_epoch, turn_id, conversation_id, turn_no, status, created_at) " +
-                "VALUES (?, ?, ?, 1, 'WAITING_EXPERT', ?)",
+                "VALUES (?, ?, ?, 1, 'COMPLETED', ?)",
                 epoch, turnId, conversationId, Timestamp.from(Instant.now())
             );
         } else {
@@ -120,9 +125,9 @@ public class ConversationRepository {
         try {
             String refsJson = objectMapper.writeValueAsString(refs != null ? refs : Collections.emptyList());
             jdbcTemplate.update(
-                "INSERT INTO runtime.chat_message (dataset_epoch, message_id, turn_id, sequence, speaker, content, references_json, created_at) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?::jsonb, ?)",
-                epoch, msgId, turnId, nextSeq, speaker, content, refsJson, Timestamp.from(now)
+                "INSERT INTO runtime.chat_message (dataset_epoch, message_id, turn_id, conversation_id, sequence, speaker, content, references_json, created_at) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?)",
+                epoch, msgId, turnId, conversationId, nextSeq, speaker, content, refsJson, Timestamp.from(now)
             );
         } catch (Exception e) {
             throw new RuntimeException("Erreur insertion message", e);

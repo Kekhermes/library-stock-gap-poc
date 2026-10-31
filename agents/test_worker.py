@@ -39,8 +39,9 @@ class FakeResponses:
 
     def create(self, **kwargs):
         self.calls.append(kwargs)
-        if len(self.calls) == 1:
-            return SimpleNamespace(id="resp_tool", output=[SimpleNamespace(type="function_call", name="get_case_snapshot", call_id="call_1")], usage=SimpleNamespace(input_tokens=11, output_tokens=3))
+        if len(self.calls) < 3:
+            name = "get_case_snapshot" if len(self.calls) == 1 else "get_source_events"
+            return SimpleNamespace(id="resp_tool_" + str(len(self.calls)), output=[SimpleNamespace(type="function_call", name=name, call_id="call_" + str(len(self.calls)), arguments="{}")], usage=SimpleNamespace(input_tokens=11, output_tokens=3))
         return SimpleNamespace(id="resp_final", output=[], output_text=json.dumps(self.final_payload), usage=SimpleNamespace(input_tokens=21, output_tokens=13))
 
 
@@ -51,9 +52,9 @@ class GptInvestigationTest(unittest.TestCase):
         with patch.object(worker, "OpenAI", return_value=client), patch.object(worker, "get_case_snapshot", return_value=SNAPSHOT), patch.object(worker, "send_kafka_event") as sent:
             diagnostic, usage = worker.run_gpt_investigation(None, ENVELOPE, "lease", 1)
         self.assertEqual("SUPPORTED", diagnostic.conclusion)
-        self.assertEqual(2, usage["llmCalls"])
-        self.assertEqual(1, usage["toolCalls"])
-        self.assertEqual(32, usage["inputTokens"])
+        self.assertEqual(3, usage["llmCalls"])
+        self.assertEqual(2, usage["toolCalls"])
+        self.assertEqual(43, usage["inputTokens"])
         self.assertEqual("get_case_snapshot", responses.calls[0]["tool_choice"]["name"])
         self.assertEqual("function_call_output", responses.calls[1]["input"][0]["type"])
         self.assertEqual("ToolObservationRecorded", sent.call_args.args[1])
@@ -77,6 +78,15 @@ class GptInvestigationTest(unittest.TestCase):
         with patch.object(worker, "OPENAI_API_KEY", ""):
             with self.assertRaisesRegex(RuntimeError, "OPENAI_API_KEY absent"):
                 worker.run_gpt_investigation(None, ENVELOPE, "lease", 1)
+
+    def test_lost_authorization_prevents_another_llm_call(self):
+        responses = FakeResponses(DIAGNOSTIC)
+        authorization = SimpleNamespace(check=lambda: (_ for _ in ()).throw(RuntimeError("cancelled")))
+        envelope = {**ENVELOPE, "_authorization": authorization}
+        with patch.object(worker, "OpenAI", return_value=SimpleNamespace(responses=responses)):
+            with self.assertRaisesRegex(RuntimeError, "cancelled"):
+                worker.run_gpt_investigation(None, envelope, "lease", 1)
+        self.assertEqual([], responses.calls)
 
 
 if __name__ == "__main__":

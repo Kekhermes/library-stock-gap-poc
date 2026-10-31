@@ -37,6 +37,12 @@ public class RuleValidationPolicy {
     private static final Set<InfixOperator> OPERATORS = Set.of(InfixOperator.EQ, InfixOperator.NE, InfixOperator.LT, InfixOperator.LTE,
         InfixOperator.GT, InfixOperator.GTE, InfixOperator.AND, InfixOperator.OR);
 
+    public java.util.Map<String, String> factTypes() {
+        java.util.Map<String, String> types = new java.util.TreeMap<>();
+        for (String name : FACTS) types.put(name, name.equals("observationReliable") ? "boolean" : name.endsWith("Count") ? "number" : "string");
+        return types;
+    }
+
     public void validate(String xml) {
         if (xml == null || xml.getBytes(StandardCharsets.UTF_8).length > 20000) throw new IllegalArgumentException("DMN absent ou supérieur à 20 Ko");
         try {

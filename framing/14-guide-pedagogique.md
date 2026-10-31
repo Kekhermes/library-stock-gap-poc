@@ -2,6 +2,20 @@
 
 ## Public, lecture et statut
 
+**La boucle complète de démo est livrée et a été exécutée avec OpenAI réel.** Les descriptions CIBLE des anciens incréments plus bas conservent l'intention ; les [preuves actuelles](12-etat-implementation-actuel.md) et le [compte rendu direct](conception/verification/live-demo-result.json) font foi. Commencer sur http://localhost:3000/demo.
+
+### Traitements M4 à M8
+
+1. **Mission :** Java attribue preuves, version et tentative ; Python réclame une autorisation temporaire et la renouvelle. Avant adoption, le résultat doit encore appartenir au même contexte. Une réponse ancienne est journalisée, pas appliquée.
+2. **Investigation :** OpenAI choisit les consultations après la synthèse. Python ne fournit que les preuves de ces outils et vérifie les références, notamment opération/mise à jour corrélée. Le JSON contraint la forme, pas la vérité scientifique de la conclusion.
+3. **Règle :** le second rôle propose questions, expressions FEEL et faits. Java construit les éléments XML, jamais les conditions causalement attendues. Le replay réel revient au modèle pour correction ; trois propositions maximum, puis refus visible.
+4. **Discussion :** chaque tour porte son rôle et contexte. Une réponse peut expliquer ou affiner ; la réévaluation explicite copie les messages Admin comme preuves humaines identifiées, conserve les sources et rend un nouveau diagnostic à accepter, sans règle en doublon automatiquement publiée.
+5. **Lecture :** table et XML représentent la même version. L'essai donne vrai/faux/inconnu et le résultat KIE sans LLM ni analyse persistée. L'écran guidé montre des états réellement atteints, pas des diagnostics préparés.
+6. **Mesures :** modèles, outils, appels/tokens cumulés, durées et erreurs sont persistés. Ne pas sommer les instantanés cumulés ; absence d'usage fournisseur = mesure partielle, pas zéro fictif. Les synthèses de consultation décrivent des données lues, pas une chaîne de pensée.
+7. **Recette :** deux acquisitions réelles dans les deux ordres, trois analogues par famille sans LLM, chat des deux rôles, affinage, correction/réévaluation et retrait, puis restauration du jeu initial. Les fixtures SQL et doubles hors ligne restent des tests distincts.
+
+Voir [la recette reproductible](conception/verification/verify-live-demo.mjs) et [le résultat réel](conception/verification/live-demo-result.json). Des erreurs fournisseur et appels répétés après crash restent possibles ; la preuve du petit jeu n'est pas une certification générale de compatibilité ou de sandbox.
+
 Pour développeurs et architectes découvrant agents LLM et DMN. Ce guide explique les traitements et les technologies du projet ; il distingue **EXISTANT** et **CIBLE**, sans présenter une spécification comme une exécution réussie.
 
 Commencer par [la vision](00-vision-et-exigences.md), puis [le scénario 2 + 4 + 4](09-donnees-evaluation-et-reset.md). Pour les preuves de livraison actuelles, lire [l'audit](12-etat-implementation-actuel.md) ; pour les travaux restants, [la roadmap](13-roadmap-demo.md).

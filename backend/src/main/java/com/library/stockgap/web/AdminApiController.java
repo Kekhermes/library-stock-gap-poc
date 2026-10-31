@@ -32,6 +32,10 @@ public class AdminApiController {
     private final RuleGovernanceService ruleGovernanceService;
     private final DatasetSeedService datasetSeedService;
     private final DemoVerificationService demoVerificationService;
+    private final com.library.stockgap.domain.service.ExpertConversationService expertService;
+    private final com.library.stockgap.infrastructure.persistence.MissionRepository missions;
+    private final com.library.stockgap.domain.service.RuleInspectionService inspection;
+    private final com.library.stockgap.domain.service.DeterministicAnalysisService deterministic;
 
     public AdminApiController(ActiveDatasetRepository activeDatasetRepository,
                               CaseRepository caseRepository,
@@ -41,7 +45,11 @@ public class AdminApiController {
                               AnalysisOrchestrationService analysisOrchestrationService,
                               RuleGovernanceService ruleGovernanceService,
                               DatasetSeedService datasetSeedService,
-                              DemoVerificationService demoVerificationService) {
+                              DemoVerificationService demoVerificationService,
+                              com.library.stockgap.domain.service.ExpertConversationService expertService,
+                              com.library.stockgap.infrastructure.persistence.MissionRepository missions,
+                              com.library.stockgap.domain.service.RuleInspectionService inspection,
+                              com.library.stockgap.domain.service.DeterministicAnalysisService deterministic) {
         this.activeDatasetRepository = activeDatasetRepository;
         this.caseRepository = caseRepository;
         this.analysisRepository = analysisRepository;
@@ -51,6 +59,8 @@ public class AdminApiController {
         this.ruleGovernanceService = ruleGovernanceService;
         this.datasetSeedService = datasetSeedService;
         this.demoVerificationService = demoVerificationService;
+        this.expertService = expertService; this.missions = missions;
+        this.inspection=inspection;this.deterministic=deterministic;
     }
 
     private UUID getEpoch() {
@@ -276,6 +286,61 @@ public class AdminApiController {
         String role = (String) body.getOrDefault("role", "Admin");
         var msg = conversationRepository.addMessage(epoch, conversationId, role, text, Collections.emptyList());
         return ResponseEntity.ok(msg);
+    }
+
+    @PostMapping("/cases/{caseId}/expert-messages")
+    public ResponseEntity<Map<String, Object>> expertMessage(@PathVariable UUID caseId, @RequestBody Map<String, Object> body) {
+        return ResponseEntity.accepted().body(expertService.send(getEpoch(), caseId, (String) body.get("role"), (String) body.get("text")));
+    }
+
+    @GetMapping("/cases/{caseId}/agent-traces")
+    public ResponseEntity<List<Map<String, Object>>> agentTraces(@PathVariable UUID caseId) {
+        return ResponseEntity.ok(missions.tracesForCase(getEpoch(), caseId));
+    }
+
+    @GetMapping("/agent-missions/{missionId}")
+    public ResponseEntity<Map<String,Object>> missionStatus(@PathVariable UUID missionId) {return ResponseEntity.ok(missions.status(getEpoch(),missionId));}
+    @PostMapping("/agent-missions/{missionId}/cancellation")
+    public ResponseEntity<Map<String,Object>> cancelMission(@PathVariable UUID missionId) {missions.cancel(getEpoch(),missionId);return ResponseEntity.ok(missions.status(getEpoch(),missionId));}
+
+    @PostMapping("/cases/{caseId}/reassessment")
+    public ResponseEntity<Map<String, Object>> reassess(@PathVariable UUID caseId) {
+        return ResponseEntity.accepted().body(Map.of("analysisId", analysisOrchestrationService.reassess(getEpoch(), caseId)));
+    }
+
+    @GetMapping("/rules/{ruleId}/inspection")
+    public ResponseEntity<Map<String,Object>> inspectRule(@PathVariable String ruleId,@RequestParam(required=false)UUID caseId,@RequestParam(required=false)Integer version) {
+        UUID epoch=getEpoch();var rule=(version==null?ruleRepository.latestRuleVersion(epoch,ruleId):ruleRepository.getRuleVersion(epoch,ruleId,version)).orElseThrow();
+        Map<String,Object> facts=null;
+        EvidenceSnapshot evidence=null;
+        if(caseId!=null) {
+            var dossier=caseRepository.findCaseDossier(epoch,caseId).orElseThrow();
+            evidence=new EvidenceSnapshot(UUID.randomUUID(),caseId,dossier.copyId(),"1.0.0",dossier.inventoryReferenceTime(),java.time.Instant.now(),Map.of(),
+                dossier.timeline(),dossier.operatorNotes(),dossier.systemState(),dossier.observations(),dossier.sourceAvailability(),dossier.symptoms());
+            facts=deterministic.facts(evidence);
+        }
+        Map<String,Object> response=new LinkedHashMap<>();
+        response.put("ruleId",ruleId);response.put("version",rule.ruleVersion());response.put("conditions",inspection.inspect(rule.dmnXml(),facts));
+        response.put("llmCalls",0);response.put("persistedAnalysis",false);
+        response.put("inScope",facts==null?null:rule.coveredSymptomKinds().contains(facts.get("symptomKind")));
+        response.put("match",evidence==null?null:deterministic.evaluate(evidence,List.of(rule)).fullyCovered());
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/demo")
+    public ResponseEntity<Map<String,Object>> demo() {
+        UUID epoch=getEpoch();Map<String,List<Map<String,Object>>> groups=new LinkedHashMap<>();
+        for(var item:caseRepository.findCases(epoch,null,null,null,0,10)) {
+            var dossier=caseRepository.findCaseDossier(epoch,(UUID)item.get("caseId")).orElseThrow();
+            var evidence=new EvidenceSnapshot(UUID.randomUUID(),dossier.caseId(),dossier.copyId(),"1.0.0",dossier.inventoryReferenceTime(),java.time.Instant.now(),Map.of(),dossier.timeline(),dossier.operatorNotes(),dossier.systemState(),dossier.observations(),dossier.sourceAvailability(),dossier.symptoms());
+            var facts=deterministic.facts(evidence);
+            String key="LOCATION_MISMATCH".equals(facts.get("symptomKind"))?"LOCATION_MISMATCH":String.valueOf(facts.get("latestBusinessEventType"));
+            Map<String,Object> row=new LinkedHashMap<>(item);
+            row.put("diagnosticOrigin",dossier.currentDiagnostic()==null?null:Boolean.TRUE.equals(dossier.currentDiagnostic().get("isDeterministic"))?"DMN":"LLM");
+            row.put("rulePublished",dossier.currentProposal()!=null&&"PUBLISHED".equals(dossier.currentProposal().get("state")));
+            groups.computeIfAbsent(key,ignored->new ArrayList<>()).add(row);
+        }
+        return ResponseEntity.ok(Map.of("datasetEpoch",epoch,"ruleSetVersion",ruleRepository.getActiveRuleSetVersion(epoch),"rules",ruleRepository.listRules(epoch),"groups",groups));
     }
 
     @GetMapping("/system/demo-check")

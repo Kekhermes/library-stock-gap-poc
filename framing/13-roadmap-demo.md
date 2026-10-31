@@ -2,6 +2,14 @@
 
 ## Statut
 
+**M1 à M8 réalisés pour le périmètre de démo et vérifiés.** Les anciens états d'avancement ci-dessous sont conservés comme historique ; les [preuves de livraison actuelles](12-etat-implementation-actuel.md) prévalent. M3 est publié dans `795089c`, M4–M8 restent locaux tant qu'un commit n'est pas demandé.
+
+La [recette réelle](conception/verification/verify-live-demo.mjs) a réussi les deux acquisitions dans les deux ordres, le chat des deux rôles, l'affinage, la réévaluation après correction humaine, le retrait et les trois analogues par famille sans LLM. Le [rapport final](conception/verification/live-demo-result.json) correspond à la recette enrichie de 4 min 37 s, avec restauration des dix dossiers vierges/R001 seule.
+
+La livraison ne réintroduit pas les extensions reportées : lignes multiples, composition multi-cause générale, lots, déploiement multi-instance ou certification de sandbox. Les échecs fournisseur restent possibles et visibles ; les tests ne garantissent pas toutes les sorties futures.
+
+Vérification finale : 46 tests Java (avec SQL), 5 tests du worker, build Vue, deux recettes directes OpenAI et contrôle navigateur des vues/essais. Dernière démo restaurée : dix vierges, R001 seule, couverture 2 / 8 et zéro traitement actif. Les anciennes lignes d'avancement et points ouverts ci-dessous ne remettent pas ces jalons livrés en attente.
+
 Réalisation autorisée le **2026-10-31**, sur la base de [l'interview](04-registre-des-decisions.md), [la cible validée](00-vision-et-exigences.md) et [l'audit](12-etat-implementation-actuel.md). Les choix techniques encore ouverts restent proposés ; la rédaction d'un document ne vaut pas livraison.
 
 **Avancement : M1 réalisé et vérifié localement.** Jeu 2 + 4 + 4, manifeste public, contrôle de préparation sans LLM, remise à zéro avec vérifications et écran responsive. La recette a produit deux diagnostics R001 et laissé dix dossiers vierges, zéro analyse/mission/conversation/proposition active, même empreinte et nouvelle époque.

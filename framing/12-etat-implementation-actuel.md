@@ -1,5 +1,35 @@
 # État de réalisation et audit — 2026-10-31
 
+## Livraison M4 à M8 — boucle OpenAI réelle vérifiée
+
+M3 est publié sur `main` dans `795089c`. M4 à M8 sont réalisés localement et leurs changements restent non committés. Les sections d'incréments plus bas sont l'historique ; cette livraison prévaut sur leurs anciennes réserves.
+
+**Gates finaux : 46 tests Java sur compilation propre, recettes PostgreSQL activées et aucune ignorée ; 5 tests du worker hors ligne ; build Vue réussi ; deux recettes OpenAI réelles réussies.** Le contrôle navigateur a lu les dix dossiers guidés et essayé R001 sur un vrai dossier : trois conditions `TRUE`, résultat applicable, zéro appel LLM et aucune analyse persistée. Desktop/mobile contrôlés. Les 17 tests du générateur ont été validés en M3 ; ses données n'ont pas changé dans M4–M8.
+
+Les corrections finales d'annulation et de journalisation tardive ont été testées en SQL puis déployées sans nouvel appel OpenAI. Le jeu reste vierge après restauration, avec couverture 2 / 8, worker actif et clés préservées. Les tests hors ligne et fixtures SQL ne sont pas présentés comme des productions du modèle.
+
+**M4 :** époque, mission, tentative, autorisation temporaire, dossier/cas/analyse et version des règles sont contrôlés avant adoption. Déduplication, effet métier et traces sont transactionnels. Les outils vérifient le contexte ; le worker renouvelle son autorisation et s'arrête entre appels si elle est perdue. Une tentative expirée est reprise une fois ; annulation et résultats tardifs n'adoptent aucun résultat. Kafka est acquitté après confirmation du résultat et les notifications sont diffusées après commit. Les traces conservent modèles, outils, synthèses factuelles, appels/tokens cumulés, durées et erreurs expurgées.
+
+**M5 :** investigation OpenAI à consultations successives ; références vérifiées contre les seules preuves consultées, avec opération et mise à jour corrélée pour un écart de statut étayé. L'agent de règles reçoit diagnostic accepté complet, preuves, faits/types et référentiel figé. Il génère conditions FEEL séparées, questions et métadonnées. Java sérialise le DMN standard sans choisir les conditions ; les tests réels sont renvoyés pour trois propositions/corrections maximum. Aucune R2/R3 ni règle métier préfabriquée.
+
+**M6 :** tours persistants pour les rôles investigateur et agent de règles, choisis selon phase et modifiables. Réponses et références sont liées au bon tour. Un affinage produit une proposition testée, jamais une publication par texte libre. La réévaluation est explicite : messages Admin conservés comme preuves humaines identifiées, sources inchangées, propositions non publiées périmées et nouveau diagnostic à accepter. Cette acceptation de réévaluation ne synthétise pas automatiquement une règle en doublon.
+
+**M7 :** http://localhost:3000/demo montre les dix dossiers et les états réellement atteints. La fiche règle affiche le XML exact, les conditions FEEL, leurs faits/valeurs attendues et un essai vrai/faux/inconnu avec résultat global KIE, sans LLM ni analyse persistée. Le dossier expose les activités, erreurs et mesures des agents et l'annulation du tour. Les vues sont contrôlées desktop/mobile.
+
+**M8 :** première recette réelle réussie en 3 min 35 s, puis recette enrichie réussie le **2026-10-31 de 13:40:19 à 13:44:56 UTC**, soit 4 min 37 s. Le [rapport final](conception/verification/live-demo-result.json) est le résultat de [la recette événementielle](conception/verification/verify-live-demo.mjs), pas une fixture.
+
+- Deux localisations : DMN/R001.
+- Retour : diagnostic OpenAI, acceptation, conditions FEEL OpenAI, tests, publication v2 ; dialogue réel des deux rôles ; affinage et publication v3.
+- Trois autres retours : même règle en DMN, aucune mission LLM sur ces dossiers.
+- Correction métier, réévaluation OpenAI avec notes humaines et nouveau diagnostic `SUPPORTED` à revoir puis accepter.
+- Réparation : acquisition réelle puis trois autres analogues en DMN.
+- Retrait runtime ; remise à zéro et acquisitions dans l'ordre inverse réparation → retour.
+- Restauration finale : dix dossiers vierges, R001 seule, zéro analyse/mission/conversation/proposition de l'époque active, couverture 2 / 8.
+
+Le modèle `gpt-5.6-luna` a été vérifié par métadonnées puis réellement appelé. Les clés n'ont pas été affichées ni incluses dans le rapport. Les fixtures SQL et doubles hors ligne sont séparés de cette recette ; leurs transactions de test sont annulées.
+
+**Limites :** petit domaine versionné mono-cause, pas une vérité causale industrielle ni une garantie de disponibilité du fournisseur. Tests empiriques, pas de certification générale de sandbox, de temps d'évaluation ou de non-régression. L'essai des conditions est éprouvé sur R001 et les tables booléennes générées. Les anciens champs de quotas restent compatibles avec le schéma, mais ne sont pas des plafonds de consommation appliqués ; boucles et appels sont bornés et mesures réelles. Un crash après inférence peut conduire à répéter un appel payant : aucun « exactly once » financier. Pas de multi-instance, lots ou multi-causes avancées livrés.
+
 ## Troisième incrément — vraie validation et publication sécurisée
 
 M2 est publié sur `main` dans `75e1aa0`. M3 est réalisé et vérifié localement ; ses changements ne sont pas encore committés. Les anciens constats de métriques synthétiques et de publication insuffisamment liée aux rapports ne décrivent plus ce chemin de validation.

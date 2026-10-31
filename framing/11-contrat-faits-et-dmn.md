@@ -2,6 +2,20 @@
 
 ## Contrat cible partiellement arbitré — 2026-10-31
 
+### Contrat exécuté — M5 à M8
+
+OpenAI produit des `conditions[]` comportant `question` (texte métier), `expression` (FEEL réelle) et `factNames` (faits typés déclarés). La proposition inclut `CREATE`/`REVISE`, règle cible si révision, nom/code de cause, justification, symptômes, sources, recommandations et limites. Java sérialise une colonne booléenne par condition et une seule ligne de valeurs `true` avec les deux sorties cause/statut ; il ne fournit pas la logique métier.
+
+Exemple de forme seulement, pas une règle préchargée :
+
+```json
+{"question":"Observation fiable ?","expression":"observationReliable = true","factNames":["observationReliable"]}
+```
+
+Le feedback des tests réels est renvoyé au modèle pour trois propositions/corrections maximum. L'approbation porte sur la révision/rapport persistés, jamais sur la réponse du chat. Le XML exact fournit le tableau et l'essai natif vrai/faux/inconnu ; le résultat global KIE et la portée sont également montrés, sans LLM ou analyse persistée dans cet essai.
+
+Les deux rôles, la génération FEEL, l'affinage et la réévaluation humaine ont été appelés réellement dans [la recette finale](12-etat-implementation-actuel.md). Les anciennes mentions de ces points comme ouverts plus bas sont l'historique des jalons. Lignes multiples, conflits multi-causes généraux et sûreté industrielle restent hors de cette livraison.
+
 ### Validation et publication actuelles — M3
 
 Le candidat validé est désormais la révision persistée complète : XML et métadonnées, origine et version de base. Un XML client différent est rejeté. Le rapport conserve les empreintes de la proposition, du manifeste candidat et du corpus réellement exécuté, ainsi que les versions moteur/faits/validateur.

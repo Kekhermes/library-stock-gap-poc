@@ -1,5 +1,15 @@
 # Spécification des missions et des deux rôles IA
 
+## Exécution réelle livrée
+
+La Responses API et le client OpenAI Python sont utilisés, pas Agents SDK. Les prompts effectifs et modèles Pydantic sont dans [le worker](../../../agents/worker.py) ; les templates plus bas sont historiques. Les modèles et mesures de la [recette réelle](../verification/verify-live-demo.mjs) sont conservés dans [son rapport](../verification/live-demo-result.json).
+
+Investigation : synthèse puis consultations choisies parmi événements, prêts, retours, réparations, mises à jour et notes. Les références doivent exister dans les preuves effectivement consultées. Règles : diagnostic accepté complet, faits/types, preuves et référentiel figé ; conditions FEEL séparées, assemblage Java standard, feedback réel et trois propositions/corrections maximum.
+
+Dialogue : tour et rôle persistés, références contrôlées, proposition éventuelle seulement dans le rôle règles sur un diagnostic accepté. La réévaluation est une commande humaine explicite, sans modification des journaux source ni publication par texte libre.
+
+Les outils et résultats contrôlent le contexte ; heartbeat, reprise bornée, annulation, doublons et journal tardif sont livrés. Les notifications suivent le commit et les traces restent durables. Les anciens quotas indiqués plus bas ne sont pas des plafonds de consommation appliqués ; politique actuelle d'observation et boucles bornées, conformément à « open bar ».
+
 ## Frontière d'autorité
 
 L'investigateur et l'agent de règles sont deux configurations explicites d'un même service Python. Ni l'un ni l'autre ne détient l'état métier ou une autorisation de publication. Java attribue la mission, les références de preuves, le budget, les outils et le jeton de tentative. Le navigateur n'appelle jamais OpenAI directement.

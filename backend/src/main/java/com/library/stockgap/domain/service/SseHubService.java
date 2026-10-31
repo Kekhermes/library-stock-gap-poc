@@ -80,7 +80,11 @@ public class SseHubService {
 
     public void publishEvent(UUID epoch, String eventType, String aggregateType, String aggregateId, Map<String, Object> data) {
         SseNotification notification = sseStreamRepository.publishEvent(epoch, eventType, aggregateType, aggregateId, data);
-        broadcast(notification);
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(new org.springframework.transaction.support.TransactionSynchronization() {
+                @Override public void afterCommit() { broadcast(notification); }
+            });
+        } else broadcast(notification);
     }
 
     private void broadcast(SseNotification notification) {

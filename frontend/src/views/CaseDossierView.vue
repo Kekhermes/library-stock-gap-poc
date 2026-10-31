@@ -325,12 +325,28 @@
           </div>
 
           <!-- Message Input -->
+          <div role="group" aria-label="Agent du dialogue" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
+            <button class="btn btn-secondary btn-sm" :aria-pressed="agentRole === 'INVESTIGATOR'" @click="agentRole = 'INVESTIGATOR'; roleChosen = true">Investigateur</button>
+            <button class="btn btn-secondary btn-sm" :aria-pressed="agentRole === 'RULE_AGENT'" @click="agentRole = 'RULE_AGENT'; roleChosen = true">Agent de règles</button>
+          </div>
+          <p v-if="chatError" role="alert" style="color: var(--accent-rose); margin-bottom: 0.75rem;">{{ chatError }}</p>
+          <span v-if="chatActive" class="badge badge-blue" style="margin-bottom: 0.75rem;">Tour expert en cours</span>
+          <button v-if="chatActive" class="btn btn-secondary btn-sm" @click="cancelChat">Annuler le tour</button>
           <div style="display: flex; gap: 0.5rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
             <input v-model="newMessage" @keyup.enter="sendMessage" placeholder="Message à l'agent..." style="flex: 1;" />
-            <button @click="sendMessage" :disabled="!newMessage.trim()" class="btn btn-primary btn-sm">
+            <button @click="sendMessage" :disabled="!newMessage.trim() || chatActive" class="btn btn-primary btn-sm">
               Envoyer
             </button>
           </div>
+          <button class="btn btn-secondary btn-sm" :disabled="chatActive || dossier.status === 'EN_ANALYSE'" @click="reassess" style="margin-top: 0.75rem;">Réévaluer avec la discussion</button>
+          <details v-if="agentTraces.length" style="margin-top: 1rem;">
+            <summary>Activité réelle des agents ({{ agentTraces.length }})</summary>
+            <div v-for="trace in agentTraces" :key="trace.event_id + ':' + trace.created_at" style="border-bottom: 1px solid var(--border-color); padding: 0.5rem 0; font-size: 0.8rem; overflow-wrap: anywhere;">
+              <strong>{{ trace.kind }} · {{ trace.status }} · {{ traceDetails(trace).toolName || trace.event_type }}</strong>
+              <div v-for="observation in traceDetails(trace).observations || []" :key="observation">{{ observation }}</div>
+              <div v-if="traceDetails(trace).usage">{{ traceDetails(trace).usage.model }} · Appels cumulés : {{ traceDetails(trace).usage.llmCalls }} · Tokens : {{ traceDetails(trace).usage.inputTokens }} / {{ traceDetails(trace).usage.outputTokens }} <span v-if="traceDetails(trace).usage.elapsedMilliseconds != null">· {{ traceDetails(trace).usage.elapsedMilliseconds }} ms</span> <span v-if="traceDetails(trace).usage.accountingComplete === false">(mesure partielle)</span></div>
+            </div>
+          </details>
 
           <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem; text-align: center;">
             ⚠️ Un message de chat ne vaut pas approbation applicative.
@@ -352,6 +368,12 @@ const store = useStockGapStore();
 const dossier = ref(null);
 const messages = ref([]);
 const newMessage = ref('');
+const agentRole = ref('INVESTIGATOR');
+const roleChosen = ref(false);
+const chatError = ref('');
+const chatActive = ref(false);
+const chatMission = ref(null);
+const agentTraces = ref([]);
 const proposalError = ref('');
 const proposalBusy = ref(false);
 let pollInterval = null;
@@ -362,15 +384,25 @@ async function loadDossier() {
     const res = await fetch(`/api/cases/${caseId}`);
     if (res.ok) {
       dossier.value = await res.json();
+      if (!roleChosen.value) agentRole.value = dossier.value.status === 'DIAGNOSTIC_ACCEPTE' ? 'RULE_AGENT' : 'INVESTIGATOR';
+      const traces = await fetch(`/api/cases/${caseId}/agent-traces`);
+      if (traces.ok) agentTraces.value = await traces.json();
+      if (chatMission.value && agentTraces.value.some(trace => trace.mission_id === chatMission.value && ['COMPLETED', 'FAILED', 'CANCELLED'].includes(trace.status))) {
+        chatActive.value = false;
+        if (agentTraces.value.some(trace => trace.mission_id === chatMission.value && trace.status === 'FAILED')) chatError.value = 'Le tour expert a échoué ; une nouvelle demande peut être envoyée.';
+      }
       if (dossier.value.activeConversationId) {
         loadMessages(dossier.value.activeConversationId);
+      }
+      if (chatMission.value && chatActive.value) {
+        const statusResponse = await fetch(`/api/agent-missions/${chatMission.value}`);
+        if (statusResponse.ok && ['COMPLETED', 'FAILED', 'CANCELLED'].includes((await statusResponse.json()).status)) chatActive.value = false;
       }
     }
   } catch (e) {
     console.error('Erreur chargement dossier', e);
   }
 }
-
 async function loadMessages(conversationId) {
   try {
     const res = await fetch(`/api/conversations/${conversationId}/messages`);
@@ -472,23 +504,47 @@ async function validateProposal() {
 }
 
 async function sendMessage() {
-  if (!newMessage.value.trim() || !dossier.value?.activeConversationId) return;
-  const convId = dossier.value.activeConversationId;
+  if (!newMessage.value.trim() || chatActive.value) return;
   const text = newMessage.value.trim();
-  newMessage.value = '';
-
+  chatError.value = '';
+  chatActive.value = true;
   try {
-    const res = await fetch(`/api/conversations/${convId}/messages`, {
+    const res = await fetch(`/api/cases/${dossier.value.caseId}/expert-messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, role: 'Admin' })
+      body: JSON.stringify({ text, role: agentRole.value })
     });
-    if (res.ok) {
-      loadMessages(convId);
-    }
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Tour expert indisponible');
+    newMessage.value = '';
+    chatMission.value = result.missionId;
+    await loadDossier();
   } catch (e) {
-    console.error('Erreur envoi message', e);
+    chatError.value = e.message;
+    chatActive.value = false;
   }
+}
+
+function traceDetails(trace) {
+  const value = trace.details?.value ?? trace.details;
+  if (typeof value === 'string') { try { return JSON.parse(value); } catch { return {}; } }
+  return value || {};
+}
+
+async function reassess() {
+
+  async function cancelChat() {
+    if(!chatMission.value)return;
+    const response=await fetch(`/api/agent-missions/${chatMission.value}/cancellation`,{method:'POST'});
+    if(response.ok){chatActive.value=false;await loadDossier();}else chatError.value='Annulation indisponible';
+  }
+  chatError.value = '';
+  try {
+    const response = await fetch(`/api/cases/${dossier.value.caseId}/reassessment`, { method: 'POST' });
+    if (!response.ok) throw new Error('Réévaluation refusée');
+    agentRole.value = 'INVESTIGATOR';
+    await loadDossier();
+  } catch (error) { chatError.value = error.message; }
 }
 
 function getStatusBadgeClass(status) {

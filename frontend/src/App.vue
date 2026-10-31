@@ -7,6 +7,7 @@
       </div>
 
       <nav class="sidebar-nav">
+        <router-link to="/demo" class="nav-item"><span>▶</span> Démo guidée</router-link>
         <router-link to="/" class="nav-item"><span>📊</span> Vue d'ensemble</router-link>
         <router-link to="/cases" class="nav-item"><span>📂</span> Dossiers d'écarts</router-link>
         <router-link to="/rules" class="nav-item"><span>⚖️</span> Catalogue des règles</router-link>
