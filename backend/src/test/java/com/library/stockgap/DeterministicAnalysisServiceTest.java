@@ -268,7 +268,7 @@ public class DeterministicAnalysisServiceTest {
         when(cases.findCaseDossier(epoch, evidence.caseId())).thenReturn(Optional.of(dossier));
         when(analyses.findActiveAnalysisId(epoch, evidence.caseId())).thenReturn(Optional.empty());
         when(rules.getActiveRuleSetVersion(epoch)).thenReturn(1);
-        when(rules.getActiveRules(epoch)).thenReturn(List.of(candidateRule("failure", "RETURN_NOT_PROJECTED", "SUPPORTED")));
+        when(rules.getRulesForVersion(epoch, 1)).thenReturn(List.of(candidateRule("failure", "RETURN_NOT_PROJECTED", "SUPPORTED")));
         when(engine.evaluate(any(), anyList())).thenThrow(new IllegalStateException("DMN_EVALUATION_FAILED"));
         var orchestration = new AnalysisOrchestrationService(cases, analyses, rules, missions, outbox, engine, mock(SseHubService.class));
         UUID analysisId = orchestration.startAnalysis(epoch, evidence.caseId());

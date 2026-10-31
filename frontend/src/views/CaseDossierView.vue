@@ -1,16 +1,16 @@
 <template>
   <div v-if="dossier">
     <!-- Header -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-      <div style="display: flex; align-items: center; gap: 1rem;">
+    <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <div style="display: flex; flex-wrap: wrap; min-width: 0; align-items: center; gap: 1rem;">
         <router-link to="/cases" class="btn btn-secondary btn-sm">← Retour aux cas</router-link>
         <h1 style="font-size: 1.3rem; font-weight: 700;">
-          Dossier : <span style="font-family: monospace; color: var(--accent-blue);">{{ dossier.barcode }}</span>
+          Dossier : <span style="font-family: monospace; color: var(--accent-blue); overflow-wrap: anywhere;">{{ dossier.barcode }}</span>
         </h1>
         <span style="color: var(--text-muted);">{{ dossier.title }}</span>
       </div>
 
-      <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem;">
         <span :class="getStatusBadgeClass(dossier.status)">{{ formatStatus(dossier.status) }}</span>
         <button v-if="dossier.status !== 'EN_ANALYSE'" @click="startAnalysis" class="btn btn-primary btn-sm">
           ⚡ Analyser le cas
@@ -241,12 +241,41 @@
                 <pre class="code-block" style="max-height: 150px;">{{ dossier.currentProposal.dmnXml }}</pre>
               </div>
 
+              <div v-if="dossier.currentProposal.validationReport" style="border-top: 1px solid var(--border-color); padding: 0.75rem 0; font-size: 0.85rem;">
+                <strong>{{ dossier.currentProposal.validationReport.passed ? 'Validation réussie' : 'Validation refusée' }}</strong>
+                <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 0.5rem 0;">
+                  <span>Positifs : {{ dossier.currentProposal.validationReport.positiveCasesPassed }} / {{ dossier.currentProposal.validationReport.positiveCasesTested }}</span>
+                  <span>Négatifs : {{ dossier.currentProposal.validationReport.negativeCasesPassed }} / {{ dossier.currentProposal.validationReport.negativeCasesTested }}</span>
+                  <span>Replay : {{ dossier.currentProposal.validationReport.totalReplayEvaluated }}</span>
+                  <span>Régressions : {{ dossier.currentProposal.validationReport.regressionsDetected }}</span>
+                </div>
+                <div v-for="failure in dossier.currentProposal.validationReport.conflicts" :key="failure" style="color: var(--accent-rose); overflow-wrap: anywhere;">{{ failure }}</div>
+                <details v-if="dossier.currentProposal.validationReport.caseResults?.length">
+                  <summary>Résultats par cas ({{ dossier.currentProposal.validationReport.caseResults.length }})</summary>
+                  <div style="overflow-x: auto; max-height: 220px; margin-top: 0.5rem;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.75rem;">
+                      <thead><tr><th>Cas</th><th>Type</th><th>Attendu</th><th>Obtenu</th><th>Test</th></tr></thead>
+                      <tbody>
+                        <tr v-for="result in dossier.currentProposal.validationReport.caseResults" :key="result.category + ':' + result.testId">
+                          <td style="overflow-wrap: anywhere; max-width: 130px; padding: 0.35rem;">{{ result.testId }}</td>
+                          <td>{{ result.category === 'ORIGIN' ? 'Origine' : result.category === 'POSITIVE' ? 'Positif' : 'Négatif' }}</td>
+                          <td>{{ result.expectedMatch ? 'Reconnu' : 'Non reconnu' }}</td>
+                          <td>{{ result.actualMatch ? 'Reconnu' : 'Non reconnu' }}</td>
+                          <td :style="{ color: result.passed ? 'var(--accent-green)' : 'var(--accent-rose)' }">{{ result.passed ? 'Réussi' : 'Échec' }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+              </div>
+              <p v-if="proposalError" role="alert" style="color: var(--accent-rose); overflow-wrap: anywhere; margin-bottom: 0.75rem;">{{ proposalError }}</p>
+              <button v-if="!['PUBLISHED', 'STALE'].includes(dossier.currentProposal.state)" @click="validateProposal" :disabled="proposalBusy" class="btn btn-secondary btn-sm" style="margin-bottom: 0.75rem;">
+                {{ proposalBusy ? 'Traitement en cours...' : 'Tester la révision' }}
+              </button>
+
               <!-- Actions de publication -->
-              <div v-if="dossier.currentProposal.state === 'READY_FOR_APPROVAL'" style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 0.8rem; color: var(--accent-green);">
-                  ✓ Tests de replay validés
-                </span>
-                <button @click="approveProposal" class="btn btn-primary btn-sm">
+              <div v-if="dossier.currentProposal.state === 'READY_FOR_APPROVAL' && dossier.currentProposal.validationReport?.publishable" style="display: flex; justify-content: flex-end; align-items: center;">
+                <button @click="approveProposal" :disabled="proposalBusy" class="btn btn-primary btn-sm">
                   🚀 Approuver & Publier au Runtime
                 </button>
               </div>
@@ -323,6 +352,8 @@ const store = useStockGapStore();
 const dossier = ref(null);
 const messages = ref([]);
 const newMessage = ref('');
+const proposalError = ref('');
+const proposalBusy = ref(false);
 let pollInterval = null;
 
 async function loadDossier() {
@@ -394,20 +425,49 @@ async function acceptDiagnostic() {
 
 async function approveProposal() {
   const prop = dossier.value?.currentProposal;
-  if (!prop) return;
+  if (!prop?.validationReport?.publishable || proposalBusy.value) return;
+  proposalBusy.value = true;
+  proposalError.value = '';
   try {
     const res = await fetch(`/api/proposals/${prop.proposalId}/approval`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ revision: prop.revision, reportId: prop.proposalId })
+      body: JSON.stringify({ revision: prop.revision, reportId: prop.validationReport.reportId })
     });
+    if (!res.ok) {
+      const failure = await res.json();
+      throw new Error(failure.error || `Approbation refusée (HTTP ${res.status}).`);
+    }
     if (res.ok) {
       loadDossier();
       store.fetchOverview();
       store.fetchSyncSnapshot();
     }
   } catch (e) {
-    console.error('Erreur approbation proposition', e);
+    proposalError.value = e.message;
+  } finally {
+    proposalBusy.value = false;
+  }
+}
+
+async function validateProposal() {
+  const prop = dossier.value?.currentProposal;
+  if (!prop || proposalBusy.value) return;
+  proposalBusy.value = true;
+  proposalError.value = '';
+  try {
+    const response = await fetch(`/api/proposals/${prop.proposalId}/validation`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ revision: prop.revision }),
+    });
+    if (!response.ok) {
+      const failure = await response.json();
+      throw new Error(failure.error || `Validation refusée (HTTP ${response.status}).`);
+    }
+    await loadDossier();
+  } catch (failure) {
+    proposalError.value = failure.message;
+  } finally {
+    proposalBusy.value = false;
   }
 }
 
@@ -496,6 +556,28 @@ onUnmounted(() => {
   if (pollInterval) clearInterval(pollInterval);
 });
 </script>
+
+<style scoped>
+.dossier-panel {
+  min-width: 0;
+}
+.dossier-panel input {
+  min-width: 0;
+}
+.panel-header {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+@media (max-width: 1000px) {
+  .dossier-layout {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+  }
+  .dossier-panel {
+    min-height: 20rem;
+  }
+}
+</style>
 
 <style scoped>
 .agent-progress { padding: 1.25rem; border: 1px solid rgba(167, 139, 250, .45); border-radius: 8px; background: linear-gradient(135deg, rgba(139, 92, 246, .10), rgba(30, 41, 59, .35)); }

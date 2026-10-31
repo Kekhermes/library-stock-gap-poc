@@ -289,7 +289,9 @@ public class CaseRepository {
 
     private Map<String, Object> getLatestProposalForCase(UUID epoch, UUID caseId) {
         String sql = "SELECT p.proposal_id, p.current_revision, p.status, " +
-                     "pr.rationale, po.kind as operation, po.rule_id, po.dmn_xml, po.artifact_sha256, po.metadata " +
+                     "pr.rationale, po.kind as operation, po.rule_id, po.dmn_xml, po.artifact_sha256, po.metadata, " +
+                     "(SELECT v.report FROM runtime.validation_report v WHERE v.dataset_epoch = p.dataset_epoch AND v.proposal_id = p.proposal_id " +
+                     "AND v.proposal_revision = p.current_revision ORDER BY v.created_at DESC LIMIT 1) AS validation_report " +
                      "FROM runtime.rule_change_proposal p " +
                      "JOIN runtime.proposal_revision pr ON p.dataset_epoch = pr.dataset_epoch AND p.proposal_id = pr.proposal_id AND p.current_revision = pr.revision " +
                      "JOIN runtime.evidence_snapshot es ON pr.dataset_epoch = es.dataset_epoch AND pr.origin_snapshot_id = es.snapshot_id " +
@@ -304,6 +306,12 @@ public class CaseRepository {
             map.put("targetRuleId", rs.getString("rule_id"));
             map.put("dmnXml", rs.getString("dmn_xml"));
             map.put("artifactSha256", rs.getString("artifact_sha256"));
+            try {
+                String report = rs.getString("validation_report");
+                map.put("validationReport", report == null ? null : objectMapper.readValue(report, Map.class));
+            } catch (Exception failure) {
+                throw new IllegalStateException("Rapport de validation du dossier illisible", failure);
+            }
             try {
                 Map<String, Object> rat = objectMapper.readValue(rs.getString("rationale"), Map.class);
                 map.put("rationale", rat.getOrDefault("rationale", ""));

@@ -28,7 +28,7 @@ Le moteur reçoit ces faits sans LLM et conserve leurs références. Il vérifie
 
 Les conclusions équivalentes conservent toutes leurs règles contributrices. Dans la démo mono-cause, des causes distinctes concurrentes sur le même symptôme ne sont pas départagées arbitrairement ; le système demande une investigation. Cela reste un contrôle conservateur sur le domaine de démo, pas une preuve générale de compatibilité logique.
 
-`deterministicTrace`, accessible avec l'analyse et le dossier, contient entrées, valeurs manquantes, faits/provenance et résultats par règle, ou la phase/message d'une panne. L'espace de lecture détaillée des conditions FEEL et le vrai replay de publication ne sont pas encore livrés. Voir [M2 et ses vérifications](12-etat-implementation-actuel.md).
+`deterministicTrace`, accessible avec l'analyse et le dossier, contient entrées, valeurs manquantes, faits/provenance et résultats par règle, ou la phase/message d'une panne. Le replay a ensuite été livré en M3 ; l'espace de lecture détaillée des conditions FEEL reste à réaliser. Voir [M2/M3 et leurs vérifications](12-etat-implementation-actuel.md).
 
 Le système ne modifie pas les poids du LLM. Il capitalise une connaissance sous forme de règle exécutable, conservée en base et évaluée ensuite par un moteur sans IA.
 
@@ -55,7 +55,7 @@ flowchart TD
   L --> B
 ```
 
-**CIBLE :** tous ces chemins sont réels, la correction après refus est bornée. **EXISTANT :** la cascade, l'appel GPT d'investigation, la synthèse XML et le pointeur runtime existent ; chat, exploration progressive, synthèse FEEL sérialisée et tests/replay réels restent à réaliser.
+**CIBLE :** tous ces chemins sont réels, la correction après refus est bornée. **EXISTANT :** la cascade, l'appel GPT d'investigation, la synthèse XML, les tests/replay et la publication runtime vérifiée existent ; chat, exploration progressive et synthèse FEEL sérialisée restent à réaliser.
 
 ## 3. Qui fait quoi ?
 
@@ -117,7 +117,7 @@ Cette expression existe dans R001 ; elle compare des faits, pas une cause attend
 
 **CIBLE :** le LLM propose les expressions FEEL et les sorties, Java sérialise des éléments XML standard et leurs identités. Ce gabarit n'a pas le droit de contenir les conditions secrètes des futures règles. Une table lisible et son XML représentent la même version ; la trace d'essai restitue ce que le moteur a réellement évalué.
 
-Le sous-ensemble FEEL autorisé, les limites de complexité et l'instrumentation des conditions feront l'objet de l'atelier dédié. FEEL déclaratif ne signifie pas sandbox sûre pour tout modèle arbitraire : extensions Java, imports et fonctions non autorisées doivent être contrôlés.
+M3 contrôle désormais le XML et les arbres syntaxiques FEEL : faits déclarés, comparaisons/booléens simples, pas de fonctions/imports externes, une ligne et complexité structurelle bornée. L'instrumentation détaillée des conditions reste à réaliser. FEEL déclaratif ne signifie pas sandbox sûre pour tout modèle arbitraire ; les bornes de M3 ne sont pas une certification générale de temps d'exécution.
 
 ## 7. Agent LLM, outil et sortie structurée
 
@@ -140,6 +140,16 @@ Avant acceptation, l'investigateur répond sur le diagnostic. Après acceptation
 Changer le diagnostic impose une nouvelle acceptation. Changer une condition impose une nouvelle révision et de nouveaux tests. L'approbation porte sur cette révision exacte : le modèle et le texte libre du chat n'ont jamais le droit d'activer le référentiel.
 
 ## 9. Compiler, tester et publier : trois preuves différentes
+
+### Troisième traitement livré
+
+Java relit la révision en base, puis contrôle le XML et les expressions FEEL. Il exécute le candidat sur les preuves d'origine et 33 cas de test séparés : situations attendues, reprise réussie, source inconnue, mise à jour en attente, autre opération et autres causes. Une règle limitée au code-barres/site d'origine ou ne vérifiant pas l'échec réel doit échouer sur ces variantes.
+
+Le replay compare ensuite le référentiel avant/après sur ces cas, et le rapport affiche chaque résultat. Pour la portée retour actuelle, quatre positifs incluent le dossier d'origine ; les trente autres cas sont négatifs pour cette règle. Le corpus et les empreintes sont versionnés : ajuster une règle sur ces tests ne les transforme pas en preuve indépendante de qualité industrielle.
+
+L'interface affiche ce rapport, pas un badge prédéfini. Au clic d'approbation, Java retrouve la proposition/révision, le rapport exact affiché et les empreintes, puis verrouille la publication active. Une version changée ou un rapport périmé est refusé ; une bonne publication est activée atomiquement et les analyses anciennes conservent leur version.
+
+La recette PostgreSQL vérifie réellement ces écritures et la reconnaissance des trois autres retours, puis annule sa transaction. Les règles de cette recette sont des fixtures explicitement de test : aucune sortie LLM n'est inventée. Les exemples d'interface interceptés en navigateur sont également des fixtures, pas des publications du produit. Voir [les tests et limites](12-etat-implementation-actuel.md).
 
 **Compiler** vérifie qu'un modèle peut être chargé avec une structure/types compatibles. Une table qui retourne toujours une cause peut parfaitement compiler et être métier incorrecte.
 

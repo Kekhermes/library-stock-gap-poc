@@ -330,5 +330,24 @@ class DatasetTests(unittest.TestCase):
             self.assertNotIn('variantCounts', manifest)
             self.assertEqual(set(manifest['sha256']), {'seed/generated/demo/runtime.json'})
 
+    def test_rule_validation_corpus_is_separate_and_has_counterexamples(self):
+        from collections import Counter
+        root, runtime = self.generate(profile='validation')
+        corpus = json.loads((root / 'data/private/validation/rule-corpus.json').read_text())
+        self.assertEqual(len(corpus['cases']), 33)
+        self.assertEqual(Counter(case['scope'] for case in corpus['cases']), {
+            'LOCATION_MISMATCH': 9, 'ReturnReceived': 12, 'RepairStarted': 12,
+        })
+        self.assertEqual(sum(case['expectedMatch'] for case in corpus['cases']), 9)
+        for case in corpus['cases']:
+            self.assertNotIn('scope', case['evidence'])
+            self.assertNotIn('expectedMatch', case['evidence'])
+            self.assertNotIn('injectedTruth', case['evidence'])
+            self.assertEqual(len(case['evidence']['symptoms']), 1)
+        self.assertNotIn('expectedMatch', json.dumps(runtime))
+        independent = [case for case in corpus['cases'] if case['variant'] == 'UNKNOWN_SOURCE']
+        self.assertEqual(len(independent), 2)
+        self.assertTrue(all(len(case['evidence']['observations']) == 1 and case['evidence']['observations'][0]['quality'] == 'VALID' for case in independent))
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

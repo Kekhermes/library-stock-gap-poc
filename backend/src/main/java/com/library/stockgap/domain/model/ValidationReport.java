@@ -22,5 +22,18 @@ public record ValidationReport(
     int regressionsDetected,
     List<String> conflicts,
     List<String> coverageLosses,
-    Instant evaluatedAt
-) {}
+    Instant evaluatedAt,
+    String proposalSha256,
+    String candidateManifestSha256,
+    String corpusSha256,
+    List<Map<String, Object>> caseResults
+) {
+    public ValidationReport(UUID reportId, UUID proposalId, int proposalRevision, int baseRuleSetVersion, String candidateSha256,
+                            boolean passed, boolean publishable, String status, int positiveCasesTested, int positiveCasesPassed,
+                            int negativeCasesTested, int negativeCasesPassed, int totalReplayEvaluated, int regressionsDetected,
+                            List<String> conflicts, List<String> coverageLosses, Instant evaluatedAt) {
+        this(reportId, proposalId, proposalRevision, baseRuleSetVersion, candidateSha256, passed, publishable, status,
+            positiveCasesTested, positiveCasesPassed, negativeCasesTested, negativeCasesPassed, totalReplayEvaluated, regressionsDetected,
+            conflicts, coverageLosses, evaluatedAt, candidateSha256, candidateSha256, candidateSha256, List.of());
+    }
+}

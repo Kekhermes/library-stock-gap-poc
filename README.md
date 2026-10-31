@@ -10,7 +10,9 @@ Le [glossaire métier](framing/06-domaine-ddd-et-cycles-de-vie.md) définit les 
 
 L'[état d'implémentation](framing/12-etat-implementation-actuel.md) distingue le code livré de la cible. Le premier incrément est réalisé : **10 dossiers vierges, 10 exemplaires et 48 événements**, avec R001 couvrant les deux localisations ; les quatre retours et quatre réparations restent hors règle initiale.
 
-L'investigation et la synthèse XML DMN possèdent des appels OpenAI réels ; **Discussion Expert n'appelle pas encore de LLM**, et les métriques de tests/replay des propositions sont encore synthétiques. La boucle complète reste à fiabiliser.
+La validation des propositions exécute désormais un **vrai corpus de 33 cas**, puis compare le référentiel avant/après. Le rapport est lié à la révision persistée, au corpus et au manifeste candidat ; l'approbation exige le rapport affiché et refuse les validations périmées.
+
+L'investigation et la synthèse XML DMN possèdent des appels OpenAI réels ; **Discussion Expert n'appelle pas encore de LLM**, et les agents outillés/génération FEEL restent à réaliser. La boucle LLM complète n'est pas encore vérifiée.
 
 La [cible révisée](framing/00-vision-et-exigences.md) prévoit dix dossiers vierges **2 + 4 + 4**, deux agents et un chat réels, règles générées en FEEL et activées sans redémarrage. Une règle apprise sur un dossier doit reconnaître les trois autres analogues sans LLM. Voir la [roadmap](framing/13-roadmap-demo.md) et le [guide pédagogique](framing/14-guide-pedagogique.md).
 
@@ -36,7 +38,7 @@ docker compose up -d --build
 
 L'analyse depuis un dossier fige les preuves et évalue les règles DMN actives. Si elles couvrent suffisamment le dossier, aucun appel OpenAI n'est requis. Sinon, Java crée une mission Kafka ; le worker la réclame, appelle l'outil `get_case_snapshot` et demande un diagnostic JSON structuré, contrôlé côté Python puis Java.
 
-L'acceptation d'un diagnostic agentique `SUPPORTED` déclenche actuellement une synthèse GPT de XML DMN. L'approbation publie une nouvelle version de règles en base, lue au runtime. Les limites de validation et de dialogue décrites dans l'audit empêchent de présenter ce parcours comme une démo complète déjà fiabilisée.
+L'acceptation d'un diagnostic agentique `SUPPORTED` déclenche actuellement une synthèse GPT de XML DMN. Java contrôle le langage, exécute les tests et persiste le rapport. L'approbation publie la révision exacte dans une nouvelle version de règles en base, lue au runtime. Les limites d'orchestration et de dialogue décrites dans l'audit empêchent de présenter ce parcours comme une démo LLM complète déjà fiabilisée.
 
 ## Sécurité et fiabilité
 
@@ -61,5 +63,13 @@ cd .. && npm --prefix frontend run build
 ```
 
 Ces vérifications hors ligne ne prouvent pas l'accès fournisseur ni les trois usages LLM. Un essai réel doit être convenu avant les appels payants ; aucun plafond de consommation n'est fixé pour l'instant, conformément à l'interview.
+
+Recette PostgreSQL opt-in, sur la base locale du POC préparée avec R001 seule, sans appel LLM :
+
+```bash
+STOCKGAP_DB_TESTS=true mvn -q -f backend/pom.xml -Dtest=RuleGovernanceServiceTest test
+```
+
+Cette recette utilise des propositions explicitement de test, vérifie validation/publication/révisions/retrait et annule sa transaction à la fin. Ne pas l'exécuter sur une base de production ou pendant une démo en cours. Voir [les preuves et limites de M3](framing/12-etat-implementation-actuel.md).
 
 Voir le [cadrage consolidé](framing/README.md).

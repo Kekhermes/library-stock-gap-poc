@@ -1,8 +1,47 @@
 # État de réalisation et audit — 2026-10-31
 
+## Troisième incrément — vraie validation et publication sécurisée
+
+M2 est publié sur `main` dans `75e1aa0`. M3 est réalisé et vérifié localement ; ses changements ne sont pas encore committés. Les anciens constats de métriques synthétiques et de publication insuffisamment liée aux rapports ne décrivent plus ce chemin de validation.
+
+### Traitement réellement exécuté
+
+1. Le backend charge la révision persistée : XML, métadonnées, preuves d'origine, opération de changement et version de base. Un XML client différent est refusé ; le validateur ne choisit pas une autre règle que celle montrée à l'expert.
+2. `RuleValidationPolicy` vérifie le XML et les arbres syntaxiques FEEL de KIE. Une décision, une table, une ligne, une à huit entrées connues et les deux sorties `causeCode`/`epistemicStatus` sont requises. Les modèles externes, fonctions, types hors contrat et faits utilisés sans déclaration sont refusés.
+3. `RuleReplayService` évalue les preuves d'origine et un corpus technique séparé de **33 cas**, version `demo-validation-1.1.0`. Il compare le candidat seul et le référentiel avant/après, avec compteurs et résultats réellement calculés.
+4. Le rapport lie proposition/révision et contenu complet, manifeste candidat, corpus, moteur, schéma des faits et version du validateur. Une proposition passe à `READY_FOR_APPROVAL` seulement si les tests passent ; sinon `CHANGES_REQUIRED` ou `STALE`.
+5. L'approbation transmet l'identifiant du rapport affiché. La publication verrouille l'époque/version active, vérifie le rapport courant et les empreintes, prépare le manifeste évaluable puis bascule le pointeur dans une transaction. Ancien rapport, autre proposition, contenu/base/corpus modifié ou second clic de publication sont refusés avant activation.
+6. Les créations, révisions et retraits conservent les versions historiques. Une analyse charge explicitement la version du référentiel choisie à son démarrage. La consultation d'une règle peut sélectionner une version historique ou retrouver la dernière version publiée.
+
+### Corpus et limites techniques
+
+Les 33 cas couvrent localisation, retour et réparation : neuf positifs, dix-huit variantes proches/incomplètes issues du jeu technique, et six contre-signaux indépendants (source de mises à jour inconnue, mise à jour en attente, mise à jour d'une autre opération). Les sites diffèrent. Pour une proposition de retour, la recette courante compte les preuves d'origine et trois positifs indépendants (**4 positifs**), **30 négatifs**, puis **33 replays**.
+
+Les attentes sont réservées au validateur. Les preuves de diagnostic et les dix dossiers présentés dans la démo ne contiennent pas ces attentes. Les trois autres dossiers de la famille de démo sont contrôlés après publication dans la recette SQL, pas utilisés pour ajuster secrètement la proposition.
+
+Bornes actuelles : XML 20 000 octets, 256 éléments, une à huit entrées, 600 caractères par expression, 128 nœuds AST et profondeur 12 par expression. Elles limitent le format et la complexité autorisés ; elles ne constituent ni un plafond financier LLM ni une certification générale de temps d'exécution/sandbox. Les politiques `COLLECT`/`UNIQUE` restent compatibles avec la ligne unique, sans ajouter de lignes multiples au périmètre.
+
+### Preuves de réalisation
+
+| Contrôle exécuté | Résultat |
+|---|---|
+| `STOCKGAP_DB_TESTS=true mvn clean test` | **41 tests Java réussis**, aucune recette SQL ignorée |
+| Générateur complet | **17 tests réussis**, corpus final 33 cas et données publiques inchangées |
+| Tests du replay | Règle causale acceptée ; règle capturant aussi la réparation, limitée au site d'origine ou ignorant la mise à jour échouée refusée |
+| Recette PostgreSQL | Rapport persistant, publication runtime, reconnaissance des trois autres retours, révisions successives, historique, retrait, ordre réparation puis retour et rapports périmés contrôlés |
+| Fin de recette SQL | Transaction annulée ; R001 seule, dix dossiers vierges, aucune analyse/mission/proposition de test persistée |
+| Frontend | Build réussi ; 34 résultats affichés, rapport exact envoyé, conflit visible ; panneaux lisibles desktop/mobile |
+| Instance reconstruite | Backend/frontend actualisés, contrôle de préparation `READY`, couverture 2 / 8 et aucun traitement actif ajouté |
+
+La recette SQL utilise des diagnostics/règles **explicitement de test**, pas des sorties LLM. Le test navigateur intercepte uniquement des réponses de fixture marquées non publiées, puis retire les interceptions ; aucune publication réelle n'est déclenchée par ce test d'interface. Ces preuves valident M3, pas encore l'investigation/génération OpenAI.
+
+Le badge de replay inconditionnel a été retiré. L'interface lit le rapport persistant, montre ses compteurs et résultats par cas et envoie son identifiant exact. Les commandes invalides reçoivent `422`, les conflits de contenu/état `409`. La prévalidation du worker reste non publiable et distincte de la validation complète.
+
+**Prochains jalons :** M4 (missions/reprise/sécurité/mesures), M5 (deux agents OpenAI réellement outillés et génération de conditions FEEL), M6 (Discussion Expert), puis espace pédagogique M7 et recette LLM M8. Aucun appel OpenAI ou reset pendant cette finalisation de M3 ; le worker LLM n'a pas été démarré. Les tests empiriques ne prouvent pas une vérité causale ou une absence de régression sur tous les cas possibles.
+
 ## Deuxième incrément — faits fiables et exécution DMN durcie
 
-M1 a été publié sur `main` dans le commit `a3a313b`. Les changements M2 ci-dessous sont réalisés localement et vérifiés ; ils ne constituent pas encore la livraison de la boucle LLM complète.
+M1 a été publié sur `main` dans le commit `a3a313b`, puis M2 dans `75e1aa0`. Les changements M2 ci-dessous sont réalisés et vérifiés ; ils ne constituent pas encore la livraison de la boucle LLM complète.
 
 - Une observation n'est exploitable comme lieu fiable que si elle est unique, valide, située dans la période de référence et cohérente avec l'exemplaire. Absence, ambiguïté ou observations concurrentes produisent des valeurs inconnues, sans choisir le premier scan.
 - Java sélectionne les opérations métier admises par date, pas par position dans une liste. La dernière tentative connue est recherchée pour la même opération et, lorsque présent, le même identifiant de corrélation. Une reprise réussie remplace l'ancien échec ; les événements postérieurs à la référence ou non encore capturés sont exclus.
@@ -14,7 +53,7 @@ M1 a été publié sur `main` dans le commit `a3a313b`. Les changements M2 ci-de
 
 **Vérifications exécutées :** 28 tests Java sur `mvn clean test`, dont 17 tests du service déterministe ; build Vue réussi ; backend/frontend reconstruits ; contrôle local en lecture seule `READY`, dix vierges, zéro analyse/mission/conversation/proposition et couverture 2 / 8 conservée. Pas de reset ou d'inférence OpenAI pendant M2.
 
-**Limites explicites :** les traces donnent actuellement entrées, provenance et résultats par règle, pas encore tous les prédicats/identifiants de ligne dans l'espace pédagogique prévu par M7. Les expressions admises, bornes d'évaluation, corpus réel de replay et validation/publication liée au contenu restent à terminer avec M3. La composition multi-cause générale n'est pas certifiée par les tests de la démo mono-symptôme. Les agents à outils successifs et Discussion Expert restent à réaliser.
+**Limites de M2 :** les traces donnent entrées, provenance et résultats par règle, pas encore tous les prédicats/identifiants de ligne dans l'espace pédagogique prévu par M7. Le corpus et les contrôles de publication ont ensuite été réalisés en M3 ci-dessus. La composition multi-cause générale n'est pas certifiée par les tests de la démo mono-symptôme. Les agents à outils successifs et Discussion Expert restent à réaliser.
 
 ## Premier incrément réalisé — données et remise à zéro
 

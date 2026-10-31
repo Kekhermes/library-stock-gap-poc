@@ -439,6 +439,82 @@ public final class GenerateDataset {
     static String sha256(Path file) throws Exception {
         return HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(file)));
     }
+    @SuppressWarnings("unchecked")
+    Map<String, Object> validationCorpus() {
+        Map<String, String> scopes = Map.of("LOCALISATION", "LOCATION_MISMATCH", "RETOUR_NON_PROJETE", "ReturnReceived",
+            "REPARATION_NON_PROJETEE", "RepairStarted");
+        List<Map<String, Object>> cases = new ArrayList<>();
+        for (Map<String, Object> oracle : oracleCases) {
+            String family = (String) oracle.get("family");
+            if (!scopes.containsKey(family)) continue;
+            String copy = oracle.get("copyId").toString();
+            Map<String, Object> state = state(copy);
+            List<Map<String, Object>> observations = new ArrayList<>();
+            for (var observation : table("observations")) {
+                if (!copy.equals(observation.get("copyId"))) continue;
+                Map<String, Object> enriched = new LinkedHashMap<>(observation);
+                for (var location : table("locations")) {
+                    if (Objects.equals(location.get("locationId"), observation.get("locationId"))) enriched.put("siteId", location.get("siteId"));
+                }
+                observations.add(enriched);
+            }
+            Map<String, Object> symptom = new LinkedHashMap<>(cast(((List<?>) oracle.get("symptoms")).get(0)));
+            boolean location = family.equals("LOCALISATION");
+            symptom.put("kind", location ? "LOCATION_MISMATCH" : "STATUS_MISMATCH");
+            symptom.put("expectedValue", state.get(location ? "locationId" : "status"));
+            symptom.put("observedValue", cast(oracle.get("injectedTruth")).get(location ? "physicalLocationId" : "physicalStatus"));
+            Map<String, Object> evidence = obj("snapshotId", id("validation-evidence/" + oracle.get("caseId")),
+                "caseId", oracle.get("caseId"), "copyId", copy, "schemaVersion", "1.0.0",
+                "inventoryReferenceTime", REFERENCE.toString(), "dataCapturedAt", REFERENCE.toString(),
+                "caseFacts", obj(), "sourceEvents", table("sourceEvents").stream().filter(event -> copy.equals(event.get("copyId"))).toList(),
+                "operatorNotes", table("operatorNotes").stream().filter(note -> copy.equals(note.get("copyId"))).toList(),
+                "systemState", state, "observations", observations,
+                "sourceAvailability", table("sourceAvailability").stream().filter(source -> copy.equals(source.get("copyId"))).toList(),
+                "symptoms", List.of(symptom));
+            cases.add(obj("testId", oracle.get("caseId"), "scope", scopes.get(family), "variant", oracle.get("variant"),
+                "expectedMatch", "POSITIVE".equals(oracle.get("variant")), "evidence", evidence));
+            if (!location && "POSITIVE".equals(oracle.get("variant"))
+                    && cases.stream().noneMatch(test -> scopes.get(family).equals(test.get("scope")) && "QUEUED_UPDATE".equals(test.get("variant")))) {
+                String businessId = cast(oracle.get("injectedTruth")).get("businessEventId").toString();
+                for (String variant : List.of("UNKNOWN_SOURCE", "QUEUED_UPDATE", "OTHER_OPERATION_UPDATE")) {
+                    Map<String, Object> changed = cast(copyValue(evidence));
+                    List<Map<String, Object>> events = (List<Map<String, Object>>) changed.get("sourceEvents");
+                    for (var event : new ArrayList<>(events)) {
+                        if (!"IntegrationProcessed".equals(event.get("eventType")) || !businessId.equals(payload(event).get("originalEventId"))) continue;
+                        if (variant.equals("UNKNOWN_SOURCE")) events.remove(event);
+                        else if (variant.equals("QUEUED_UPDATE")) {
+                            payload(event).put("outcome", "QUEUED");
+                            payload(event).remove("errorCode");
+                        } else {
+                            var other = events.stream().filter(item -> "ReceiptReceived".equals(item.get("eventType"))).findFirst().orElseThrow();
+                            payload(event).put("originalEventId", other.get("sourceEventId"));
+                            payload(event).put("correlationId", payload(other).get("correlationId"));
+                        }
+                    }
+                    if (variant.equals("UNKNOWN_SOURCE")) {
+                        for (var source : (List<Map<String, Object>>) changed.get("sourceAvailability")) {
+                            if ("INTEGRATIONS".equals(source.get("source"))) source.put("status", "PARTIAL");
+                        }
+                    }
+                    String caseId = id("validation-counterexample/" + family + "/" + variant);
+                    changed.put("caseId", caseId);
+                    changed.put("snapshotId", id("validation-counterexample-evidence/" + family + "/" + variant));
+                    cases.add(obj("testId", caseId, "scope", scopes.get(family), "variant", variant, "expectedMatch", false, "evidence", changed));
+                }
+            }
+        }
+        return obj("schemaVersion", "1.0.0", "corpusVersion", "demo-validation-1.1.0", "generatorVersion", VERSION,
+            "referenceTime", REFERENCE.toString(), "cases", cases);
+    }
+    static Object copyValue(Object value) {
+        if (value instanceof Map<?, ?> map) {
+            Map<String, Object> copy = new LinkedHashMap<>();
+            map.forEach((key, item) -> copy.put(key.toString(), copyValue(item)));
+            return copy;
+        }
+        if (value instanceof List<?> list) return new ArrayList<>(list.stream().map(GenerateDataset::copyValue).toList());
+        return value;
+    }
     void export(Path root) throws Exception {
         for (List<Map<String, Object>> rows : tables.values()) Collections.shuffle(rows, random);
         oracleCases.sort(Comparator.comparing(c -> (String) c.get("caseId")));
@@ -464,6 +540,7 @@ public final class GenerateDataset {
         write(root.resolve(privatePath + "manifest.json"), obj("generatorVersion", VERSION, "datasetId", id("dataset"),
             "profile", profile, "seed", seed, "referenceTime", REFERENCE.toString(), "counts", counts,
             "familyCounts", families, "variantCounts", variants, "normalStateDistribution", healthy, "sha256", hashes));
+        if (profile.equals("validation")) write(root.resolve(privatePath + "rule-corpus.json"), validationCorpus());
     }
     static void increment(Map<String, Object> counts, String key) { counts.put(key, ((Number) counts.getOrDefault(key, 0)).intValue() + 1); }
     static Map<String, Object> obj(Object... pairs) {

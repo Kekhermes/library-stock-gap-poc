@@ -2,6 +2,18 @@
 
 ## Contrat cible partiellement arbitré — 2026-10-31
 
+### Validation et publication actuelles — M3
+
+Le candidat validé est désormais la révision persistée complète : XML et métadonnées, origine et version de base. Un XML client différent est rejeté. Le rapport conserve les empreintes de la proposition, du manifeste candidat et du corpus réellement exécuté, ainsi que les versions moteur/faits/validateur.
+
+Le langage courant est contrôlé avec les AST FEEL de KIE : une décision/table/ligne, une à huit entrées connues, sorties `causeCode` et `epistemicStatus`, comparaisons/booléens et tests de valeurs simples. Fonctions, imports, ressources externes et noms non déclarés sont refusés. Bornes structurelles : XML 20 000 octets / 256 éléments ; expression 600 caractères / 128 nœuds / profondeur 12. Elles ne démontrent pas une sûreté générale ni un plafond financier.
+
+Le corpus séparé contient 33 cas techniques. Les attentes n'entrent pas dans les preuves du diagnostic. Tests sur origine, positifs indépendants, négatifs et inconnus, puis replay avant/après ; compilation seule ne produit jamais un rapport publiable.
+
+Une approbation porte sur le rapport affiché et la révision exacte. Changement de contenu, base, corpus, validateur ou état de proposition invalide la publication. Le basculement actif est transactionnel, les révisions/retraits historisés et chaque analyse charge sa version figée.
+
+**Encore ouverts :** structure JSON des conditions générées par l'agent, instrumentation complète par prédicat/ligne, orchestration/permissions uniformes des missions et recette OpenAI. Les contrôles de M3 sont éprouvés sur le domaine de démo, pas certifiés pour des décisions arbitraires. Voir [les preuves M3](12-etat-implementation-actuel.md).
+
 ### État d'exécution actuel — M2
 
 Le service Java applique maintenant la sélection admissible des observations et opérations métier, la dernière tentative connue pour la même opération, la disponibilité des sources et une provenance des faits. Les valeurs inconnues sont des `null`, pas des booléens ou compteurs fabriqués.
@@ -21,7 +33,7 @@ Une règle avec entrée indispensable inconnue n'est pas évaluée comme si cett
 
 Les sorties DMN sont désormais contrôlées : `causeCode` chaîne non vide et `epistemicStatus` `SUPPORTED` ou `HYPOTHESIS`. Les pannes de compilation/évaluation et les sorties non conformes restent des erreurs techniques, pas `NO_RULE_MATCH`. Elles sont persistées et ne déclenchent pas de mission LLM.
 
-**Encore ouverts :** structure JSON des conditions générées, restrictions et bornes d'exécution, analyse générale des conflits et traces détaillées par prédicat/ligne. Les tests/replay de publication restent à implémenter. Voir [les preuves de réalisation](12-etat-implementation-actuel.md).
+Les contrôles de langage et tests/replay de publication ont été ajoutés ensuite en M3 ci-dessus. Restent la structure JSON des conditions générées, l'analyse générale des conflits et les traces détaillées par prédicat/ligne. Voir [les preuves de réalisation](12-etat-implementation-actuel.md).
 
 [L'interview et les décisions N19–N28](04-registre-des-decisions.md) fixent le résultat : le LLM produit les conditions FEEL ; Java sérialise le DMN standard, compile, teste et publie la révision approuvée au runtime. Les vagues d'arbitrage ci-dessous sont validées ; les détails historiques plus bas ne font pas autorité lorsqu'ils les contredisent. Le [glossaire explicite](06-domaine-ddd-et-cycles-de-vie.md) fait référence pour les discussions et les livrables.
 

@@ -14,7 +14,7 @@ import java.time.Instant; import java.util.*;
   EvidenceSnapshot snap=new EvidenceSnapshot(sid,caseId,d.copyId(),"1.0.0",d.inventoryReferenceTime(),Instant.now(),Map.of("caseId",caseId.toString(),"copyId",d.copyId().toString()),d.timeline(),d.operatorNotes(),d.systemState(),d.observations(),d.sourceAvailability(),d.symptoms());
   analyses.insertSnapshot(epoch,snap); analyses.insertAnalysisRun(epoch,aid,caseId,sid,version);
     DeterministicAnalysisService.DeterministicEvaluationResult result;
-    try { result=dmn.evaluate(snap,rules.getActiveRules(epoch)); }
+    try { result=dmn.evaluate(snap,rules.getRulesForVersion(epoch,version)); }
     catch (RuntimeException failure) {
     analyses.failDeterministicAnalysis(epoch,aid,String.valueOf(failure.getMessage()));
      sse.publishEvent(epoch,"AnalysisChanged","Analysis",aid.toString(),Map.of("analysisId",aid,"caseId",caseId,"state","FAILED","reason","DMN_EVALUATION_FAILED","message",String.valueOf(failure.getMessage())));

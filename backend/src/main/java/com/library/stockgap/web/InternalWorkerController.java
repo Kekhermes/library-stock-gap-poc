@@ -20,17 +20,20 @@ public class InternalWorkerController {
     private final AnalysisRepository analysisRepository;
     private final RuleRepository ruleRepository;
     private final DmnEngineService dmnEngineService;
+    private final com.library.stockgap.domain.service.RuleValidationPolicy rulePolicy;
 
     public InternalWorkerController(ActiveDatasetRepository activeDatasetRepository,
                                     MissionRepository missionRepository,
                                     AnalysisRepository analysisRepository,
                                     RuleRepository ruleRepository,
-                                    DmnEngineService dmnEngineService) {
+                                    DmnEngineService dmnEngineService,
+                                    com.library.stockgap.domain.service.RuleValidationPolicy rulePolicy) {
         this.activeDatasetRepository = activeDatasetRepository;
         this.missionRepository = missionRepository;
         this.analysisRepository = analysisRepository;
         this.ruleRepository = ruleRepository;
         this.dmnEngineService = dmnEngineService;
+        this.rulePolicy = rulePolicy;
     }
 
     private UUID getEpoch() {
@@ -156,6 +159,11 @@ public class InternalWorkerController {
             @PathVariable UUID missionId,
             @RequestBody Map<String, Object> body) {
         String dmnXml = (String) body.get("dmnXml");
+        try {
+            rulePolicy.validate(dmnXml);
+        } catch (IllegalArgumentException failure) {
+            return ResponseEntity.ok(Map.of("valid", false, "publishable", false, "message", String.valueOf(failure.getMessage())));
+        }
         boolean valid = dmnEngineService.validateDmnXml(dmnXml);
         return ResponseEntity.ok(Map.of(
             "valid", valid,

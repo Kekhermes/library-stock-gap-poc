@@ -1,5 +1,13 @@
 # Vérification effective des ressources de données
 
+## Corpus M3 — réalisé et vérifié
+
+Le générateur produit désormais `data/private/validation/rule-corpus.json`, version `demo-validation-1.1.0`, **33 cas techniques**. Une copie identique est embarquée dans le validateur backend. Les trois portées localisation/retour/réparation possèdent des positifs, négatifs et inconnus ; six variantes isolent source de mises à jour inconnue, attente de mise à jour et mauvais lien d'opération.
+
+La régénération en temporaire a confirmé que les données publiques validation restent identiques octet pour octet. Les attentes du corpus sont hors des preuves et ne sont pas ajoutées au runtime demo. La suite complète actuelle compte **17 tests réussis** (35,784 secondes lors de cette finalisation).
+
+Tests backend : **41 tests réussis**, recette PostgreSQL activée. Le replay causal passe ; les règles trop larges, spécifiques au site ou ignorant l'échec sont refusées. La recette de publication annule toutes ses écritures à la fin et laisse dix dossiers vierges/R001 seule. Voir [l'état M3](../../12-etat-implementation-actuel.md). Les métriques et corpus historiques ci-dessous sont conservés comme archive de M1, pas comme mesure actuelle de publication.
+
 ## Générateur 2.0.0 et jeu minimal — réalisé
 
 Le profil demo contient dix titres, dix exemplaires et dix dossiers 2/4/4, tous positifs et non analysés au chargement, avec 48 événements. Les profils validation et holdout restent séparés ; ils sont régénérés avec les nouvelles identités/version et conservent leurs tailles de 180/90 et 240/120.

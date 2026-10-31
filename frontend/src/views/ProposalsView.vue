@@ -37,7 +37,12 @@
           <pre class="code-block" style="max-height: 180px;">{{ p.dmnXml }}</pre>
         </div>
 
-        <div style="display: flex; justify-content: flex-end; gap: 0.75rem;" v-if="p.status === 'READY_FOR_APPROVAL'">
+        <div v-if="p.validationReport" style="font-size: 0.85rem; margin-bottom: 0.75rem;">
+          Positifs : {{ p.validationReport.positiveCasesPassed }} / {{ p.validationReport.positiveCasesTested }} ·
+          Négatifs : {{ p.validationReport.negativeCasesPassed }} / {{ p.validationReport.negativeCasesTested }} ·
+          Replay : {{ p.validationReport.totalReplayEvaluated }} · Régressions : {{ p.validationReport.regressionsDetected }}
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem;" v-if="p.status === 'READY_FOR_APPROVAL' && p.validationReport?.publishable">
           <button @click="publish(p)" class="btn btn-primary btn-sm">
             🚀 Approuver & Publier au Runtime
           </button>
@@ -70,7 +75,7 @@ async function publish(p) {
     const res = await fetch(`/api/proposals/${p.proposalId}/approval`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ revision: p.currentRevision, reportId: p.proposalId })
+      body: JSON.stringify({ revision: p.currentRevision, reportId: p.validationReport.reportId })
     });
     if (res.ok) {
       loadProposals();

@@ -16,9 +16,10 @@ Autorités : `../00-conventions.md` et `../../09-donnees-evaluation-et-reset.md`
 - `data/private/<profil>/oracle.json` : vérité injectée, événements masqués et conclusions admissibles distincts.
 - `data/private/<profil>/catalogue.md` : catalogue intégral, généré depuis cet oracle, une section pour **chaque** dossier avec ID, symptôme, variante, chronologie, état, preuves et diagnostic admissible.
 - `data/private/<profil>/manifest.json` : comptes exacts et SHA-256 des trois fichiers générés ci-dessus. Le manifeste ne se hache pas lui-même.
+- `data/private/validation/rule-corpus.json` : corpus technique M3, 33 cas et attentes hors preuves ; copie contrôlée dans la ressource backend `rules/validation-corpus.json`, jamais dans le jeu public demo.
 - `data/verification.md` : résultats et empreintes obtenus pendant la vérification de livraison.
 
-**Isolation réalisée pour le jeu minimal** : le backend embarque uniquement le runtime demo et son manifeste public. Ni oracle ni catalogue privé n'est copié dans ses ressources. Le worker ne reçoit pas le dépôt ni un accès SQL. Les fichiers de validation/holdout restent réservés au banc de tests ; leur utilisation pour le replay réel est encore à réaliser.
+**Isolation réalisée** : les données de diagnostic embarquées sont le runtime demo et son manifeste public. Le backend possède aussi le petit corpus M3 pour son validateur, distinct des dossiers de preuves ; les attentes ne sont jamais ajoutées aux faits de diagnostic. Ni oracle complet ni catalogue privé n'est copié dans ses ressources. Le worker ne reçoit pas le dépôt ni un accès SQL. Le holdout historique reste réservé à l'évaluation future.
 
 ## Reproduire les octets livrés
 
@@ -37,11 +38,13 @@ java -cp "$BUILD" GenerateDataset "$ROOT" 9001 holdout
 python "$ROOT/seed/test_dataset.py"
 ```
 
-Le premier argument est une racine de conception, non un chemin de fichier. Le programme ne crée que `seed/generated/<profil>/` et `data/private/<profil>/` sous cette racine ; une nouvelle exécution écrase les cinq sorties de ce profil, pas les autres profils. N'utiliser qu'une racine locale maîtrisée, sans liens symboliques malveillants. Les classes compilées ne doivent jamais être placées dans le dépôt. Les profils inconnus sont rejetés avant écriture ; la seed est un entier Java `long` signé.
+Le premier argument est une racine de conception, non un chemin de fichier. Le programme ne crée que `seed/generated/<profil>/` et `data/private/<profil>/` sous cette racine ; une nouvelle exécution écrase les cinq sorties de ce profil, et un sixième fichier de corpus pour validation, pas les autres profils. N'utiliser qu'une racine locale maîtrisée, sans liens symboliques malveillants. Les classes compilées ne doivent jamais être placées dans le dépôt. Les profils inconnus sont rejetés avant écriture ; la seed est un entier Java `long` signé.
 
 Pour régénérer sans toucher les fixtures livrées, passer une racine dans `$SCRATCH`. Pour éprouver la variation, remplacer `42` par `43`. Les tests comparent les octets de deux générations identiques et constatent également une variation des dates métier, pas seulement des identifiants.
 
 ## Profils et tailles exactes
+
+Le corpus de publication M3 est une sélection séparée de **33 dossiers de preuves techniques** (trois portées, contre-signaux indépendants inclus), version `demo-validation-1.1.0`. Il ne remplace pas les 90 dossiers du profil historique validation et n'est pas affiché comme nouveaux dossiers à analyser dans la démo. Le backend en exécute réellement les tests ; la suite du générateur compte maintenant 17 tests.
 
 | Profil | Seed livrée | Exemplaires | Dossiers | Sans dossier | Familles | Répartition privée des dossiers |
 |---|---:|---:|---:|---:|---|---|

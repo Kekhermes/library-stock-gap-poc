@@ -195,9 +195,9 @@ public class AdminApiController {
     }
 
     @GetMapping("/rules/{ruleId}")
-    public ResponseEntity<Map<String, Object>> getRule(@PathVariable String ruleId) {
+    public ResponseEntity<Map<String, Object>> getRule(@PathVariable String ruleId, @RequestParam(required = false) Integer version) {
         UUID epoch = getEpoch();
-        var ruleOpt = ruleRepository.getRuleVersion(epoch, ruleId, 1);
+        var ruleOpt = version == null ? ruleRepository.latestRuleVersion(epoch, ruleId) : ruleRepository.getRuleVersion(epoch, ruleId, version);
         return ruleOpt.<ResponseEntity<Map<String, Object>>>map(r -> ResponseEntity.ok(Map.<String, Object>of("rule", r)))
                       .orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -232,10 +232,27 @@ public class AdminApiController {
             @RequestBody Map<String, Object> body) {
         UUID epoch = getEpoch();
         int revision = ((Number) body.getOrDefault("revision", 1)).intValue();
-        // Le navigateur ne choisit jamais le rapport : le backend impose le dernier PASS de la proposition.
         UUID reportId = ruleRepository.requirePassingValidationReport(epoch, proposalId, revision);
+        Object displayed = body.get("reportId");
+        if (!(displayed instanceof String value)) throw new IllegalArgumentException("Le rapport exact affiché doit être fourni pour l'approbation");
+        if (!reportId.equals(UUID.fromString(value))) throw new IllegalStateException("Le rapport a changé : relisez la proposition et ses tests");
         int newVer = ruleGovernanceService.approveAndPublish(epoch, proposalId, revision, reportId);
         return ResponseEntity.ok(Map.of("proposalId", proposalId, "status", "PUBLISHED", "newRuleSetVersion", newVer));
+    }
+
+    @GetMapping("/proposals/{proposalId}/validation-report")
+    public ResponseEntity<Map<String, Object>> getValidationReport(@PathVariable UUID proposalId, @RequestParam(defaultValue = "1") int revision) {
+        return ruleRepository.latestValidationReport(getEpoch(), proposalId, revision).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> invalidCommand(IllegalArgumentException failure) {
+        return ResponseEntity.unprocessableEntity().body(Map.of("error", String.valueOf(failure.getMessage())));
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<Map<String, Object>> conflictingCommand(IllegalStateException failure) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", String.valueOf(failure.getMessage())));
     }
 
     @GetMapping("/publications")

@@ -174,9 +174,10 @@ public class AgentEventConsumer {
         // Prevalidate proposal automatically
         var validationReport = ruleGovernanceService.validateProposal(epoch, proposalId, 1, dmnXml);
         missionRepository.markMissionCompleted(epoch, missionId);
+        String proposalStatus = validationReport.passed() ? "READY_FOR_APPROVAL" : validationReport.status().equals("STALE") ? "STALE" : "CHANGES_REQUIRED";
 
         sseHubService.publishEvent(epoch, "ProposalChanged", "Proposal", proposalId.toString(),
-            Map.of("proposalId", proposalId, "status", "READY_FOR_APPROVAL", "ruleName", ruleName, "validationPassed", validationReport.passed()));
+            Map.of("proposalId", proposalId, "status", proposalStatus, "ruleName", ruleName, "validationPassed", validationReport.passed()));
     }
 
     private void handleRuleChangeNotProposed(UUID epoch, Map<String, Object> envelope, Map<String, Object> payload) {
