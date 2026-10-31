@@ -4,7 +4,7 @@
 
 `GenerateDataset.java` est une **simulation de sources**, pas l'application, un importeur SQL, un moteur DMN ou un moteur de diagnostic Python. Il ne lit aucun secret, ne contacte aucun réseau et ne lance aucun conteneur. Java 17 ou ultérieur suffit ; aucune dépendance Maven. Les tests utilisent `unittest` et, pour le seul contrôle JSON Schema, le module Python `jsonschema` déjà disponible dans l'environnement de réalisation.
 
-Autorités : `../00-conventions.md` et `../../09-donnees-evaluation-et-reset.md`. Le premier définit l'interface JSON exportée. Le nom court de profil est `demo`, `validation` ou `holdout` ; `demo-v1` dans le cadrage correspond ici au profil `demo` du générateur version `1.0.0`. Aucun fichier partagé n'est modifié.
+Autorités : `../00-conventions.md` et `../../09-donnees-evaluation-et-reset.md`. Le premier définit l'interface JSON exportée. Le nom court de profil est `demo`, `validation` ou `holdout` ; le générateur actuel est en **version 2.0.0**, avec nouveau jeu demo minimal. Le schéma d'export reste `1.0.0` : changer les données ne change pas leur structure.
 
 ### Arborescence
 
@@ -12,12 +12,13 @@ Autorités : `../00-conventions.md` et `../../09-donnees-evaluation-et-reset.md`
 - `seed/runtime.schema.json` : contrat JSON Schema 2020-12 strict, avec payload propre à chacun des huit types d'événement.
 - `seed/test_dataset.py` : tests exécutant réellement `javac` et `java`, en répertoire scratch.
 - `seed/generated/<profil>/runtime.json` : seules données normalisées susceptibles d'être importées dans le runtime concerné.
+- `seed/generated/<profil>/manifest.json` : volumes et empreinte du seul fichier public ; aucun label de famille ni référence privée. Ce manifeste et le runtime demo sont embarqués dans le backend.
 - `data/private/<profil>/oracle.json` : vérité injectée, événements masqués et conclusions admissibles distincts.
 - `data/private/<profil>/catalogue.md` : catalogue intégral, généré depuis cet oracle, une section pour **chaque** dossier avec ID, symptôme, variante, chronologie, état, preuves et diagnostic admissible.
 - `data/private/<profil>/manifest.json` : comptes exacts et SHA-256 des trois fichiers générés ci-dessus. Le manifeste ne se hache pas lui-même.
 - `data/verification.md` : résultats et empreintes obtenus pendant la vérification de livraison.
 
-**Isolation à réaliser lors du raccordement à l'application** : ne monter dans le service métier que le `runtime.json` du profil sélectionné. Ne monter ni `seed/`, ni `data/`, ni le dépôt entier dans les workers IA. Les oracles, catalogues et manifestes restent dans un espace de tests/expert. Le runtime holdout lui-même est réservé au banc d'évaluation finale. La séparation de fichiers ici n'est pas une preuve d'isolation Docker, SQL ou réseau ; aucun déploiement n'est livré.
+**Isolation réalisée pour le jeu minimal** : le backend embarque uniquement le runtime demo et son manifeste public. Ni oracle ni catalogue privé n'est copié dans ses ressources. Le worker ne reçoit pas le dépôt ni un accès SQL. Les fichiers de validation/holdout restent réservés au banc de tests ; leur utilisation pour le replay réel est encore à réaliser.
 
 ## Reproduire les octets livrés
 
@@ -36,7 +37,7 @@ java -cp "$BUILD" GenerateDataset "$ROOT" 9001 holdout
 python "$ROOT/seed/test_dataset.py"
 ```
 
-Le premier argument est une racine de conception, non un chemin de fichier. Le programme ne crée que `seed/generated/<profil>/` et `data/private/<profil>/` sous cette racine ; une nouvelle exécution écrase les quatre sorties de ce profil, pas les autres profils. N'utiliser qu'une racine locale maîtrisée, sans liens symboliques malveillants. Les classes compilées ne doivent jamais être placées dans le dépôt. Les profils inconnus sont rejetés avant écriture ; la seed est un entier Java `long` signé.
+Le premier argument est une racine de conception, non un chemin de fichier. Le programme ne crée que `seed/generated/<profil>/` et `data/private/<profil>/` sous cette racine ; une nouvelle exécution écrase les cinq sorties de ce profil, pas les autres profils. N'utiliser qu'une racine locale maîtrisée, sans liens symboliques malveillants. Les classes compilées ne doivent jamais être placées dans le dépôt. Les profils inconnus sont rejetés avant écriture ; la seed est un entier Java `long` signé.
 
 Pour régénérer sans toucher les fixtures livrées, passer une racine dans `$SCRATCH`. Pour éprouver la variation, remplacer `42` par `43`. Les tests comparent les octets de deux générations identiques et constatent également une variation des dates métier, pas seulement des identifiants.
 
@@ -44,7 +45,7 @@ Pour régénérer sans toucher les fixtures livrées, passer une racine dans `$S
 
 | Profil | Seed livrée | Exemplaires | Dossiers | Sans dossier | Familles | Répartition privée des dossiers |
 |---|---:|---:|---:|---:|---|---|
-| demo | 42 | 1 200 | 120 | 1 080 | 10 × 12 | 80 positifs, 20 négatifs proches, 20 preuves incomplètes |
+| demo | 42 | 10 | 10 | 0 | Localisation 2, retour 4, réparation 4 | 10 positifs, tous non analysés au chargement |
 | validation | 4242 | 180 | 90 | 90 | 10 × 9 | 30 positifs, 30 négatifs proches, 30 preuves incomplètes |
 | holdout | 9001 | 240 | 120 | 120 | 10 × 12 | 40 positifs, 40 négatifs proches, 40 preuves incomplètes |
 
@@ -54,7 +55,9 @@ Chaque profil possède son propre espace d'UUID, même avec la même seed. Les s
 
 Le holdout partage volontairement les mêmes dix mécanismes, mais pas les exemplaires, les seeds, les délais ni toutes les séquences. Ce n'est pas un corpus industriel indépendant : il mesure une généralisation synthétique limitée. Ne pas réviser les règles en lisant ses résultats avant l'évaluation finale.
 
-## Algorithme déterministe, version 1.0.0
+## Algorithme déterministe, version 2.0.0
+
+Pour `demo`, créer dix titres et dix exemplaires ; tous possèdent un dossier. L'histoire ordinaire est limitée à réception et rangement. Puis sélectionner les trois familles 2/4/4, sans variantes négatives/incomplètes ni transfert. Le résultat contient 48 événements, dix observations et une seule règle initiale. Les étapes détaillées ci-dessous décrivent aussi les profils techniques plus riches ; leurs historiques et variantes ne sont pas affichés comme dossiers de démo.
 
 1. Initialiser `java.util.Random` avec `seed XOR profile.hashCode() XOR VERSION.hashCode()` ; utiliser le générateur linéaire congruentiel 48 bits standard de Java (`Random`, multiplicateur `0x5DEECE66D`, incrément `0xB`, modulo `2^48`). Aucun `SecureRandom`, horloge système ou appel réseau.
 2. Générer les UUID avec `UUID.nameUUIDFromBytes`, sur les octets UTF-8 de `version/profil/seed/clé`. Cela produit des UUID v3 opaques. Les clés publiques sont des compteurs ou index d'entité, jamais des codes de famille. MD5 ici ne protège aucun secret : c'est seulement le mécanisme d'identité reproductible de l'API Java. Les empreintes d'intégrité des fichiers sont bien SHA-256.

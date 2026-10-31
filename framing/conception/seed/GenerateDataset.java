@@ -5,7 +5,7 @@ import java.util.*;
 
 /** Simulation hors ligne ; aucune décision diagnostique n'est exécutée. */
 public final class GenerateDataset {
-    static final String VERSION = "1.0.0";
+    static final String VERSION = "2.0.0";
     static final Instant REFERENCE = Instant.parse("2026-09-30T12:00:00Z");
     final long seed;
     final String profile;
@@ -28,8 +28,9 @@ public final class GenerateDataset {
     static final String[] KINDS = {"SHELF", "RESERVE", "RETURNS", "RECEIVING", "REPAIR"};
     final Map<String, List<Map<String, Object>>> tables = new LinkedHashMap<>();
     final Random random = new Random();
-    int population() { return profile.equals("demo") ? 1200 : profile.equals("validation") ? 180 : 240; }
+    int population() { return profile.equals("demo") ? 10 : profile.equals("validation") ? 180 : 240; }
     int perFamily() { return profile.equals("validation") ? 9 : 12; }
+    int caseCount() { return profile.equals("demo") ? 10 : perFamily() * 10; }
     int serial = 0;
     String nextId() { return id("entity/" + serial++); }
     String time(long secondsBefore) { return REFERENCE.minusSeconds(secondsBefore).toString(); }
@@ -91,7 +92,8 @@ public final class GenerateDataset {
                 scope(location(site, kind), "COMPLETE");
             }
         }
-        for (int i = 0; i < 300; i++) {
+        int titleCount = profile.equals("demo") ? 10 : 300;
+        for (int i = 0; i < titleCount; i++) {
             String base = String.format(Locale.ROOT, "978290%06d", i);
             int sum = 0; for (int d = 0; d < 12; d++) sum += (base.charAt(d) - '0') * (d % 2 == 0 ? 1 : 3);
             table("titles").add(obj("titleId", id("title/" + i), "isbn", base + ((10 - sum % 10) % 10),
@@ -99,23 +101,25 @@ public final class GenerateDataset {
         }
         List<Integer> order = new ArrayList<>(); for (int i = 0; i < population(); i++) order.add(i);
         Collections.shuffle(order, random);
-        Set<Integer> cases = new HashSet<>(order.subList(0, perFamily() * 10));
+        Set<Integer> cases = new HashSet<>(order.subList(0, caseCount()));
         for (int i = 0; i < population(); i++) {
             String copy = id("copy/" + i), site = SITES[random.nextInt(3)], shelf = location(site, "SHELF");
             table("copies").add(obj("copyId", copy, "barcode", "TR" + id("barcode/" + i).replace("-", "").substring(0, 16),
-                "titleId", id("title/" + random.nextInt(300)), "owningSiteId", site));
+                "titleId", id("title/" + random.nextInt(titleCount)), "owningSiteId", site));
             table("systemStates").add(obj("copyId", copy, "status", "NOT_REGISTERED", "siteId", site,
                 "locationId", null, "sourceEventIds", List.of()));
             long jitter = random.nextInt(86400);
             Map<String, Object> received = business(copy, "ReceiptReceived", 120L * 86400 + jitter, site, location(site, "RECEIVING"), "receiptId", nextId());
             project(copy, received, "APPLIED", "ON_SHELF", site, shelf, 119L * 86400 + jitter);
-            String loan = nextId();
-            Map<String, Object> opened = business(copy, "LoanOpened", 60L * 86400 + jitter, site, null, "loanId", loan);
-            project(copy, opened, "APPLIED", "ON_LOAN", site, null, 60L * 86400 + jitter - 60);
-            business(copy, "LoanClosed", 40L * 86400 + jitter, site, location(site, "RETURNS"), "loanId", loan);
-            Map<String, Object> returned = business(copy, "ReturnReceived", 40L * 86400 + jitter - 30, site, location(site, "RETURNS"), "loanId", loan);
-            project(copy, returned, "APPLIED", "ON_SHELF", site, shelf, 39L * 86400 + jitter);
-            if (i % 4 == 0) {
+            if (!profile.equals("demo")) {
+                String loan = nextId();
+                Map<String, Object> opened = business(copy, "LoanOpened", 60L * 86400 + jitter, site, null, "loanId", loan);
+                project(copy, opened, "APPLIED", "ON_LOAN", site, null, 60L * 86400 + jitter - 60);
+                business(copy, "LoanClosed", 40L * 86400 + jitter, site, location(site, "RETURNS"), "loanId", loan);
+                Map<String, Object> returned = business(copy, "ReturnReceived", 40L * 86400 + jitter - 30, site, location(site, "RETURNS"), "loanId", loan);
+                project(copy, returned, "APPLIED", "ON_SHELF", site, shelf, 39L * 86400 + jitter);
+            }
+            if (!profile.equals("demo") && i % 4 == 0) {
                 String destination = SITES[(Arrays.asList(SITES).indexOf(site) + 1) % 3], transfer = nextId();
                 Map<String, Object> sent = business(copy, "TransferDispatched", 30L * 86400 + jitter, site, null,
                     "transferId", transfer, "fromSiteId", site, "toSiteId", destination);
@@ -180,9 +184,9 @@ public final class GenerateDataset {
     }
     void simulate() {
         Collections.shuffle(table("cases"), random);
-        for (int index = 0; index < perFamily() * 10; index++) {
+        for (int index = 0; index < caseCount(); index++) {
             Map<String, Object> c = table("cases").get(index);
-            int family = index / perFamily();
+            int family = profile.equals("demo") ? (index < 2 ? 0 : index < 6 ? 2 : 5) : index / perFamily();
             if (family == 6 || family == 8) { uncertaintyCase(c, family, index % perFamily()); continue; }
             if (family == 9) { compositeCase(c, index % perFamily()); continue; }
             if (family != 0) {
@@ -216,7 +220,7 @@ public final class GenerateDataset {
         }
     }
     String variant(int index) {
-        return profile.equals("demo") ? (index < 8 ? "POSITIVE" : index < 10 ? "NEAR_NEGATIVE" : "INCOMPLETE")
+        return profile.equals("demo") ? "POSITIVE"
             : new String[]{"POSITIVE", "NEAR_NEGATIVE", "INCOMPLETE"}[index % 3];
     }
     void projectionCase(Map<String, Object> c, int family, int ordinal) {
@@ -445,6 +449,10 @@ public final class GenerateDataset {
             "datasetId", id("dataset"), "cases", oracleCases));
         Files.writeString(root.resolve(privatePath + "catalogue.md"), catalogue(), StandardCharsets.UTF_8);
         Map<String, Object> counts = obj(); tables.forEach((name, rows) -> counts.put(name, rows.size()));
+        write(root.resolve("seed/generated/" + profile + "/manifest.json"), obj(
+            "generatorVersion", VERSION, "datasetId", id("dataset"), "profile", profile,
+            "seed", seed, "referenceTime", REFERENCE.toString(), "counts", counts,
+            "sha256", obj(runtimePath, sha256(root.resolve(runtimePath)))));
         Map<String, Object> families = obj(), variants = obj(), healthy = obj();
         for (Map<String, Object> c : oracleCases) {
             increment(families, (String) c.get("family")); increment(variants, (String) c.get("variant"));

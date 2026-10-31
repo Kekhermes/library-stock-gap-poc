@@ -1,5 +1,13 @@
 # Données, démonstration, évaluation et réinitialisation
 
+## Réalisation du premier incrément
+
+Le jeu public est désormais produit par le générateur 2.0.0 et embarqué dans le backend : **10 exemplaires, 10 titres, 10 dossiers, 48 événements**, sans règle supplémentaire ni label privé. La recette locale a vérifié R001 sur les deux localisations, puis laissé les dix dossiers vierges après remise à zéro.
+
+L'écran système et `GET /api/system/demo-check` contrôlent la préparation sans créer d'analyse ni de mission LLM. Une base déjà utilisée est conservée au démarrage ; l'utilisateur confirme la remise à zéro. Les anciennes époques restent consultables techniquement et ne polluent pas la liste active. L'adoption sûre des résultats tardifs et la boucle LLM complète restent des travaux distincts.
+
+Les profils techniques historiques ne sont pas le jeu présenté dans l'application ; leur simplification et l'exécution réelle du corpus de replay restent à réaliser. Voir [l'état et les preuves](12-etat-implementation-actuel.md).
+
 ## Cible actuelle — validée le 2026-10-31
 
 Cette section remplace la volumétrie, le catalogue et les plafonds historiques conservés plus bas. Voir [les décisions N01–N18](04-registre-des-decisions.md) et [la vision actuelle](00-vision-et-exigences.md).
@@ -49,7 +57,7 @@ Le parcours court n'enlève pas l'exigence de réussite sur les deux familles ; 
 
 Réutiliser et fiabiliser le reset existant plutôt qu'imposer d'emblée une suppression de volumes. Résultat vérifié : nouvelle époque, dix dossiers `A_ANALYSER`, seule R001 active, aucune ancienne mission/proposition/conversation active ou réponse tardive adoptable. Les anciens états éventuellement archivés ne polluent pas l'écran initial.
 
-Préserver la configuration OpenAI et les autres projets. Confirmation explicite avant reset ; aucun nettoyage Docker global. Le support UI ou la commande de reset et son contrôle automatisé seront précisés dans la roadmap. Le POST existant n'est pas encore une preuve de reset complet.
+Préserver la configuration OpenAI et les autres projets. Confirmation explicite avant reset ; aucun nettoyage Docker global. Le support UI et le contrôle de préparation sont désormais livrés et éprouvés sur les images locales. Une remise à zéro ne démontre pas à elle seule la reprise sûre de toutes les missions : cette protection uniforme reste à réaliser.
 
 ### Fiabilité et consommation
 

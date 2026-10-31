@@ -8,13 +8,15 @@ Java/Spring Boot possède les états, dossiers de preuves figés, validations et
 
 Le [glossaire métier](framing/06-domaine-ddd-et-cycles-de-vie.md) définit les termes communs : opération métier de bibliothèque, mise à jour du stock informatique et dossier de preuves figé. La bibliothèque simulée, l'application d'analyse et ses moyens de diagnostic sont trois niveaux distincts.
 
-L'[audit du 2026-10-31](framing/12-etat-implementation-actuel.md) distingue le code livré de la cible. L'investigation et la synthèse XML DMN possèdent des appels OpenAI réels ; **Discussion Expert n'appelle pas encore de LLM**, et les métriques de tests/replay des propositions sont encore synthétiques. Le jeu actuel contient 120 dossiers, pas les dix de la nouvelle démo.
+L'[état d'implémentation](framing/12-etat-implementation-actuel.md) distingue le code livré de la cible. Le premier incrément est réalisé : **10 dossiers vierges, 10 exemplaires et 48 événements**, avec R001 couvrant les deux localisations ; les quatre retours et quatre réparations restent hors règle initiale.
+
+L'investigation et la synthèse XML DMN possèdent des appels OpenAI réels ; **Discussion Expert n'appelle pas encore de LLM**, et les métriques de tests/replay des propositions sont encore synthétiques. La boucle complète reste à fiabiliser.
 
 La [cible révisée](framing/00-vision-et-exigences.md) prévoit dix dossiers vierges **2 + 4 + 4**, deux agents et un chat réels, règles générées en FEEL et activées sans redémarrage. Une règle apprise sur un dossier doit reconnaître les trois autres analogues sans LLM. Voir la [roadmap](framing/13-roadmap-demo.md) et le [guide pédagogique](framing/14-guide-pedagogique.md).
 
 ## Démarrage
 
-Prérequis : Docker Engine et le plugin Compose. La clé OpenAI est requise pour une analyse.
+Prérequis : Docker Engine et le plugin Compose. La clé OpenAI est requise pour la voie LLM, pas pour le contrôle de préparation ni les diagnostics déjà couverts par R001.
 
 ```bash
 cp .env.example .env
@@ -47,8 +49,13 @@ L'acceptation d'un diagnostic agentique `SUPPORTED` déclenche actuellement une 
 
 ## Vérifications
 
+La page http://localhost:3000/system affiche la préparation initiale. `GET /api/system/demo-check` vérifie en lecture seule le jeu importé, les dix dossiers vierges, R001 seule, l'absence de traitements enregistrés et la couverture 2 / 8. Il ne crée aucune analyse ou mission et ne teste pas la disponibilité d'OpenAI.
+
+Une base existante n'est pas remplacée automatiquement au démarrage. Après confirmation explicite depuis l'écran système, la remise à zéro importe le nouveau jeu dans une époque neuve, conserve l'historique ancien et affiche le résultat des contrôles. Aucun volume Docker ni fichier de configuration n'est supprimé.
+
 ```bash
-mvn -q -f backend/pom.xml test
+mvn -q -f backend/pom.xml clean test
+/usr/bin/python3 framing/conception/seed/test_dataset.py
 cd agents && OPENAI_API_KEY=offline-audit-placeholder .venv/bin/python -m unittest -v test_worker
 cd .. && npm --prefix frontend run build
 ```

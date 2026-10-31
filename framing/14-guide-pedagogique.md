@@ -6,6 +6,16 @@ Pour développeurs et architectes découvrant agents LLM et DMN. Ce guide expliq
 
 Commencer par [la vision](00-vision-et-exigences.md), puis [le scénario 2 + 4 + 4](09-donnees-evaluation-et-reset.md). Pour les preuves de livraison actuelles, lire [l'audit](12-etat-implementation-actuel.md) ; pour les travaux restants, [la roadmap](13-roadmap-demo.md).
 
+## Premier traitement livré : préparer les dix dossiers
+
+1. Le générateur Java 2.0.0 crée dix exemplaires et leur historique court : réception/rangement, puis les seules opérations utiles aux trois causes. Les deux dossiers de localisation ont un constat fiable ailleurs ; les retours/réparations possèdent une mise à jour échouée corrélée à leur opération métier.
+2. L'export public contient les preuves, jamais les causes attendues. Son manifeste public contient volumes, version, seed et SHA-256 ; les attentes et exemples difficiles restent dans les fichiers privés de test.
+3. Le backend vérifie le manifeste, importe dans une nouvelle époque et active R001 seule. La remise à zéro change le pointeur d'époque, pas les sources de code ni la configuration OpenAI ; les anciennes données restent isolées dans leurs époques historiques.
+4. Le contrôle de préparation relit l'état actif et évalue R001 sans enregistrer d'analyse. « Deux couverts, huit hors règle » prouve la couverture de départ ; ce n'est pas huit diagnostics LLM déjà préparés.
+5. Quand l'utilisateur analyse une localisation, Java persiste un vrai diagnostic DMN. Le contrôle signale ensuite que l'époque n'est plus vierge. Une remise à zéro rétablit les dix dossiers non analysés.
+
+L'écran système affiche les neuf contrôles réels ; son état « Prête » concerne les données initiales. Il ne teste pas OpenAI et ne promet pas que Discussion Expert est livré. Voir [la recette exécutée](12-etat-implementation-actuel.md).
+
 ## 1. Ce que le système apprend
 
 Le système ne modifie pas les poids du LLM. Il capitalise une connaissance sous forme de règle exécutable, conservée en base et évaluée ensuite par un moteur sans IA.

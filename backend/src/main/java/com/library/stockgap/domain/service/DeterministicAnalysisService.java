@@ -17,8 +17,22 @@ public class DeterministicAnalysisService {
         List<UUID> ids=new ArrayList<>(); Set<String> kinds=new HashSet<>();
         for(var symptom:snapshot.symptoms()){ ids.add(UUID.fromString(symptom.get("symptomId").toString())); kinds.add(symptom.get("kind").toString()); }
         Map<String,Object> facts=facts(snapshot); List<Finding> findings=new ArrayList<>(); Set<String> covered=new HashSet<>(); List<Map<String,Object>> traces=new ArrayList<>();
-        for(var rule:rules){ var result=dmnEngineService.evaluateRule(runtime,rule,facts,snapshot.copyId(),ids); if(result.isEmpty()) traces.add(Map.of("ruleId",rule.ruleId(),"match",false)); else { findings.addAll(result); covered.addAll(rule.coveredSymptomKinds()); traces.add(Map.of("ruleId",rule.ruleId(),"match",true,"findingsCount",result.size())); } }
-        var trace=Map.<String,Object>of("rulesEvaluated",rules.size(),"ruleTraces",traces,"caseSymptomKinds",kinds,"coveredSymptomKinds",covered);
+        int evaluatedCount = 0;
+        for (var rule : rules) {
+            if (Collections.disjoint(rule.coveredSymptomKinds(), kinds)) {
+                traces.add(Map.of("ruleId", rule.ruleId(), "match", false, "evaluated", false, "reason", "SYMPTOM_OUT_OF_SCOPE"));
+                continue;
+            }
+            evaluatedCount++;
+            var result = dmnEngineService.evaluateRule(runtime, rule, facts, snapshot.copyId(), ids);
+            if (result.isEmpty()) traces.add(Map.of("ruleId", rule.ruleId(), "match", false, "evaluated", true));
+            else {
+                findings.addAll(result);
+                covered.addAll(rule.coveredSymptomKinds());
+                traces.add(Map.of("ruleId", rule.ruleId(), "match", true, "evaluated", true, "findingsCount", result.size()));
+            }
+        }
+        var trace=Map.<String,Object>of("rulesEvaluated",evaluatedCount,"rulesConsidered",rules.size(),"ruleTraces",traces,"caseSymptomKinds",kinds,"coveredSymptomKinds",covered);
         if(findings.isEmpty()) return new DeterministicEvaluationResult(false,FallbackReason.NO_RULE_MATCH,List.of(),trace);
         return new DeterministicEvaluationResult(covered.containsAll(kinds), covered.containsAll(kinds)?null:FallbackReason.PARTIAL_COVERAGE, findings, trace);
     }
@@ -136,10 +150,6 @@ public class DeterministicAnalysisService {
         f.put("transfersDispatchedCount", count(s, "TransferDispatched"));
         f.put("transfersReceivedCount", count(s, "TransferReceived"));
         f.put("repairsCount", count(s, "RepairStarted"));
-
-        // 7. Backward-compatibility aliases for rules previously synthesized by agent in database
-        f.put("diagnosticConclusion", "SUPPORTED");
-        f.put("acceptedDiagnosticConclusion", "SUPPORTED");
 
         return f;
     }

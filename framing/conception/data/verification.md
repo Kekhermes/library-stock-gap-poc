@@ -1,5 +1,13 @@
 # Vérification effective des ressources de données
 
+## Générateur 2.0.0 et jeu minimal — réalisé
+
+Le profil demo contient dix titres, dix exemplaires et dix dossiers 2/4/4, tous positifs et non analysés au chargement, avec 48 événements. Les profils validation et holdout restent séparés ; ils sont régénérés avec les nouvelles identités/version et conservent leurs tailles de 180/90 et 240/120.
+
+Suite complète actuelle : **16 tests réussis** en 32,711 secondes ; références, dates, sources masquées, négatifs, données incomplètes, schéma public et reproductibilité sont contrôlés. Les cinq fichiers de chaque profil comprennent désormais un manifeste public distinct du manifeste privé. Douze empreintes des six manifestes ont été vérifiées ; les ressources backend correspondent au seul export public demo.
+
+Le contrôle backend et les resets ont également été exécutés sur l'instance locale : voir [l'état de réalisation](../../12-etat-implementation-actuel.md). Les chiffres et empreintes des sections historiques suivantes ne décrivent pas la version 2.0.0 ; les manifestes actuels font foi.
+
 ## Actualisation du vocabulaire — 2026-10-31
 
 Le rendu des catalogues emploie désormais « opération métier », « mise à jour du stock informatique » et « état du stock informatique ». Les extraits JSON, identifiants, codes et valeurs métier restent inchangés ; une légende explique les noms techniques conservés. Le [glossaire validé](../../06-domaine-ddd-et-cycles-de-vie.md) fait référence.

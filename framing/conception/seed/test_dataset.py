@@ -20,21 +20,21 @@ class DatasetTests(unittest.TestCase):
         return root / 'out', runtime
 
     def test_population_et_histoire_normale(self):
-        _, runtime = self.generate()
-        self.assertEqual(len(runtime.get('copies', [])), 1200)
-        self.assertEqual(len(runtime['cases']), 120)
-        self.assertEqual(len({c['copyId'] for c in runtime['cases']}), 120)
-        self.assertEqual(len(runtime['systemStates']), 1200)
-        case_copies = {c['copyId'] for c in runtime['cases']}
-        healthy = [s for s in runtime['systemStates'] if s['copyId'] not in case_copies]
-        self.assertEqual(len(healthy), 1080)
-        statuses = {s['status'] for s in healthy}
-        self.assertTrue({'ON_SHELF', 'ON_LOAN', 'IN_TRANSIT', 'RECEIVING', 'IN_REPAIR'} <= statuses)
-        events = runtime['sourceEvents']
-        for copy in [c for c in runtime['copies'] if c['copyId'] not in case_copies]:
-            kinds = {e['eventType'] for e in events if e['copyId'] == copy['copyId']}
-            self.assertTrue({'ReceiptReceived', 'LoanOpened', 'LoanClosed', 'ReturnReceived', 'IntegrationProcessed'} <= kinds)
-        self.assertTrue(any(e['eventType'] == 'TransferReceived' for e in events))
+        from collections import Counter
+        root, runtime = self.generate()
+        self.assertEqual(len(runtime['copies']), 10)
+        self.assertEqual(len(runtime['titles']), 10)
+        self.assertEqual(len(runtime['cases']), 10)
+        self.assertEqual(len({case['copyId'] for case in runtime['cases']}), 10)
+        self.assertEqual(len(runtime['systemStates']), 10)
+        self.assertEqual(len(runtime['sourceEvents']), 48)
+        self.assertTrue(all(case['status'] == 'A_ANALYSER' and len(case['symptoms']) == 1 for case in runtime['cases']))
+        oracle = json.loads((root / 'data/private/demo/oracle.json').read_text())
+        self.assertEqual(Counter(case['family'] for case in oracle['cases']), {
+            'LOCALISATION': 2, 'RETOUR_NON_PROJETE': 4, 'REPARATION_NON_PROJETEE': 4,
+        })
+        self.assertTrue(all(case['variant'] == 'POSITIVE' for case in oracle['cases']))
+        self.assertEqual([rule['ruleId'] for rule in runtime['initialRuleSet']['rules']], ['R001'])
 
     def test_retours_normaux_sans_double_retour(self):
         _, runtime = self.generate()
@@ -47,8 +47,8 @@ class DatasetTests(unittest.TestCase):
         self.assertTrue(path.is_file(), 'L’oracle privé de simulation doit être exporté')
         oracle = json.loads(path.read_text())
         rows = [c for c in oracle['cases'] if c['family'] == 'LOCALISATION']
-        self.assertEqual(len(rows), 12)
-        self.assertEqual({c['variant'] for c in rows}, {'POSITIVE', 'NEAR_NEGATIVE', 'INCOMPLETE'})
+        self.assertEqual(len(rows), 2)
+        self.assertEqual({c['variant'] for c in rows}, {'POSITIVE'})
         for case in rows:
             obs = [o for o in runtime['observations'] if o['copyId'] == case['copyId'] and o['quality'] == 'VALID']
             state = next(s for s in runtime['systemStates'] if s['copyId'] == case['copyId'])
@@ -64,14 +64,14 @@ class DatasetTests(unittest.TestCase):
             self.assertNotIn(forbidden, text)
 
     def test_perturbations_projection_corrigees_ou_masquees(self):
-        root, runtime = self.generate()
-        oracle = json.loads((root / 'data/private/demo/oracle.json').read_text())
+        root, runtime = self.generate(profile='validation')
+        oracle = json.loads((root / 'data/private/validation/oracle.json').read_text())
         mechanisms = {'PRET_NON_PROJETE': 'LoanOpened', 'RETOUR_NON_PROJETE': 'ReturnReceived',
             'TRANSFERT_INCOHERENT': 'TransferReceived', 'RECEPTION_NON_INTEGREE': 'ReceiptReceived',
             'REPARATION_NON_PROJETEE': 'RepairStarted', 'RETARD_INTEGRATION': 'LoanOpened'}
         for family, event_type in mechanisms.items():
             rows = [c for c in oracle['cases'] if c['family'] == family]
-            self.assertEqual(len(rows), 12, family)
+            self.assertEqual(len(rows), 9, family)
             for case in rows:
                 events = [e for e in runtime['sourceEvents'] if e['copyId'] == case['copyId']]
                 target = next(e for e in events if e['sourceEventId'] == case['injectedTruth']['businessEventId'])
@@ -93,10 +93,10 @@ class DatasetTests(unittest.TestCase):
                     self.assertEqual(state['status'], 'RECEIVING' if case['variant'] == 'NEAR_NEGATIVE' else 'NOT_REGISTERED')
 
     def test_incertitude_et_composition_sans_invention_de_perte(self):
-        root, runtime = self.generate()
-        oracle = json.loads((root / 'data/private/demo/oracle.json').read_text())
+        root, runtime = self.generate(profile='validation')
+        oracle = json.loads((root / 'data/private/validation/oracle.json').read_text())
         from collections import Counter
-        self.assertEqual(Counter(c['family'] for c in oracle['cases']), {f:12 for f in (
+        self.assertEqual(Counter(c['family'] for c in oracle['cases']), {f:9 for f in (
             'LOCALISATION', 'PRET_NON_PROJETE', 'RETOUR_NON_PROJETE', 'TRANSFERT_INCOHERENT', 'RECEPTION_NON_INTEGREE',
             'REPARATION_NON_PROJETEE', 'INVENTAIRE_INCOMPLET', 'RETARD_INTEGRATION', 'ABSENCE_INEXPLIQUEE', 'DEUX_CAUSES')})
         for case in oracle['cases']:
@@ -119,7 +119,7 @@ class DatasetTests(unittest.TestCase):
     def test_profils_independants_variations_structurelles(self):
         from collections import Counter
         datasets = {}
-        for profile, total, cases in [('demo', 1200, 120), ('validation', 180, 90), ('holdout', 240, 120)]:
+        for profile, total, cases in [('demo', 10, 10), ('validation', 180, 90), ('holdout', 240, 120)]:
             root, runtime = self.generate(profile=profile)
             self.assertEqual(len(runtime['copies']), total)
             self.assertEqual(len(runtime['cases']), cases)
@@ -129,19 +129,19 @@ class DatasetTests(unittest.TestCase):
                 self.assertEqual(Counter(c['variant'] for c in oracle['cases']), {'POSITIVE':cases//3, 'NEAR_NEGATIVE':cases//3, 'INCOMPLETE':cases//3})
             families = {c['caseId']: c['family'] for c in oracle['cases']}
             public_order = [families[c['caseId']] for c in runtime['cases']]
-            self.assertGreater(sum(a != b for a,b in zip(public_order, public_order[1:])), cases//2)
+            self.assertNotEqual(public_order, sorted(public_order))
             datasets[profile] = runtime
         for a,b in [('demo','validation'), ('validation','holdout'), ('holdout','demo')]:
             self.assertFalse({c['copyId'] for c in datasets[a]['copies']} & {c['copyId'] for c in datasets[b]['copies']})
         def ages(data):
             from datetime import datetime
             ref = datetime.fromisoformat(data['dataset']['referenceTime'])
-            return {(ref-datetime.fromisoformat(e['occurredAt'])).total_seconds() for e in data['sourceEvents'] if e['eventType']=='LoanOpened' and e['occurredAt'] > '2026-09-30'}
+            return {(ref-datetime.fromisoformat(e['occurredAt'])).total_seconds() for e in data['sourceEvents'] if e['eventType']=='LoanOpened' and e['occurredAt'] > '2026-09-29'}
         self.assertNotEqual(ages(datasets['validation']), ages(datasets['holdout']))
 
     def test_fenetre_incomplete_ne_promet_pas_le_journal_masque(self):
-        root, runtime = self.generate()
-        oracle = json.loads((root / 'data/private/demo/oracle.json').read_text())
+        root, runtime = self.generate(profile='validation')
+        oracle = json.loads((root / 'data/private/validation/oracle.json').read_text())
         by_event = {e['sourceEventId']: e for e in runtime['sourceEvents']}
         for case in oracle['cases']:
             if case['variant'] == 'INCOMPLETE' and 'businessEventId' in case['injectedTruth'] and case['family'] != 'DEUX_CAUSES':
@@ -155,12 +155,12 @@ class DatasetTests(unittest.TestCase):
         catalogue = first / 'data/private/demo/catalogue.md'
         self.assertTrue(catalogue.is_file(), 'Le catalogue doit être généré automatiquement')
         text = catalogue.read_text()
-        self.assertEqual(text.count('\n## Cas '), 120)
+        self.assertEqual(text.count('\n## Cas '), 10)
         for case in runtime['cases']:
             self.assertIn('## Cas ' + case['caseId'], text)
         manifest = json.loads((first / 'data/private/demo/manifest.json').read_text())
-        self.assertEqual(manifest['counts']['copies'], 1200)
-        self.assertEqual(manifest['counts']['cases'], 120)
+        self.assertEqual(manifest['counts']['copies'], 10)
+        self.assertEqual(manifest['counts']['cases'], 10)
         for path, expected in manifest['sha256'].items():
             self.assertEqual(hashlib.sha256((first/path).read_bytes()).hexdigest(), expected)
         second, _ = self.generate()
@@ -185,8 +185,8 @@ class DatasetTests(unittest.TestCase):
             self.assertTrue(list(validator.iter_errors(runtime)), 'Une annotation privée doit être rejetée')
 
     def test_notes_et_perimetres_absents_sont_cites(self):
-        root, runtime = self.generate()
-        oracle = json.loads((root / 'data/private/demo/oracle.json').read_text())
+        root, runtime = self.generate(profile='validation')
+        oracle = json.loads((root / 'data/private/validation/oracle.json').read_text())
         for note in runtime['operatorNotes']:
             case = next(c for c in oracle['cases'] if c['copyId']==note['copyId'])
             self.assertIn({'kind':'operatorNote','id':note['noteId']}, case['evidenceRefs'])
@@ -288,8 +288,8 @@ class DatasetTests(unittest.TestCase):
         self.assertFalse((root/'out').exists())
 
     def test_verite_injectee_et_masquage_reel(self):
-        root, r = self.generate()
-        oracle = json.loads((root/'data/private/demo/oracle.json').read_text())
+        root, r = self.generate(profile='validation')
+        oracle = json.loads((root/'data/private/validation/oracle.json').read_text())
         public_ids = {e['sourceEventId'] for e in r['sourceEvents']}
         for case in oracle['cases']:
             truth = case['injectedTruth']
@@ -323,6 +323,12 @@ class DatasetTests(unittest.TestCase):
             self.assertEqual(runtime['dataset']['seed'], 42)
             self.assertNotIn('datasetEpoch', runtime['dataset'])
             self.assertEqual(runtime['initialRuleSet'], {'version': 1, 'rules': [{'ruleId': 'R001', 'ruleVersion': 1, 'dmnPath': 'rules/R001-v1.dmn'}]})
+            manifest = json.loads((root / 'out/seed/generated/demo/manifest.json').read_text())
+            self.assertEqual(manifest['generatorVersion'], '2.0.0')
+            self.assertEqual(manifest['counts']['cases'], 10)
+            self.assertNotIn('familyCounts', manifest)
+            self.assertNotIn('variantCounts', manifest)
+            self.assertEqual(set(manifest['sha256']), {'seed/generated/demo/runtime.json'})
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

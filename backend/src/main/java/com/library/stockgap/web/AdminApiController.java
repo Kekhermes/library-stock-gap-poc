@@ -6,6 +6,7 @@ import com.library.stockgap.domain.model.DiagnosticRecord;
 import com.library.stockgap.domain.model.EvidenceSnapshot;
 import com.library.stockgap.domain.service.AnalysisOrchestrationService;
 import com.library.stockgap.domain.service.DatasetSeedService;
+import com.library.stockgap.domain.service.DemoVerificationService;
 import com.library.stockgap.domain.service.RuleGovernanceService;
 import com.library.stockgap.infrastructure.persistence.ActiveDatasetRepository;
 import com.library.stockgap.infrastructure.persistence.AnalysisRepository;
@@ -30,6 +31,7 @@ public class AdminApiController {
     private final AnalysisOrchestrationService analysisOrchestrationService;
     private final RuleGovernanceService ruleGovernanceService;
     private final DatasetSeedService datasetSeedService;
+    private final DemoVerificationService demoVerificationService;
 
     public AdminApiController(ActiveDatasetRepository activeDatasetRepository,
                               CaseRepository caseRepository,
@@ -38,7 +40,8 @@ public class AdminApiController {
                               ConversationRepository conversationRepository,
                               AnalysisOrchestrationService analysisOrchestrationService,
                               RuleGovernanceService ruleGovernanceService,
-                              DatasetSeedService datasetSeedService) {
+                              DatasetSeedService datasetSeedService,
+                              DemoVerificationService demoVerificationService) {
         this.activeDatasetRepository = activeDatasetRepository;
         this.caseRepository = caseRepository;
         this.analysisRepository = analysisRepository;
@@ -47,6 +50,7 @@ public class AdminApiController {
         this.analysisOrchestrationService = analysisOrchestrationService;
         this.ruleGovernanceService = ruleGovernanceService;
         this.datasetSeedService = datasetSeedService;
+        this.demoVerificationService = demoVerificationService;
     }
 
     private UUID getEpoch() {
@@ -255,6 +259,11 @@ public class AdminApiController {
         String role = (String) body.getOrDefault("role", "Admin");
         var msg = conversationRepository.addMessage(epoch, conversationId, role, text, Collections.emptyList());
         return ResponseEntity.ok(msg);
+    }
+
+    @GetMapping("/system/demo-check")
+    public ResponseEntity<Map<String, Object>> verifyDemo() throws java.io.IOException {
+        return ResponseEntity.ok(demoVerificationService.verify());
     }
 
     @PostMapping("/system/reset")

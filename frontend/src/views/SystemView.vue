@@ -2,7 +2,7 @@
   <div>
     <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1.25rem;">État du système & Réinitialisation</h1>
 
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+    <div class="system-summary">
       <div class="card" style="margin-bottom: 0;">
         <div class="card-header">
           <span class="card-title">État des composants locaux</span>
@@ -32,7 +32,7 @@
 
           <div style="display: flex; justify-content: space-between;">
             <span style="color: var(--text-muted);">Worker Python :</span>
-            <span style="color: var(--accent-purple); font-weight: 600;">Agents SDK / Confluent-Kafka</span>
+            <span style="color: var(--accent-purple); font-weight: 600;">OpenAI Responses / Confluent-Kafka</span>
           </div>
 
           <div style="display: flex; justify-content: space-between;">
@@ -53,7 +53,7 @@
         <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.9rem;">
           <div>
             <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">UUID de l'époque active :</div>
-            <code style="display: block; background: #090d16; padding: 0.5rem; border-radius: 4px; font-size: 0.85rem; margin-top: 0.25rem;">
+            <code style="display: block; background: #090d16; padding: 0.5rem; border-radius: 4px; font-size: 0.85rem; margin-top: 0.25rem; overflow-wrap: anywhere;">
               {{ store.overview?.datasetEpoch || 'Non initialisée' }}
             </code>
           </div>
@@ -75,6 +75,36 @@
       </div>
     </div>
 
+    <section class="demo-preparation">
+      <div class="demo-preparation__header">
+        <h2>Préparation initiale de la démo</h2>
+        <div class="demo-preparation__actions">
+          <span v-if="demoCheck" :class="demoCheck.status === 'READY' ? 'badge badge-green' : 'badge badge-amber'">
+            {{ demoCheck.status === 'READY' ? 'Prête' : 'Remise à zéro requise' }}
+          </span>
+          <button class="btn btn-secondary btn-sm" :disabled="checking || resetting" @click="loadDemoCheck">
+            {{ checking ? 'Vérification en cours...' : 'Vérifier la préparation' }}
+          </button>
+        </div>
+      </div>
+      <p v-if="checkError" class="demo-preparation__error" role="alert">{{ checkError }}</p>
+      <table v-if="demoCheck" class="demo-preparation__checks">
+        <tbody>
+          <tr v-for="(label, key) in checkLabels" :key="key">
+            <td>{{ label }}</td>
+            <td :style="{ color: demoCheck.checks[key] ? 'var(--accent-green)' : 'var(--accent-amber)' }">
+              {{ demoCheck.checks[key] ? 'Conforme' : 'À vérifier' }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div v-if="demoCheck" class="demo-preparation__counts">
+        <span>{{ demoCheck.counts.virginCases }} / {{ demoCheck.counts.cases }} dossiers non analysés</span>
+        <span>{{ demoCheck.counts.activeRules }} règle active</span>
+        <span v-if="demoCheck.coverageEvaluated">{{ demoCheck.deterministicCases }} couverts · {{ demoCheck.uncoveredCases }} hors règle</span>
+      </div>
+    </section>
+
     <!-- Reset Box -->
     <div class="card" style="border: 1px solid var(--accent-rose); background: rgba(244, 63, 94, 0.05);">
       <div class="card-header">
@@ -83,7 +113,7 @@
       </div>
 
       <p style="font-size: 0.9rem; margin-bottom: 1rem; color: var(--text-main);">
-        La réinitialisation recrée une époque vierge, recharge les 1 200 exemplaires et 120 cas du jeu <code>demo</code>, réactive uniquement la règle initiale <code>R001 v1</code>, et archive proprement les anciennes analyses sans écraser votre clé API locale ni votre configuration.
+        La réinitialisation recharge les 10 exemplaires et les 10 dossiers non analysés du jeu <code>demo</code>, avec uniquement <code>R001 v1</code>. Elle conserve l'historique dans les anciennes époques et ne modifie ni votre clé API locale ni votre configuration.
       </p>
 
       <div style="display: flex; justify-content: flex-end;">
@@ -96,14 +126,45 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useStockGapStore } from '../stores/stockGapStore';
 
 const store = useStockGapStore();
 const resetting = ref(false);
+const checking = ref(false);
+const demoCheck = ref(null);
+const checkError = ref('');
+const checkLabels = {
+  expectedDataset: 'Version et empreinte du jeu public',
+  tenCasesAndCopies: '10 dossiers et 10 exemplaires',
+  allCasesVirgin: 'Tous les dossiers non analysés',
+  onlyBootstrapRule: 'R001 v1 seule active',
+  noAnalyses: 'Aucune analyse enregistrée',
+  noMissions: 'Aucune mission d’agent',
+  noConversations: 'Aucune conversation',
+  noProposals: 'Aucune proposition de règle',
+  expectedCoverage: '2 dossiers couverts, 8 hors règle',
+};
+
+async function loadDemoCheck() {
+  checking.value = true;
+  checkError.value = '';
+  try {
+    const response = await fetch('/api/system/demo-check');
+    if (!response.ok) throw new Error(`Vérification indisponible (HTTP ${response.status}).`);
+    demoCheck.value = await response.json();
+  } catch (error) {
+    demoCheck.value = null;
+    checkError.value = error.message || 'Vérification indisponible.';
+  } finally {
+    checking.value = false;
+  }
+}
+
+onMounted(loadDemoCheck);
 
 async function handleReset() {
-  if (!confirm("Voulez-vous réinitialiser le POC ? Tous les cas reviendront à l'état initial avec la seule règle R001 active.")) {
+  if (!confirm("Remettre la démo à zéro ? Les 10 dossiers seront non analysés, avec R001 seule active. L'historique sera conservé dans les anciennes époques.")) {
     return;
   }
 
@@ -113,7 +174,12 @@ async function handleReset() {
     if (res.ok) {
       await store.fetchOverview();
       await store.fetchSyncSnapshot();
-      alert("Système réinitialisé avec succès avec une nouvelle époque !");
+      await loadDemoCheck();
+      if (demoCheck.value?.status === 'READY') {
+        alert("Démo prête : 10 dossiers non analysés, R001 seule et couverture 2 / 8 vérifiée.");
+      } else {
+        alert("Le jeu a été rechargé, mais les vérifications de préparation ne sont pas toutes conformes.");
+      }
     } else {
       alert("Erreur lors de la réinitialisation.");
     }
@@ -125,3 +191,70 @@ async function handleReset() {
   }
 }
 </script>
+
+<style scoped>
+.system-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.demo-preparation {
+  border-top: 1px solid var(--border-color);
+  padding: 1rem 0;
+  margin-bottom: 1rem;
+}
+.demo-preparation__header,
+.demo-preparation__actions,
+.demo-preparation__counts {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.demo-preparation__header {
+  justify-content: space-between;
+}
+.demo-preparation h2 {
+  font-size: 1.1rem;
+  margin: 0;
+}
+.demo-preparation__actions button {
+  min-width: 12rem;
+  max-width: 100%;
+}
+.demo-preparation__checks {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+}
+.demo-preparation__checks td {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+.demo-preparation__checks td:last-child {
+  text-align: right;
+}
+.demo-preparation__counts {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+.demo-preparation__error {
+  color: var(--accent-rose);
+}
+.system-summary code {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 760px) {
+  .system-summary .card-header,
+  .system-summary .card > div:not(.card-header) > div {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  button {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+</style>

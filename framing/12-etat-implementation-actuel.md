@@ -1,6 +1,34 @@
-# Audit du projet — 2026-10-31
+# État de réalisation et audit — 2026-10-31
 
-## Conclusion
+## Premier incrément réalisé — données et remise à zéro
+
+Le profil `demo` du générateur **2.0.0** contient dix exemplaires, dix titres, dix dossiers et 48 événements : deux localisations, quatre retours, quatre réparations. Les dossiers sont tous non analysés au chargement ; seule R001 est active. L'historique est limité aux preuves nécessaires, sans transfert ou fonds normal supplémentaire dans ce profil.
+
+Le backend importe uniquement les données publiques et un manifeste sans labels de famille ni références d'oracle. Il contrôle l'empreinte et les volumes avant l'import. Les profils techniques de validation/évaluation restent séparés et conservent pour l'instant les mécanismes historiques ; leur réduction et leur branchement au vrai replay appartiennent à M3.
+
+`GET /api/system/demo-check` est une lecture transactionnelle : époque/empreinte, dix dossiers vierges, R001 v1 seule, zéro analyse/mission/conversation/proposition de l'époque active, couverture déterministe 2 / 8. Les évaluations ne sont pas persistées ; aucun LLM, outil Python ou mission n'est déclenché. Le statut concerne la préparation initiale des données, pas la disponibilité d'OpenAI ni la livraison du chat.
+
+La remise à zéro conserve les anciennes époques, importe le jeu minimal et vérifie le nouvel état depuis l'écran système. La navigation et cet écran ont été adaptés puis contrôlés sur desktop et mobile. Les conclusions forcées `diagnosticConclusion`/`acceptedDiagnosticConclusion` ont été retirées des faits ; une règle ne contribue pas à un type de symptôme hors de sa portée.
+
+| Contrôle exécuté | Résultat |
+|---|---|
+| Générateur, suite complète | 16 tests réussis ; seed, références, dates, corpus difficiles et reproductibilité |
+| Backend, `mvn clean test` | 15 tests réussis, dont cinq tests du jeu minimal et du contrôle de préparation |
+| Frontend | Build réussi ; écran « Prête » et neuf contrôles conformes ; largeur mobile corrigée et capture contrôlée |
+| Ressources générées | Douze empreintes conformes ; manifeste embarqué public uniquement |
+| Recette locale | Reset → READY, deux diagnostics DMN/R001 `SUPPORTED`, zéro mission LLM ; reset final → READY et dix vierges |
+
+La première tentative de recette s'est interrompue sur une assertion client utilisant `producer` au lieu du champ réel `createdOrigin`. Le bloc de remise à zéro finale a conservé l'état vierge ; le contrôle a été corrigé et la recette complète a ensuite passé. Aucune correction du moteur n'a été faite pour masquer cet écart de contrat.
+
+Les conteneurs PostgreSQL/Redpanda étaient arrêtés au début du déploiement ; ils ont été redémarrés avec leurs volumes existants. Backend/frontend ont été reconstruits, le worker LLM est resté arrêté. Les resets ont été explicitement autorisés ; aucun appel OpenAI, suppression de volume ou modification de configuration locale.
+
+Empreinte publique vérifiée : `4c4601f13cb0dbe8c4e708cdce481a45f92da83056a453eeaf32f86f43504634`. Époque finale de recette : `22ff6a01-ba2a-49f5-930b-b039b6206c7b` ; elle changera au prochain reset.
+
+**Restent à réaliser :** corrélations et qualité des faits complètes, tests/replay et publication stricts, sécurisation uniforme des missions, agents à outils successifs, génération FEEL sérialisée par Java, Discussion Expert réelle et espace DMN complet. M1 n'est pas la preuve de la boucle LLM de bout en bout.
+
+## Conclusion de l'audit initial — avant ce premier incrément
+
+Les constats ci-dessous sont l'historique qui a guidé la réalisation. La section de réalisation ci-dessus prévaut pour les points corrigés ; notamment les anciens volumes et les conclusions forcées ne décrivent plus le code actuel.
 
 Le projet n'est plus intégralement mocké : **deux chemins OpenAI réels existent dans le code**, investigation et synthèse XML DMN. En revanche, **Discussion Expert n'appelle aucun LLM**, l'investigation n'explore pas successivement les sources, et les tests de règles présentés comme réussis sont synthétiques. La boucle démonstrative fiable demandée n'est donc pas établie.
 

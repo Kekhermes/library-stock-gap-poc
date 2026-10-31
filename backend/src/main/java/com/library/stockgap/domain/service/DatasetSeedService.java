@@ -77,6 +77,18 @@ public class DatasetSeedService {
             }
             root = objectMapper.readTree(dataBytes);
             String runtimeSha = AnalysisRepository.sha256Hex(new String(dataBytes, StandardCharsets.UTF_8));
+            JsonNode manifest;
+            try (InputStream input = resourceLoader.getResource("classpath:seed/demo-manifest.json").getInputStream()) {
+                manifest = objectMapper.readTree(input);
+            }
+            if (!runtimeSha.equals(manifest.path("sha256").path("seed/generated/demo/runtime.json").asText())
+                    || root.path("cases").size() != 10 || root.path("copies").size() != 10
+                    || manifest.path("counts").path("cases").asInt() != 10
+                    || !root.path("dataset").path("datasetId").asText().equals(manifest.path("datasetId").asText())
+                    || root.path("initialRuleSet").path("rules").size() != 1
+                    || !"R001".equals(root.path("initialRuleSet").path("rules").get(0).path("ruleId").asText())) {
+                throw new IllegalArgumentException("Jeu de démonstration ou manifeste incompatible : dix dossiers et R001 seule sont requis");
+            }
 
             JsonNode dsNode = root.get("dataset");
             UUID datasetId = UUID.fromString(dsNode.get("datasetId").asText());
@@ -84,7 +96,7 @@ public class DatasetSeedService {
             long seed = dsNode.get("seed").asLong();
             Instant refTime = Instant.parse(dsNode.get("referenceTime").asText());
             Instant capturedAt = Instant.parse(dsNode.get("capturedAt").asText());
-            String generatorVersion = "1.0.0";
+            String generatorVersion = manifest.path("generatorVersion").asText();
 
             Instant now = Instant.now();
             UUID epoch = UUID.randomUUID();

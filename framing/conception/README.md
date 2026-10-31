@@ -25,7 +25,7 @@ Le [guide pédagogique](../14-guide-pedagogique.md) distingue EXISTANT/CIBLE. Le
 
 ## Périmètre
 
-Une seule règle initiale ; dix familles de désynchronisation ; 1 200 exemplaires et 120 cas dans le profil demo, avec jeux de validation/holdout séparés. Les labels cachés servent uniquement à l'évaluation, jamais aux outils d'investigation.
+Une seule règle initiale ; **dix exemplaires et dix dossiers 2 + 4 + 4** dans le profil demo du générateur 2.0.0, avec jeux de validation/holdout séparés. Le jeu public et son manifeste sont embarqués dans le backend ; les labels cachés servent uniquement à l'évaluation, jamais aux outils d'investigation. Le contrôle initial et les resets sont désormais réalisés : voir [les preuves](../12-etat-implementation-actuel.md).
 
 Les éléments détaillés de conception sont proposés pour la réalisation et doivent être réconciliés lors d'une évolution de contrat. L'autorisation de produire/publier ce dossier n'est pas une autorisation de démarrer des services applicatifs, payer des inférences ou réinitialiser des données existantes.
 

@@ -2,7 +2,11 @@
 
 ## Statut
 
-Roadmap proposée le **2026-10-31**, fondée sur [l'interview](04-registre-des-decisions.md), [la cible validée](00-vision-et-exigences.md) et [l'audit](12-etat-implementation-actuel.md). Les résultats attendus sont validés ; ce découpage de réalisation reste une proposition. Aucun jalon applicatif ci-dessous n'est déclaré livré par la rédaction de ce document.
+Réalisation autorisée le **2026-10-31**, sur la base de [l'interview](04-registre-des-decisions.md), [la cible validée](00-vision-et-exigences.md) et [l'audit](12-etat-implementation-actuel.md). Les choix techniques encore ouverts restent proposés ; la rédaction d'un document ne vaut pas livraison.
+
+**Avancement : M1 réalisé et vérifié localement.** Jeu 2 + 4 + 4, manifeste public, contrôle de préparation sans LLM, remise à zéro avec vérifications et écran responsive. La recette a produit deux diagnostics R001 et laissé dix dossiers vierges, zéro analyse/mission/conversation/proposition active, même empreinte et nouvelle époque.
+
+Deux garde-fous de M2 sont également réalisés : suppression des conclusions forcées dans les faits et filtrage d'une règle par les types de symptômes qu'elle couvre. M2 reste ouvert pour qualité des observations, corrélations, traces complètes et erreurs moteur ; M3–M8 ne sont pas déclarés livrés.
 
 Ne pas reconstruire le projet ni migrer sa stack. Réaliser des incréments courts, démontrables et documentés ; ne pas élargir le périmètre avant la preuve de la boucle.
 
@@ -25,6 +29,8 @@ Les acquisitions doivent fonctionner dans les deux ordres, retour puis réparati
 | M6 — Discussion Expert | Bloquante | M4, M5 | Dialogue réel, rôle visible, correction et révision avec effets métier | F03 |
 | M7 — Espace DMN et démo | Essentielle | M1–M6 | Compréhension des conditions et parcours guidé 10–15 min | F08, F09 |
 | M8 — Recette et documentation | Livraison | M1–M7 | Preuve directe des deux boucles et documentation à jour | F01–F10 |
+
+Preuves de M1 : 16 tests du générateur, 15 tests Java sur compilation propre, build Vue, recette REST sur images reconstruites et contrôle navigateur desktop/mobile. Aucune inférence payante ; worker LLM resté arrêté durant la recette. Voir [l'état de réalisation](12-etat-implementation-actuel.md).
 
 Les documents pédagogiques sont mis à jour **à chaque jalon**, pas uniquement en M8. M4 est un travail transversal ; ses protections sont terminées avant les premiers essais de boucle réelle.
 
