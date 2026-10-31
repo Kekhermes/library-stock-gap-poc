@@ -1,4 +1,22 @@
-# Boucle hybride et règles runtime — cadrage technique à arbitrer
+# Boucle hybride et règles runtime
+
+## Cible actuelle — 2026-10-31
+
+Les [réponses N01–N18](04-registre-des-decisions.md) et la [vision révisée](00-vision-et-exigences.md) prévalent sur les détails historiques ci-dessous.
+
+Boucle obligatoire : dossier vierge non couvert → investigateur OpenAI outillé → diagnostic sourcé → acceptation humaine → agent OpenAI proposant les conditions FEEL → sérialisation DMN standard par Java → vrais tests → approbation humaine → publication runtime → trois autres dossiers analogues reconnus sans LLM. Deux familles doivent pouvoir suivre cette boucle indépendamment ; R001 couvre déjà deux dossiers au départ.
+
+Le LLM choisit réellement la logique. Un gabarit Java peut construire les éléments XML, mais pas fournir les conditions métier préfabriquées. Les règles recombinent des faits structurés disponibles sans IA ; aucun diagnostic forcé dans les entrées, aucune nouvelle source ou fonction hôte ajoutée par du code généré.
+
+Le chat explique les preuves, recueille une correction et affine une règle. Réévaluation sur demande ; nouveau diagnostic à accepter si modifié. Toute révision de règle invalide ses tests précédents. Le rapport d'échec peut déclencher une correction automatique bornée de l'agent ; refus persistant visible, sans activation forcée.
+
+La gestion dynamique doit montrer versions, contenu exact, essais et retrait. Les nouvelles analyses prennent la publication confirmée ; les analyses en cours gardent leur version. Une transaction de pointeur seule ne prouve ni que la bonne révision a été testée ni que le manifeste complet compile.
+
+**OUVERTS pour l'atelier DMN/FEEL :** sous-ensemble, représentation des conditions, typage/provenance des faits, instrumentation des résultats vrais/faux/inconnus, restrictions et bornes d'évaluation. Pas de quota de consommation fixé maintenant ; ne pas confondre « open bar » et correction sans fin.
+
+La composition multi-cause et les remplacements coordonnés avancés ne pilotent plus la première démo. Voir [l'audit des défauts actuels](12-etat-implementation-actuel.md), [M2–M6](13-roadmap-demo.md) et [l'explication pédagogique](14-guide-pedagogique.md).
+
+## Spécification détaillée historique — à réconcilier
 
 ## 1. Décisions acquises et portée de cette page
 

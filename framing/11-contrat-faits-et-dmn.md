@@ -1,5 +1,19 @@
 # Contrat des faits et des règles DMN/FEEL
 
+## Contrat cible à préciser — 2026-10-31
+
+[L'interview](04-registre-des-decisions.md) fixe le résultat : le LLM produit les conditions FEEL ; Java sérialise le DMN standard, compile, teste et publie la révision approuvée au runtime. Les détails de syntaxe, schéma et instrumentation ci-dessous restent historiques/proposés jusqu'à l'atelier dédié.
+
+Principes conservés : faits structurés typés et sourcés, aucune IA dans leur préparation déterministe, pas d'oracle ni de conclusion préexistante exigée, aucune fonction hôte ou nouvelle source ajoutée librement par l'agent. Le JSON de proposition décrit des expressions FEEL natives et métadonnées ; il ne doit pas devenir un langage de diagnostic propriétaire avec une méthode par cause.
+
+Le contrat devra permettre une règle simple par famille inconnue reconnaissant trois autres dossiers vierges. Les faits doivent distinguer retour et réparation, corréler l'intégration à la bonne opération et tenir compte d'une reprise réussie. Une absence de source ne devient pas `false`.
+
+Le rapport et la trace seront liés au contenu exécuté : types, conditions vraies/fausses/inconnues, décision/ligne, symptômes effectivement couverts et preuves. Le contrat du candidat, les schémas/API, la sérialisation DMN et le rendu UI seront modifiés ensemble ; ce document seul ne livre pas ces contrôles.
+
+**À arbitrer :** sous-ensemble FEEL et politique de table, forme des conditions proposées, catalogue des faits, restrictions, limites d'évaluation et traces. La composition multi-cause avancée n'est pas requise pour le parcours initial. Voir [M0–M3](13-roadmap-demo.md), [l'audit](12-etat-implementation-actuel.md) et [le guide](14-guide-pedagogique.md).
+
+## Détails historiques — non globalement approuvés
+
 ## Statut
 
 DMN/FEEL, moteur Apache KIE, collecte des règles compatibles et fallback en cas d'insuffisance sont validés. Le contrat détaillé de cette page est **PROPOSÉ** ; il devra être éprouvé sur le jeu de scénarios avant gel d'implémentation.

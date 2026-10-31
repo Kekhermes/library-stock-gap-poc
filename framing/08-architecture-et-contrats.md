@@ -1,5 +1,15 @@
 # Architecture locale et contrats d'échange
 
+## Autorité actuelle — 2026-10-31
+
+La stack et les frontières Java/Python/Vue sont conservées selon [la vision actuelle](00-vision-et-exigences.md). Les mécanismes détaillés ci-dessous restent des propositions historiques, pas une liste de fonctionnalités livrées : voir [l'audit](12-etat-implementation-actuel.md).
+
+La cible privilégie dix dossiers, deux acquisitions indépendantes, outils successifs et chat réel. Les conditions FEEL sont produites par le LLM puis sérialisées en DMN standard par Java. L'adoption du SDK Agents n'est pas reconfirmée ; la Responses API actuelle constitue l'existant, pas une intégration automatiquement interchangeable.
+
+Les contrats seront réconciliés avec le code au jalon correspondant de [la roadmap](13-roadmap-demo.md), notamment tours expert, révisions, traces, missions et publication liée au rapport. Pas de nouveaux services par principe, de budgets historiques imposés ni de suppression de volumes comme unique solution de reset.
+
+## Architecture détaillée historique
+
 ## Statut
 
 **Validé** : Vue REST/SSE ; Java/Spring Boot propriétaire du domaine, des cycles de vie et de DMN ; deux rôles IA dans un service Python ; Kafka sur Redpanda ; exécution locale Docker Compose ; pas de RAG, Keycloak, Valkey, architecture multi-instance ou correction de stock.

@@ -1,77 +1,74 @@
-# Vision et exigences
+# Vision et exigences — démo simplifiée
 
-## Intention — ACQUIS
+## Statut et autorité
 
-Application pédagogique locale d'analyse des désynchronisations du stock d'une bibliothèque après inventaire. Objectif secondaire : rendre l'architecture hybride suffisamment compréhensible et crédible pour la présenter comme piste pour un projet d'entreprise.
+Cible révisée à partir des réponses de Kevin le **2026-10-31**. Cette page et le [registre des décisions](04-registre-des-decisions.md) prévalent sur les choix historiques incompatibles. Une exigence validée n'est pas une fonctionnalité déjà livrée : voir [l'audit réel](12-etat-implementation-actuel.md).
 
-Le produit doit montrer une acquisition de connaissances contrôlée, pas simplement un chatbot placé devant une base de données.
+Les détails non arbitrés sont marqués **OUVERTS** ou **PROPOSÉS**. La présente révision est documentaire ; elle n'autorise pas implicitement sa réalisation applicative.
 
-## Exigences explicites
+## Intention validée
 
-| ID | Exigence acquise |
-|---|---|
-| E01 | Le diagnostic déterministe intervient en premier ; l'investigation agentique est un fallback. |
-| E02 | L'agent propose des règles réutilisables à partir de son investigation ; un humain valide leur intégration. |
-| E03 | Une règle validée devient utilisable au runtime, dès l'analyse suivante, sans redémarrage ni livraison applicative. |
-| E04 | Un chat intégré permet à l'expert de discuter efficacement avec l'agent responsable de la proposition de règles. |
-| E05 | Les règles sont visibles ; l'agent peut proposer création, mise à jour et suppression, notamment par généralisation. Correction explicite : la modification des règles est le monopole de l'agent de règles, sans édition manuelle par l'Admin ; celui-ci peut les retirer. La création est également réservée à l'agent et ancrée dans un diagnostic ; l'Admin peut demander par chat la révision d'une règle existante. |
-| E06 | Un domaine de bibliothèque fictif mais plausible fournit stock informatique, inventaire et sources de recoupement : prêts, réceptions, etc. |
-| E07 | Les cas de désynchronisation sont déjà présents en base ; le POC n'est pas d'abord un outil de collecte d'inventaire. |
-| E08 | Un seul persona Admin omnipotent simplifie le POC. |
-| E09 | Conception DDD, objets métier, invariants et cycles de vie explicites. |
-| E10 | Frontend Vue, backend applicatif Java/Spring Boot, SSE, agents Python, communications asynchrones Kafka sur Redpanda. |
-| E11 | Exécution locale Docker/Docker Compose ; réinitialisation complète simple et documentée. |
-| E12 | Pas de RAG, Keycloak, Valkey ni architecture multi-instance à construire. |
-| E13 | Utilisation du modèle demandé GPT-5.6 Luna ; clé OpenAI fournie ultérieurement dans un `.env` ignoré par Git. |
-| E14 | Composants gratuits pour usage personnel, y compris source available ; API OpenAI payante comme exception explicite. |
-| E15 | Livrables Markdown dans `framing`, cadrage conjoint avant développement. |
+Une démo locale, démonstrative **et pédagogique**, destinée aux développeurs et architectes découvrant les agents LLM et DMN. Parcours principal de **10 à 15 minutes**, hors installation, avec approfondissement technique séparé.
 
-## Interprétations à confirmer
+Montrer une acquisition de connaissance exécutable : un cas inconnu est diagnostiqué avec un LLM réel, une règle simple est produite avec un LLM réel, puis d'autres cas deviennent déterministes **sans redémarrage et sans nouvel appel LLM de diagnostic**. Il ne s'agit ni d'entraîner les poids du modèle, ni de corriger automatiquement le stock.
 
-- « Local » désigne l'hébergement de l'application, pas une inférence hors ligne : l'appel OpenAI est une dépendance distante explicitement demandée.
-- Le coût d'usage de l'API OpenAI est distinct des licences des composants locaux. Un budget et des limites d'exécution doivent être fixés.
-- DDD est l'interprétation de « DD », compte tenu de la demande d'objets métier et de cycles de vie.
-- Pas de microservices métier supplémentaires par défaut. La séparation Java/Python et le broker constituent néanmoins plusieurs processus : délais, doublons et pannes restent à traiter même en local.
+## Jeu initial validé : 2 + 4 + 4
 
-## Garde-fous proposés — NON ENCORE ARBITRÉS
+Après première utilisation ou reset : **dix dossiers, tous non analysés**, une seule règle déterministe active.
 
-1. Distinguer un constat d'écart, une hypothèse causale, un diagnostic accepté et une règle généralisée.
-2. Une absence de preuve ne devient pas une preuve d'absence. Un résultat « indéterminé » doit être possible.
-3. Une règle déterministe peut se tromper : déterminisme signifie reproductibilité, pas vérité métier.
-4. L'agent n'écrit pas directement dans le stock ou dans le référentiel actif ; il soumet des propositions au backend.
-5. Valider un diagnostic n'approuve pas automatiquement toutes les généralisations proposées.
-6. Le texte libre du chat ne vaut pas autorisation de publication ; un acte explicite porte sur une version exacte et son rapport de validation.
-7. Les modifications coordonnées de règles sont atomiques : remplacement et retrait ne créent pas une période incohérente.
-8. Les analyses passées conservent leur référentiel et leurs preuves, même après modification ou suppression opérationnelle d'une règle.
-9. La vérité de simulation ne doit pas être accessible aux outils de diagnostic ou aux invites LLM.
+| Groupe | Dossiers | Couverture initiale | Effet attendu de l'apprentissage |
+|---|---:|---|---|
+| Localisation différente | 2 | R001, déjà active | Les deux dossiers sont diagnostiqués sans LLM lorsqu'on les analyse |
+| Retour non répercuté | 4 | Aucune règle active correspondante | Un dossier d'origine permet de créer une règle ; les trois autres sont ensuite reconnus sans LLM |
+| Réparation non répercutée | 4 | Aucune règle active correspondante | Même boucle indépendante ; les trois autres deviennent déterministes après acquisition |
 
-## Preuve pédagogique proposée
+« Règle 2 » et « règle 3 » désignent ici les futures règles apprises, pas des règles cachées préchargées. Leur identité et leurs conditions viennent des propositions réelles. Les causes connues du concepteur restent hors contexte des agents. Voir [le scénario de données](09-donnees-evaluation-et-reset.md).
 
-Une démonstration réussie doit permettre de voir :
+## Exigences fonctionnelles validées
 
-- un premier cas non couvert, avec traces de recoupement et hypothèse expliquée ;
-- une discussion métier qui modifie réellement la proposition de règle ;
-- un contre-exemple ou test négatif empêchant une règle trop large ;
-- une approbation explicite et une publication sans redémarrage ;
-- un autre cas analogue mais non identique, diagnostiqué sans appel LLM ;
-- une généralisation remplaçant une règle ancienne, avec impacts visibles ;
-- un cas ambigu pour lequel le système refuse de conclure artificiellement ;
-- une réinitialisation restaurant les cas et règles initiaux sans effacer la clé locale.
+| ID | Exigence | Preuve de réalisation attendue |
+|---|---|---|
+| E01 | Déterministe en premier, fallback automatique si le dossier n'est pas suffisamment couvert | Trace DMN et motif du relais avant la mission LLM |
+| E02 | Investigateur utilisant réellement OpenAI avec consultations successives via des outils bornés | Appels fournisseur, outils et preuves référencées, diagnostic persistant |
+| E03 | Agent de règles utilisant réellement OpenAI pour proposer les conditions FEEL | Conditions issues de la réponse LLM ; Java sérialise une structure DMN standard |
+| E04 | Création, révision, activation et retrait des règles dynamiques au runtime | Nouvelle version utilisée dès l'analyse suivante, sans rebuild, redémarrage ni déploiement |
+| E05 | Deux décisions humaines distinctes | Accepter le diagnostic, puis approuver et publier la révision de règle réellement testée |
+| E06 | Discussion Expert réelle avec les deux rôles | Réponses sourcées, explication du diagnostic, correction métier, construction et affinage de règle |
+| E07 | Rôle du chat choisi selon la phase, affiché et modifiable | Investigateur avant acceptation ; agent de règles ensuite ; retour au diagnostic possible |
+| E08 | Réévaluation sur demande explicite après une correction métier | Nouveau diagnostic à accepter si modifié ; propositions dépendantes périmées |
+| E09 | Échec des tests communiqué à l'agent, avec correction automatique bornée | Rapport réel, nouvelle révision, nouveaux tests ; arrêt visible si la correction échoue |
+| E10 | Espace de compréhension et gestion DMN/FEEL | Table lisible, FEEL exact, faits, essai sur un dossier et conditions vraies/fausses/inconnues, cycle runtime |
+| E11 | Investigation observable | Étapes, outils, preuves, synthèses intermédiaires factuelles, modèle, appels, tokens et durée réels |
+| E12 | Documentation pédagogique Markdown de tous les traitements et technologies | Explications liées au code et aux étapes de démo, avec limites et procédures vérifiables |
+| E13 | Démo simple à remettre à zéro | Retour aux dix dossiers vierges et à R001 seule ; configuration locale conservée |
 
-L'évaluation doit comparer précision, couverture déterministe, faux positifs, abstentions, appels LLM, tokens, latence et effort humain. Une baisse des appels LLM seule n'est pas une preuve de progrès.
+Pas d'éditeur manuel de règles retenu : l'expert pilote la proposition par le dialogue et les décisions applicatives. Un message « oui » n'est jamais une publication.
 
-## Hors périmètre acquis et points non décidés
+## Contraintes conservées
 
-Hors périmètre acquis : RAG, authentification Keycloak, cache Valkey, déploiement cloud, gestion multi-personas.
+La stack est conservée : Vue/Pinia/Router, Java/Spring Boot, PostgreSQL, Apache KIE DMN/FEEL, agents Python, Kafka/Redpanda, SSE et Docker Compose. Pas de migration technologique générale ni d'orchestrateur supplémentaire imposé.
 
-Décisions du 2026-10-24 : exemplaires identifiés par code-barres ; synthèses par titre/site ; trois sites avec rayons, réserves et transferts ; diagnostic et recommandations sans correction de stock ; socle mono-cause avec cas ambigus/incomplets et quelques multi-causes contrôlées ; scénarios garantis et générateur déterministe par seed.
+OpenAI existant, modèle configurable ; l'identifiant réellement accessible doit être vérifié avec le fournisseur, sans recopier une affirmation historique comme preuve actuelle. L'application locale envoie les données nécessaires aux inférences à un service distant. Aucun secret dans le navigateur ou les traces.
 
-Deuxième vague validée le 2026-10-24 : inventaire à date fixe avec activité suspendue pendant les scans ; historiques et retards d'intégration conservés ; données structurées et quelques notes opérateur libres sans RAG ; conclusions pouvant être des causes étayées ou des hypothèses incertaines, accompagnées de preuves et recommandations ; fallback automatique visible, borné et annulable ; suppression d'une règle par retrait actif avec historique conservé.
+Java reste propriétaire des états, snapshots, validations et publications. Python consulte et propose ; pas d'accès SQL libre, d'écriture de stock, de shell ou de droit de publication. Les règles déterministes utilisent des faits structurés calculés **sans LLM**, sans oracle ni conclusion fabriquée.
 
-Troisième vague validée le 2026-10-24 : DMN/FEEL avec moteur Java existant, sans DSL propriétaire ; notes réservées à l'investigation et règles sur faits structurés sans IA ; types/tests/replay sans vérification SMT dans le premier périmètre ; validation du diagnostic distincte de celle du changement de règles ; publication atomique, analyses en cours conservant leur version initiale.
+Pas de RAG, Keycloak, Valkey, multi-instance ou correction de stock dans ce périmètre. DDD sert les invariants ; il ne justifie pas de multiplier les services ou les écrans.
 
-Décisions complémentaires : création de règles uniquement par l'agent à partir d'un diagnostic ; révision par chat d'une règle existante ; deux rôles IA dans un service Python ; Java propriétaire des états métier ; Apache KIE DMN et OpenAI Agents SDK ; collecte des conclusions compatibles avec fallback sur insuffisance ou conflit ; UNE SEULE règle initiale très simple ; environ 1 200 exemplaires et 120 cas ; petits lots ; dossier à trois panneaux et mode démonstration ; plafonds techniques sans suivi monétaire.
+## Simplifier sans simuler
 
-Derniers choix validés : règle initiale de localisation différente constatée, plafonds techniques proposés acceptés comme valeurs de départ, interface française claire et sobre. Kevin demande la livraison du cadrage consolidé pour relecture, sans implémentation.
+Les dix familles, les 120 dossiers, les 1 200 exemplaires comme volumétrie imposée, les lots et la composition multi-cause ne pilotent plus le parcours initial. Des contre-exemples et données incomplètes restent dans les tests, pas comme nouvelles familles à découvrir dans la liste de démo.
 
-Restent à valider : détails du langage FEEL autorisé, contrats de faits, objectifs mesurables, prototype visuel et cohérence finale de l'ensemble.
+Les appels sont **en direct**, avec erreurs visibles et reprises bornées. Aucun mock ni replay n'est présenté comme une nouvelle exécution OpenAI. Les doubles restent légitimes dans les tests hors ligne explicitement identifiés.
+
+Après publication, les résultats DMN attendus sur les trois analogues de chaque famille doivent être reproductibles. La disponibilité et les réponses d'un LLM ne peuvent pas être garanties à chaque appel : prévol, tests réels et corrections renforcent la fiabilité sans fabriquer une réussite.
+
+**Aucun plafond financier, de tokens ou d'appels à définir pour l'instant : « open bar ».** Mesurer reste obligatoire. Cela n'autorise ni boucle infinie ni publication forcée ; les reprises restent bornées et les appels payants de vérification sont convenus avant exécution. Les anciens plafonds ne sont pas reconfirmés.
+
+## Points ouverts
+
+- Atelier DMN/FEEL : sous-ensemble autorisé, représentation des conditions LLM, faits typés, traces par condition et sécurisation de l'évaluation.
+- Catalogue précis des outils des deux rôles, nombre de corrections et modalités d'annulation/reprise.
+- Choix du SDK d'orchestration : la Responses API existe ; adopter Agents SDK n'est pas une exigence reconfirmée.
+- Prototype de l'espace règles et détails du parcours 10–15 minutes.
+
+L'ordre de réalisation et les critères de sortie sont dans [la roadmap](13-roadmap-demo.md). Le [guide pédagogique](14-guide-pedagogique.md) explique les mécanismes et distingue l'existant de la cible.

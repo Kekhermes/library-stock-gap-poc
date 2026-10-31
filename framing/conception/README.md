@@ -1,6 +1,14 @@
 # Ressources de conception — library-stock-gap-poc
 
-Dossier destiné à la réalisation du projet par Kevin avec ses outils. Il contient des spécifications concrètes et des ressources testables, pas une application commencée implicitement.
+Dossier de ressources issues du premier cadrage, distinct du code applicatif désormais présent à la racine. Il contient des spécifications et fixtures testables, pas une preuve de fonctionnement du produit.
+
+## Réconciliation nécessaire — 2026-10-31
+
+L'[interview et la vision actuelles](../00-vision-et-exigences.md) et la [roadmap](../13-roadmap-demo.md) prévalent sur les détails incompatibles de ce dossier. Le jeu cible est dix dossiers **2 + 4 + 4**, tous vierges après reset ; les anciennes fixtures 120 dossiers/dix familles ne doivent pas être régénérées comme cible par défaut.
+
+Les rôles LLM restent réels, la génération attendue porte sur les conditions FEEL avec sérialisation DMN Java, et Discussion Expert doit être branchée. Les anciens budgets/SDK et les contrats proposés ne sont pas reconfirmés implicitement. Adapter schémas, exemples, prompts, données et tests ensemble au jalon correspondant, sans les assouplir pour masquer un écart.
+
+Le [guide pédagogique](../14-guide-pedagogique.md) distingue EXISTANT/CIBLE. Les résultats de conception historiques ci-dessous n'attestent ni les endpoints HTTP actuels ni la boucle réelle OpenAI.
 
 ## Organisation
 

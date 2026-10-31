@@ -1,5 +1,66 @@
 # Données, démonstration, évaluation et réinitialisation
 
+## Cible actuelle — validée le 2026-10-31
+
+Cette section remplace la volumétrie, le catalogue et les plafonds historiques conservés plus bas. Voir [les décisions N01–N18](04-registre-des-decisions.md) et [la vision actuelle](00-vision-et-exigences.md).
+
+### État exact après initialisation ou reset
+
+| Famille | Dossiers | Règle active initiale | Résultat attendu |
+|---|---:|---|---|
+| Localisation différente | 2 | R001 uniquement | Les deux passent en déterministe lorsqu'ils sont analysés |
+| Retour non répercuté | 4 | Aucune | Le premier dossier analysé produit un diagnostic LLM puis une règle ; les trois autres passent ensuite sans LLM |
+| Réparation non répercutée | 4 | Aucune | Même mécanisme, indépendamment des retours ; trois autres analogues reconnus après publication |
+
+**Total : dix dossiers en `A_ANALYSER`, aucun diagnostic, aucune proposition ni conversation préremplie.** Les vérifications de prévol ne doivent pas consommer le dossier d'apprentissage ou préanalyser les dossiers analogues dans l'époque de présentation.
+
+Les termes R2/R3 sont des repères pédagogiques, pas des identifiants imposés ni des artefacts préchargés. L'ordre d'apprentissage retour/réparation est libre. Une seule règle doit suffire pour chacun des groupes de quatre ; créer une règle différente par code-barres ferait échouer la démo.
+
+### Construction proposée des données
+
+Conserver seulement le fonds et les événements nécessaires à ces dix dossiers, au lieu d'imposer 1 200 exemplaires. Conserver le schéma et la stack existants. Chaque dossier a une histoire courte, une seule cause et des preuves structurées suffisantes pour la règle future.
+
+Retour : prêt antérieurement projeté, clôture/retour réellement enregistrés, échec corrélé de projection, présence physique admissible, état informatique encore prêté. Réparation : ordre et présence en atelier, échec corrélé de projection, état informatique resté au rayon. Localisation : observation unique fiable ailleurs dans le même site, sans second symptôme à expliquer.
+
+Les quatre exemplaires d'une famille varient par identifiants et détails non causaux, mais partagent les faits suffisants à une règle simple. Les trois analogues ne sont pas transmis comme exemples d'apprentissage à l'investigateur ni à l'agent de règles avant la publication ; ils servent à prouver la réutilisation.
+
+Les familles des données et leurs attentes sont connues du concepteur, pas du chemin de diagnostic. Pas de champ de cause attendue, de conclusion forcée ou de nom de scénario dans les faits DMN ou les prompts. Les notes restent des preuves auxiliaires ; la règle future doit fonctionner sur des faits structurés disponibles sans LLM.
+
+### Tests hors liste de dossiers
+
+Corpus technique séparé et réduit : positifs nouveaux, négatifs proches et faits inconnus. Pour une règle de retour, inclure notamment une projection finalement appliquée, un échec portant sur une autre opération, des sources incomplètes et un cas de réparation. Le corpus ne crée pas une quatrième famille dans la liste de démo.
+
+Java exécute réellement le candidat et le référentiel avant/après. Le rapport détaille les résultats ; aucune métrique de tests n'est dérivée du seul succès de compilation. Les trois analogues réservés sont contrôlés après publication et ne servent pas à corriger secrètement la règle.
+
+### Parcours 10–15 minutes proposé
+
+1. Constater dix dossiers vierges, une règle active et la configuration OpenAI prête.
+2. Analyser un des deux dossiers de localisation : montrer R001 et zéro appel LLM.
+3. Analyser un retour : aucune règle applicable, consultations successives réelles, diagnostic sourcé.
+4. Échanger avec l'investigateur ; accepter explicitement le diagnostic.
+5. Observer l'agent de règles, les conditions FEEL et leur table DMN ; discuter une condition ou un négatif.
+6. Voir le rapport de tests réel, puis approuver et publier la révision exacte au runtime.
+7. Analyser les trois autres retours : même nouvelle règle, nouvelle publication, aucun appel LLM de diagnostic.
+8. Constater que les réparations restent hors couverture ; leur boucle identique peut être déroulée en approfondissement.
+
+Le parcours court n'enlève pas l'exigence de réussite sur les deux familles ; la recette complète les acquiert toutes deux, dans les deux ordres.
+
+### Réinitialisation simple
+
+Réutiliser et fiabiliser le reset existant plutôt qu'imposer d'emblée une suppression de volumes. Résultat vérifié : nouvelle époque, dix dossiers `A_ANALYSER`, seule R001 active, aucune ancienne mission/proposition/conversation active ou réponse tardive adoptable. Les anciens états éventuellement archivés ne polluent pas l'écran initial.
+
+Préserver la configuration OpenAI et les autres projets. Confirmation explicite avant reset ; aucun nettoyage Docker global. Le support UI ou la commande de reset et son contrôle automatisé seront précisés dans la roadmap. Le POST existant n'est pas encore une preuve de reset complet.
+
+### Fiabilité et consommation
+
+Appels en direct, prévol non destructif, corrections bornées, refus et panne visibles. Pas de replay/mock de secours présenté comme une nouvelle génération. Aucune promesse absolue sur le fournisseur ou une sortie LLM ; la preuve déterministe après publication est reproductible sur le jeu versionné.
+
+Pas de plafond financier/tokens/appels à fixer maintenant, conformément à « open bar ». Mesurer la consommation de tous les essais et corrections. Les valeurs de l'ancien paragraphe 7 ne s'appliquent plus comme cible.
+
+## Historique du premier cadrage — non prescriptif pour la nouvelle démo
+
+Le profil 120 dossiers/dix familles et les commandes/plafonds suivants sont conservés pour comprendre l'existant. Ne pas régénérer ces fixtures comme jeu cible ; elles doivent être adaptées selon [la roadmap](13-roadmap-demo.md).
+
 ## Statut
 
 **Validé** : trois sites, environ 1 200 exemplaires et 120 cas, scénarios garantis + seed, inventaire à date fixe, sources en lecture seule, notes libres auxiliaires, variantes réservées aux tests, **UNE SEULE règle initiale très simple**.

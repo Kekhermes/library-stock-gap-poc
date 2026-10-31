@@ -1,5 +1,11 @@
 # Guide de réalisation avec tes outils
 
+## Priorité de lecture — révision du 2026-10-31
+
+Ce guide est historique. L'application existe désormais ; suivre [la vision actuelle](../../00-vision-et-exigences.md), [l'audit](../../12-etat-implementation-actuel.md) et [la roadmap M0–M8](../../13-roadmap-demo.md), pas une nouvelle reconstruction du socle.
+
+Préserver les décisions actuelles : dix dossiers vierges 2 + 4 + 4, deux agents et chat OpenAI réels, conditions FEEL générées et sérialisation DMN Java, vrais tests, publication runtime, mesures sans plafond de consommation imposé. Les lots/dix familles, les anciens quotas et Agents SDK ne sont pas des obligations reconfirmées. Les incréments ci-dessous sont des ressources à réconcilier, pas la roadmap actuelle.
+
 ## Ce dossier est une entrée de travail, pas un projet déjà développé
 
 Tu peux transmettre la racine `framing/conception/` à un outil de code. Les contrats et fixtures y sont concrets ; les snippets de transactions restent à implémenter. La conception ne dispense pas des tests d'intégration du futur backend.

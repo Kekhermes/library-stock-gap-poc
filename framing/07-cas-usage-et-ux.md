@@ -1,5 +1,30 @@
 # Cas d'usage et UX/UI
 
+## Parcours cible actuel — 2026-10-31
+
+Les [décisions actuelles](04-registre-des-decisions.md) et le [jeu 2 + 4 + 4](09-donnees-evaluation-et-reset.md) prévalent sur la navigation et les parcours historiques ci-dessous. Objectif : une démo 10–15 minutes pour développeurs/architectes, pas une plateforme opérationnelle exhaustive.
+
+- Liste de dix dossiers vierges au reset ; un dossier à la fois dans le parcours initial.
+- Dossier : attendu/observé et preuves ; diagnostic et proposition ; Discussion Expert réelle.
+- Investigation : étapes, consultations successives, observations, synthèses factuelles, modèle/appels/tokens/durée mesurés.
+- Chat : rôle choisi selon la phase, affiché et modifiable ; expliquer, contester et affiner, avec demande explicite de réévaluation.
+- Deux décisions distinctes : accepter le diagnostic, puis approuver/publier la révision de règle testée.
+- Espace DMN/FEEL : table lisible, expression exacte en lecture seule, faits/provenance, essai pur sur un dossier et conditions vraies/fausses/inconnues.
+- Gestion runtime : brouillon/révisions, rapports réels, approbation, publication/version active, retrait et historique.
+- Démo : progression déduite des actions réellement exécutées, puis analyse des trois analogues encore vierges.
+
+Le chat ne se limite pas à enregistrer la question. Un statut « prêt » ou une compilation réussie n'autorise pas un badge « replay validé ». Le refus de synthèse, la correction, l'expiration d'une validation et les erreurs fournisseur doivent être compréhensibles et relançables.
+
+Les preuves sont consultables depuis le diagnostic et les essais de règle. Le code FEEL inspecté est celui réellement exécuté, pas une explication reconstruite par l'UI. Un essai de règle ne doit pas déclencher un LLM caché.
+
+Sur écran étroit, utiliser onglets ou étapes lisibles plutôt que trois colonnes fixes. Réutiliser les vues existantes, organiser règles/propositions/publications ensemble si cela simplifie la navigation. Lots, multi-causes et comparaison avancée ne sont pas des exigences du parcours initial.
+
+**À prototyper :** structure précise de l'espace règles et intégration du reset avec confirmation. La confirmation avant reset et la conservation de la configuration sont obligatoires ; l'ancien choix « commande locale exclusivement » n'est pas reconfirmé.
+
+Voir [la roadmap M6–M8](13-roadmap-demo.md). La documentation pédagogique approfondit le fonctionnement hors du parcours court ; il ne faut pas un chat technique généraliste supplémentaire.
+
+## Spécification détaillée historique — à réconcilier
+
 ## Statut et principes
 
 **Validé** : persona Admin unique, dossier à trois panneaux, analyse individuelle et petits lots, mode démonstration guidé, absence d'édition manuelle des règles, création/révision exclusivement par l'agent, retrait possible par l'Admin.

@@ -1,5 +1,19 @@
 # Stack cible, versions et limites de vérification
 
+## Lecture actuelle — 2026-10-31
+
+**La stack existante est conservée ; la matrice candidate historique ci-dessous n'est pas une demande de migration.** Ses versions, licences et références de modèle n'ont pas été revérifiées auprès des registres/fournisseurs pendant cette passe.
+
+L'existant inspecté utilise Java 21 / Spring Boot 3.4.2 / KIE 10.2.0, Python 3.11 en image, le client OpenAI Responses API, Spring JDBC et Flyway. Le build Vue vérifié utilise Vite 6.4.5 ; les plages Vue/Router/Pinia sont des déclarations de dépendances, pas une preuve de version runtime exacte. Node 22 construit l'interface et Nginx la sert. PostgreSQL est tagué `18` dans Compose, Redpanda `v24.3.1` et Console `v3.13.1`.
+
+Sources : [POM](../backend/pom.xml), [image worker](../agents/Dockerfile), [dépendances Python](../agents/requirements.txt), [frontend](../frontend/package.json), [image frontend](../frontend/Dockerfile), [Compose](../docker-compose.yml), [audit des tests exécutés](12-etat-implementation-actuel.md).
+
+OpenAI reste le fournisseur, avec modèle configurable et accès à vérifier réellement. Agents SDK et les plafonds historiques ne sont pas reconfirmés. Pas de plafond de consommation fixé actuellement ; appels/usage mesurés, corrections bornées, aucun secret en traces. « Open bar » ne prouve pas la disponibilité d'un modèle ni sa compatibilité avec les sorties structurées.
+
+La recette finale enregistre les versions réellement résolues et les images utilisées ; elle ne substitue pas une recherche de « latest » à la preuve de la boucle. Voir [la roadmap](13-roadmap-demo.md) et [les rôles des technologies](14-guide-pedagogique.md).
+
+## Recherche documentaire historique — non reconfirmée
+
 ## Statut
 
 Recherche documentaire et registres consultés le **2026-10-24**. Technologies principales validées par Kevin ; versions ci-dessous proposées à partir de sources vivantes. **Aucune compatibilité intégrée, image Docker ou application n'a été testée pendant le cadrage.** Les lockfiles et digests seront figés au début de l'implémentation après le gate technique.

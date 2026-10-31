@@ -1,5 +1,38 @@
 # Registre des décisions et questions
 
+## Décisions actuelles — interview du 2026-10-31
+
+Ces décisions prévalent sur les lignes historiques incompatibles conservées plus bas. Les détails de FEEL, des contrats et de l'UX ne sont pas globalement approuvés par cette interview.
+
+| ID | Réponse explicite | Conséquence |
+|---|---|---|
+| N01 | LLM réels pour les deux agents ET Discussion Expert | Pas de réponses préfabriquées dans le parcours applicatif ; tests hors ligne clairement séparés |
+| N02 | Règles gérées dynamiquement au runtime, feature essentielle | Publication utilisée dès l'analyse suivante sans rebuild/redémarrage |
+| N03 | Consultations successives via outils bornés | Le snapshot complet à outil unique actuel ne suffit pas à la cible |
+| N04 | Chat : expliquer les preuves, corriger/réévaluer, construire/affiner une règle | Pas de simple stockage de messages ; effet métier explicite et traçable |
+| N05 | Accepter le diagnostic puis approuver la règle testée | Deux actes humains, jamais une publication par texte libre |
+| N06 | Dix dossiers : deux couverts par R001, quatre retours et quatre réparations | Tous vierges au reset ; un apprentissage par famille doit reconnaître les trois autres dossiers |
+| N07 | Localisation différente, retour non répercuté, réparation non répercutée | Trois causes métier, pas dix familles ni 120 dossiers dans la cible |
+| N08 | Appels directs, reprises bornées et erreurs visibles | Pas de secours mock/replay présenté comme réel ; aléa fournisseur expliqué |
+| N09 | OpenAI existant, modèle configurable | Pas de changement de fournisseur demandé ni d'identifiant de modèle tenu pour vérifié sans contrôle |
+| N10 | Table lisible, FEEL réel, faits et essais, cycle de gestion runtime | Espace DMN/FEEL dédié ; édition manuelle non retenue |
+| N11 | Conserver la stack ; simplifier données, parcours et concepts | Pas de suppression de Kafka ni de migration générale |
+| N12 | Développeurs/architectes découvrant agents et DMN ; démo 10–15 min | Markdown pédagogique lié au code, approfondissement séparé |
+| N13 | Étapes/outils/preuves, explications intermédiaires et mesures réelles | Synthèses factuelles, pas chaîne de pensée interne ni compteurs fictifs |
+| N14 | LLM produit les conditions FEEL, Java sérialise le DMN standard | Gabarit structurel permis, logique métier préfabriquée interdite |
+| N15 | Rôle selon la phase, affiché, avec possibilité de changer | Deux interlocuteurs réels sans troisième agent routeur imposé |
+| N16 | Réévaluation sur demande ; nouvelle acceptation si diagnostic modifié | Invalider les propositions dépendantes ; apport humain avec provenance explicite |
+| N17 | Rapport d'échec renvoyé à l'agent ; correction automatique bornée | Nouvelles révisions/test, arrêt visible si refus persistant |
+| N18 | Aucun plafond à déterminer pour l'instant : « open bar » | Les anciens budgets ne font plus autorité ; mesure et bornage des corrections demeurent |
+
+Le découpage exact **2 + 4 + 4** vient de la précision de Kevin, pas de la proposition initiale d'une boucle unique. Chacune des deux familles inconnues doit pouvoir être apprise indépendamment, dans l'ordre choisi par le démonstrateur.
+
+**OUVERTS :** détail FEEL et sérialisation, catalogue des outils, SDK d'orchestration, nombre de reprises, prototype UI. **Non exécutés pendant l'audit :** appels OpenAI réels et reset. L'interview ne vaut pas autorisation générale de modifier l'application.
+
+## Historique — 2026-10-24
+
+Les décisions de volumétrie, quotas et SDK ci-dessous sont historiques lorsqu'elles contredisent N01–N18. Elles expliquent le cadrage initial ; elles ne sont pas des exigences supplémentaires à réaliser.
+
 ## Règle de gestion
 
 Une recommandation reste **OUVERTE** jusqu'à une réponse explicite de Kevin. Les exigences déjà explicites sont dans [la vision](00-vision-et-exigences.md) et ne sont pas remises en question sans raison.
