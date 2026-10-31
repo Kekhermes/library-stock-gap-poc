@@ -1,5 +1,21 @@
 # État de réalisation et audit — 2026-10-31
 
+## Deuxième incrément — faits fiables et exécution DMN durcie
+
+M1 a été publié sur `main` dans le commit `a3a313b`. Les changements M2 ci-dessous sont réalisés localement et vérifiés ; ils ne constituent pas encore la livraison de la boucle LLM complète.
+
+- Une observation n'est exploitable comme lieu fiable que si elle est unique, valide, située dans la période de référence et cohérente avec l'exemplaire. Absence, ambiguïté ou observations concurrentes produisent des valeurs inconnues, sans choisir le premier scan.
+- Java sélectionne les opérations métier admises par date, pas par position dans une liste. La dernière tentative connue est recherchée pour la même opération et, lorsque présent, le même identifiant de corrélation. Une reprise réussie remplace l'ancien échec ; les événements postérieurs à la référence ou non encore capturés sont exclus.
+- Une source incomplète ou ne couvrant pas la référence ne fournit pas un compteur zéro présenté comme une absence prouvée. Les compteurs deviennent inconnus ; leur provenance inclut la disponibilité de la source.
+- Les traces contiennent les faits, les entrées de chaque règle, les valeurs manquantes et les références contributrices. Les findings restent distincts par règle pour conserver l'identité/version de chaque contribution ; une même cause n'est pas départagée par priorité arbitraire.
+- Un fait indispensable inconnu, une hypothèse seule ou plusieurs causes distinctes concurrentes sur le même symptôme empêchent de conclure déterministement et produisent `INSUFFICIENT_EVIDENCE`. Le cas de causes concurrentes est un garde-fou conservateur du périmètre mono-cause, pas une preuve formelle de contradiction.
+- Le moteur ne recompilera plus silencieusement un sous-ensemble de règles valides. Une sortie doit contenir `causeCode` et un `epistemicStatus` admis ; une chaîne seule ou un statut absent ne devient plus automatiquement `SUPPORTED`.
+- Une panne DMN est enregistrée comme analyse `FAILED`, avec phase et message persistés. Aucune mission LLM n'est créée pour la masquer. L'API d'analyse et le dossier exposent `deterministicTrace` ; l'interface distingue cette panne d'un échec GPT.
+
+**Vérifications exécutées :** 28 tests Java sur `mvn clean test`, dont 17 tests du service déterministe ; build Vue réussi ; backend/frontend reconstruits ; contrôle local en lecture seule `READY`, dix vierges, zéro analyse/mission/conversation/proposition et couverture 2 / 8 conservée. Pas de reset ou d'inférence OpenAI pendant M2.
+
+**Limites explicites :** les traces donnent actuellement entrées, provenance et résultats par règle, pas encore tous les prédicats/identifiants de ligne dans l'espace pédagogique prévu par M7. Les expressions admises, bornes d'évaluation, corpus réel de replay et validation/publication liée au contenu restent à terminer avec M3. La composition multi-cause générale n'est pas certifiée par les tests de la démo mono-symptôme. Les agents à outils successifs et Discussion Expert restent à réaliser.
+
 ## Premier incrément réalisé — données et remise à zéro
 
 Le profil `demo` du générateur **2.0.0** contient dix exemplaires, dix titres, dix dossiers et 48 événements : deux localisations, quatre retours, quatre réparations. Les dossiers sont tous non analysés au chargement ; seule R001 est active. L'historique est limité aux preuves nécessaires, sans transfert ou fonds normal supplémentaire dans ce profil.
@@ -24,7 +40,7 @@ Les conteneurs PostgreSQL/Redpanda étaient arrêtés au début du déploiement 
 
 Empreinte publique vérifiée : `4c4601f13cb0dbe8c4e708cdce481a45f92da83056a453eeaf32f86f43504634`. Époque finale de recette : `22ff6a01-ba2a-49f5-930b-b039b6206c7b` ; elle changera au prochain reset.
 
-**Restent à réaliser :** corrélations et qualité des faits complètes, tests/replay et publication stricts, sécurisation uniforme des missions, agents à outils successifs, génération FEEL sérialisée par Java, Discussion Expert réelle et espace DMN complet. M1 n'est pas la preuve de la boucle LLM de bout en bout.
+Cette section décrit le jalon M1 ; les corrections ultérieures des faits et du moteur sont précisées dans M2 ci-dessus. Restent les tests/replay et publication stricts, la sécurisation uniforme des missions, les agents à outils successifs, la génération FEEL sérialisée par Java, Discussion Expert réelle et l'espace DMN complet. M1 n'est pas la preuve de la boucle LLM de bout en bout.
 
 ## Conclusion de l'audit initial — avant ce premier incrément
 

@@ -3,6 +3,13 @@ package com.library.stockgap;
 import com.library.stockgap.domain.model.*;
 import com.library.stockgap.domain.service.DeterministicAnalysisService;
 import com.library.stockgap.domain.service.DmnEngineService;
+import com.library.stockgap.domain.service.AnalysisOrchestrationService;
+import com.library.stockgap.domain.service.SseHubService;
+import com.library.stockgap.infrastructure.persistence.CaseRepository;
+import com.library.stockgap.infrastructure.persistence.AnalysisRepository;
+import com.library.stockgap.infrastructure.persistence.RuleRepository;
+import com.library.stockgap.infrastructure.persistence.MissionRepository;
+import com.library.stockgap.infrastructure.persistence.OutboxRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -10,6 +17,8 @@ import java.time.Instant;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 public class DeterministicAnalysisServiceTest {
 
@@ -28,6 +37,9 @@ public class DeterministicAnalysisServiceTest {
         UUID copyId = UUID.randomUUID();
         UUID symptomId = UUID.randomUUID();
         UUID eventId = UUID.randomUUID();
+        UUID operationId = UUID.randomUUID();
+        String correlationId = UUID.randomUUID().toString();
+        Instant reference = Instant.parse("2026-09-30T12:00:00Z");
 
         List<Map<String, Object>> symptoms = List.of(Map.of(
             "symptomId", symptomId.toString(),
@@ -44,6 +56,8 @@ public class DeterministicAnalysisServiceTest {
         List<Map<String, Object>> observations = List.of(Map.of(
             "siteId", "NORD",
             "locationId", "loc-123",
+            "observationId", UUID.randomUUID().toString(),
+            "observedAt", reference.minusSeconds(30),
             "quality", "VALID"
         ));
 
@@ -52,31 +66,246 @@ public class DeterministicAnalysisServiceTest {
         integPayload.put("errorCode", errorCode);
         integPayload.put("projectedStatus", projectedStatus);
         integPayload.put("siteId", "NORD");
+        integPayload.put("originalEventId", operationId.toString());
+        integPayload.put("correlationId", correlationId);
 
         List<Map<String, Object>> sourceEvents = List.of(
             Map.of(
-                "sourceEventId", UUID.randomUUID().toString(),
+                "sourceEventId", operationId.toString(),
                 "eventType", "ReturnReceived",
-                "payload", Map.of("siteId", "NORD")
+                "occurredAt", reference.minusSeconds(120),
+                "recordedAt", reference.minusSeconds(110),
+                "payload", Map.of("siteId", "NORD", "correlationId", correlationId)
             ),
             Map.of(
                 "sourceEventId", eventId.toString(),
                 "eventType", "IntegrationProcessed",
+                "occurredAt", reference.minusSeconds(90),
+                "recordedAt", reference.minusSeconds(80),
                 "payload", integPayload
             )
         );
 
         List<Map<String, Object>> availability = List.of(
-            Map.of("source", "INTEGRATIONS", "status", "COMPLETE"),
-            Map.of("source", "LOANS", "status", "COMPLETE"),
-            Map.of("source", "RETURNS", "status", "COMPLETE")
+            Map.of("source", "INTEGRATIONS", "status", "COMPLETE", "completeFrom", reference.minusSeconds(86400), "completeTo", reference),
+            Map.of("source", "LOANS", "status", "COMPLETE", "completeFrom", reference.minusSeconds(86400), "completeTo", reference),
+            Map.of("source", "RETURNS", "status", "COMPLETE", "completeFrom", reference.minusSeconds(86400), "completeTo", reference)
         );
 
         return new EvidenceSnapshot(
             UUID.randomUUID(), caseId, copyId, "1.0.0",
-            Instant.now(), Instant.now(),
+            reference, reference,
             Map.of(), sourceEvents, List.of(), systemState, observations, availability, symptoms
         );
+    }
+
+    @Test
+    void contradictoryScansDoNotProduceAReliableLocation() {
+        var evidence = createStatusMismatchSnapshot("ON_LOAN", "RECEIVING", "FAILED", "ERROR", "RECEIVING");
+        List<Map<String, Object>> observations = List.of(
+            Map.of("siteId", "NORD", "locationId", "returns", "quality", "VALID", "observedAt", evidence.inventoryReferenceTime().minusSeconds(10)),
+            Map.of("siteId", "NORD", "locationId", "repair", "quality", "VALID", "observedAt", evidence.inventoryReferenceTime().minusSeconds(5)));
+        var facts = deterministicAnalysisService.facts(withEvidence(evidence, observations, evidence.sourceEvents(), evidence.sourceAvailability()));
+        assertNull(facts.get("observationReliable"));
+        assertNull(facts.get("observedLocationId"));
+        assertNull(facts.get("observedStatus"));
+        assertEquals("AMBIGUOUS", facts.get("observationQuality"));
+    }
+
+    @Test
+    void missingObservationRemainsUnknown() {
+        var evidence = createStatusMismatchSnapshot("ON_LOAN", "RECEIVING", "FAILED", "ERROR", "RECEIVING");
+        var facts = deterministicAnalysisService.facts(withEvidence(evidence, List.of(), evidence.sourceEvents(), evidence.sourceAvailability()));
+        assertNull(facts.get("observationReliable"));
+        assertNull(facts.get("observedSiteId"));
+    }
+
+    @Test
+    void successfulRetryWinsEvenWhenTheEventListIsReversed() {
+        var evidence = createStatusMismatchSnapshot("ON_LOAN", "RECEIVING", "FAILED", "ERROR", "RECEIVING");
+        Map<String, Object> failed = evidence.sourceEvents().getLast();
+        Map<String, Object> payload = new HashMap<>((Map<String, Object>) failed.get("payload"));
+        payload.put("outcome", "APPLIED");
+        payload.put("errorCode", null);
+        Map<String, Object> applied = new HashMap<>(failed);
+        applied.put("sourceEventId", UUID.randomUUID().toString());
+        applied.put("occurredAt", evidence.inventoryReferenceTime().minusSeconds(60));
+        applied.put("recordedAt", evidence.inventoryReferenceTime().minusSeconds(50));
+        applied.put("payload", payload);
+        var facts = deterministicAnalysisService.facts(withEvidence(evidence, evidence.observations(),
+            List.of(applied, failed, evidence.sourceEvents().getFirst()), evidence.sourceAvailability()));
+        assertEquals("APPLIED", facts.get("latestIntegrationOutcome"));
+        assertNull(facts.get("latestIntegrationErrorCode"));
+        assertEquals("ReturnReceived", facts.get("latestBusinessEventType"));
+    }
+
+    @Test
+    void updateOfAnotherOperationCannotExplainTheCurrentReturn() {
+        var evidence = createStatusMismatchSnapshot("ON_LOAN", "RECEIVING", "FAILED", "ERROR", "RECEIVING");
+        Map<String, Object> failed = new HashMap<>(evidence.sourceEvents().getLast());
+        Map<String, Object> payload = new HashMap<>((Map<String, Object>) failed.get("payload"));
+        payload.put("originalEventId", UUID.randomUUID().toString());
+        failed.put("payload", payload);
+        var facts = deterministicAnalysisService.facts(withEvidence(evidence, evidence.observations(),
+            List.of(evidence.sourceEvents().getFirst(), failed), evidence.sourceAvailability()));
+        assertNull(facts.get("latestIntegrationOutcome"));
+        assertNull(facts.get("latestProjectedStatus"));
+    }
+
+    private EvidenceSnapshot withEvidence(EvidenceSnapshot original, List<Map<String, Object>> observations,
+                                          List<Map<String, Object>> events, List<Map<String, Object>> availability) {
+        return new EvidenceSnapshot(original.snapshotId(), original.caseId(), original.copyId(), original.schemaVersion(),
+            original.inventoryReferenceTime(), original.dataCapturedAt(), original.caseFacts(), events, original.operatorNotes(),
+            original.systemState(), observations, availability, original.symptoms());
+    }
+
+    @Test
+    void incompleteSourcesDoNotProduceZeroAsProofOfAbsence() {
+        var evidence = createStatusMismatchSnapshot("ON_LOAN", "RECEIVING", "FAILED", "ERROR", "RECEIVING");
+        var availability = List.<Map<String, Object>>of(Map.of("source", "LOANS", "status", "PARTIAL"));
+        var facts = deterministicAnalysisService.facts(withEvidence(evidence, evidence.observations(), List.of(), availability));
+        assertNull(facts.get("loansCount"));
+        assertNull(facts.get("returnsCount"));
+        assertEquals("PARTIAL", facts.get("loansAvailabilityStatus"));
+        var complete = deterministicAnalysisService.facts(withEvidence(evidence, evidence.observations(), List.of(), evidence.sourceAvailability()));
+        assertEquals(0, complete.get("loansCount"));
+        assertFalse(((List<?>) ((Map<?, ?>) complete.get("factProvenance")).get("loansCount")).isEmpty());
+    }
+
+    @Test
+    void futureOrNotYetCapturedUpdatesAreNotUsed() {
+        var evidence = createStatusMismatchSnapshot("ON_LOAN", "RECEIVING", "FAILED", "ERROR", "RECEIVING");
+        Map<String, Object> future = new HashMap<>(evidence.sourceEvents().getLast());
+        future.put("sourceEventId", UUID.randomUUID().toString());
+        future.put("occurredAt", evidence.inventoryReferenceTime().plusSeconds(10));
+        future.put("recordedAt", evidence.dataCapturedAt().plusSeconds(20));
+        Map<String, Object> payload = new HashMap<>((Map<String, Object>) future.get("payload"));
+        payload.put("outcome", "APPLIED");
+        future.put("payload", payload);
+        var facts = deterministicAnalysisService.facts(withEvidence(evidence, evidence.observations(),
+            List.of(evidence.sourceEvents().getFirst(), evidence.sourceEvents().getLast(), future), evidence.sourceAvailability()));
+        assertEquals("FAILED", facts.get("latestIntegrationOutcome"));
+    }
+
+    @Test
+    void factsKeepTheReferencesOfTheOperationAndItsUpdate() {
+        var evidence = createStatusMismatchSnapshot("ON_LOAN", "RECEIVING", "FAILED", "ERROR", "RECEIVING");
+        var facts = deterministicAnalysisService.facts(evidence);
+        Map<?, ?> provenance = (Map<?, ?>) facts.get("factProvenance");
+        List<?> references = (List<?>) provenance.get("latestIntegrationOutcome");
+        assertEquals(2, references.size());
+        assertEquals(evidence.sourceEvents().getFirst().get("sourceEventId"), ((Map<?, ?>) references.getFirst()).get("recordId"));
+        assertEquals(evidence.sourceEvents().getLast().get("sourceEventId"), ((Map<?, ?>) references.getLast()).get("recordId"));
+    }
+
+    @Test
+    void missingRequiredFactTriggersInvestigationNotAFalseMatch() {
+        var evidence = createStatusMismatchSnapshot("ON_LOAN", "RECEIVING", "FAILED", "ERROR", "RECEIVING");
+        var result = deterministicAnalysisService.evaluate(withEvidence(evidence, List.of(), evidence.sourceEvents(), evidence.sourceAvailability()),
+            List.of(candidateRule("unknown-observation", "RETURN_NOT_PROJECTED", "SUPPORTED")));
+        assertFalse(result.fullyCovered());
+        assertEquals(FallbackReason.INSUFFICIENT_EVIDENCE, result.fallbackReason());
+        assertTrue(result.findings().isEmpty());
+        assertEquals(0, result.trace().get("rulesEvaluated"));
+    }
+
+    @Test
+    void aHypothesisCannotShortCircuitInvestigation() {
+        var evidence = createStatusMismatchSnapshot("ON_LOAN", "RECEIVING", "FAILED", "ERROR", "RECEIVING");
+        var result = deterministicAnalysisService.evaluate(evidence, List.of(candidateRule("hypothesis", "RETURN_NOT_PROJECTED", "HYPOTHESIS")));
+        assertFalse(result.fullyCovered());
+        assertEquals(FallbackReason.INSUFFICIENT_EVIDENCE, result.fallbackReason());
+        assertEquals(EpistemicStatus.HYPOTHESIS, result.findings().getFirst().epistemicStatus());
+    }
+
+    @Test
+    void equivalentRulesKeepAllContributorsAndEvidence() {
+        var evidence = createStatusMismatchSnapshot("ON_LOAN", "RECEIVING", "FAILED", "ERROR", "RECEIVING");
+        var result = deterministicAnalysisService.evaluate(evidence, List.of(
+            candidateRule("equivalent-a", "RETURN_NOT_PROJECTED", "SUPPORTED"),
+            candidateRule("equivalent-b", "RETURN_NOT_PROJECTED", "SUPPORTED")));
+        assertTrue(result.fullyCovered());
+        assertEquals(2, result.findings().size());
+        assertEquals(1, result.findings().stream().map(Finding::causeCode).distinct().count());
+        assertTrue(result.findings().stream().allMatch(finding -> !finding.evidenceRefs().isEmpty()
+            && finding.evidenceRefs().stream().allMatch(reference -> evidence.snapshotId().equals(reference.evidenceSnapshotId()))));
+        assertEquals(false, result.trace().get("competingCauses"));
+    }
+
+    @Test
+    void competingCausesAreNotArbitrarilyAccepted() {
+        var evidence = createStatusMismatchSnapshot("ON_LOAN", "RECEIVING", "FAILED", "ERROR", "RECEIVING");
+        var result = deterministicAnalysisService.evaluate(evidence, List.of(
+            candidateRule("competing-a", "RETURN_NOT_PROJECTED", "SUPPORTED"),
+            candidateRule("competing-b", "OTHER_CAUSE", "SUPPORTED")));
+        assertFalse(result.fullyCovered());
+        assertEquals(FallbackReason.INSUFFICIENT_EVIDENCE, result.fallbackReason());
+        assertEquals(true, result.trace().get("competingCauses"));
+    }
+
+    @Test
+    void anInvalidModelIsATechnicalFailureNotAnUnknownCause() {
+        var evidence = createStatusMismatchSnapshot("ON_LOAN", "RECEIVING", "FAILED", "ERROR", "RECEIVING");
+        var valid = candidateRule("valid", "RETURN_NOT_PROJECTED", "SUPPORTED");
+        var invalid = new RuleMetadata("invalid", 1, "Invalid", "AGENT", "rules/invalid.dmn", "urn:invalid", "invalid", "decision",
+            "UNKNOWN", List.of("STATUS_MISMATCH"), List.of(), List.of(), "invalid", "<definitions>broken", true, null, null);
+        assertThrows(RuntimeException.class, () -> deterministicAnalysisService.evaluate(evidence, List.of(valid, invalid)));
+    }
+
+    @Test
+    void aDmnFailureIsPersistedWithoutQueuingAnLlmMission() {
+        var evidence = createStatusMismatchSnapshot("ON_LOAN", "RECEIVING", "FAILED", "ERROR", "RECEIVING");
+        UUID epoch = UUID.randomUUID();
+        CaseRepository cases = mock(CaseRepository.class);
+        AnalysisRepository analyses = mock(AnalysisRepository.class);
+        RuleRepository rules = mock(RuleRepository.class);
+        MissionRepository missions = mock(MissionRepository.class);
+        OutboxRepository outbox = mock(OutboxRepository.class);
+        DeterministicAnalysisService engine = mock(DeterministicAnalysisService.class);
+        CaseDossier dossier = new CaseDossier(evidence.caseId(), evidence.copyId(), "demo", "demo", "demo", "NORD",
+            evidence.inventoryReferenceTime(), CaseStatus.A_ANALYSER, evidence.symptoms(), evidence.systemState(), evidence.observations(),
+            evidence.sourceAvailability(), evidence.operatorNotes(), evidence.sourceEvents(), List.of(), null, null, null);
+        when(cases.findCaseDossier(epoch, evidence.caseId())).thenReturn(Optional.of(dossier));
+        when(analyses.findActiveAnalysisId(epoch, evidence.caseId())).thenReturn(Optional.empty());
+        when(rules.getActiveRuleSetVersion(epoch)).thenReturn(1);
+        when(rules.getActiveRules(epoch)).thenReturn(List.of(candidateRule("failure", "RETURN_NOT_PROJECTED", "SUPPORTED")));
+        when(engine.evaluate(any(), anyList())).thenThrow(new IllegalStateException("DMN_EVALUATION_FAILED"));
+        var orchestration = new AnalysisOrchestrationService(cases, analyses, rules, missions, outbox, engine, mock(SseHubService.class));
+        UUID analysisId = orchestration.startAnalysis(epoch, evidence.caseId());
+        verify(analyses).failDeterministicAnalysis(epoch, analysisId, "DMN_EVALUATION_FAILED");
+        verifyNoInteractions(missions, outbox);
+    }
+
+    private RuleMetadata candidateRule(String ruleId, String causeCode, String status) {
+        String xml = """
+            <definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" id="definition_%s" name="%s" namespace="urn:test:%s">
+              <inputData id="kind" name="symptomKind"><variable name="symptomKind" typeRef="string"/></inputData>
+              <inputData id="outcome" name="latestIntegrationOutcome"><variable name="latestIntegrationOutcome" typeRef="string"/></inputData>
+              <inputData id="quality" name="observationReliable"><variable name="observationReliable" typeRef="boolean"/></inputData>
+              <decision id="decision" name="decision">
+                <variable name="decision"/>
+                <informationRequirement><requiredInput href="#kind"/></informationRequirement>
+                <informationRequirement><requiredInput href="#outcome"/></informationRequirement>
+                <informationRequirement><requiredInput href="#quality"/></informationRequirement>
+                <decisionTable hitPolicy="COLLECT">
+                  <input><inputExpression typeRef="string"><text>symptomKind</text></inputExpression></input>
+                  <input><inputExpression typeRef="string"><text>latestIntegrationOutcome</text></inputExpression></input>
+                  <input><inputExpression typeRef="boolean"><text>observationReliable</text></inputExpression></input>
+                  <output name="causeCode" typeRef="string"/>
+                  <output name="epistemicStatus" typeRef="string"/>
+                  <rule id="row">
+                    <inputEntry><text>"STATUS_MISMATCH"</text></inputEntry>
+                    <inputEntry><text>"FAILED"</text></inputEntry>
+                    <inputEntry><text>true</text></inputEntry>
+                    <outputEntry><text>"%s"</text></outputEntry>
+                    <outputEntry><text>"%s"</text></outputEntry>
+                  </rule>
+                </decisionTable>
+              </decision>
+            </definitions>
+            """.formatted(ruleId, ruleId, ruleId, causeCode, status);
+        return new RuleMetadata(ruleId, 1, ruleId, "AGENT", "rules/" + ruleId + ".dmn", "urn:test:" + ruleId, ruleId, "decision",
+            causeCode, List.of("STATUS_MISMATCH"), List.of(), List.of(), "test", xml, true, null, null);
     }
 
     @Test
@@ -206,7 +435,7 @@ public class DeterministicAnalysisServiceTest {
     }
 
     @Test
-    void testExistingDatabaseRule8bfdMatchesOnStatusMismatchCase() {
+    void testExistingDatabaseRule8bfdRejectsItsMissingDiagnosticOutputs() {
         // Case corresponding to repair projection failure: expected ON_SHELF, observed IN_REPAIR
         EvidenceSnapshot snapshot = createStatusMismatchSnapshot(
             "ON_SHELF", "IN_REPAIR", "FAILED", "PROJECTION_WRITE_UNAVAILABLE", "IN_REPAIR"
@@ -268,11 +497,6 @@ public class DeterministicAnalysisServiceTest {
             "sha-8bfd", ruleXml, true, null, null
         );
 
-        var result = deterministicAnalysisService.evaluate(snapshot, List.of(rule8bfd));
-
-        assertTrue(result.fullyCovered(), "La règle 8bfd de la base doit maintenant matcher le cas STATUS_MISMATCH !");
-        assertEquals(1, result.findings().size());
-        assertEquals("PROJECTION_WRITE_UNAVAILABLE", result.findings().getFirst().causeCode());
-        assertEquals(EpistemicStatus.SUPPORTED, result.findings().getFirst().epistemicStatus());
+        assertThrows(IllegalStateException.class, () -> deterministicAnalysisService.evaluate(snapshot, List.of(rule8bfd)));
     }
 }

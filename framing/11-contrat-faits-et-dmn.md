@@ -2,6 +2,27 @@
 
 ## Contrat cible partiellement arbitré — 2026-10-31
 
+### État d'exécution actuel — M2
+
+Le service Java applique maintenant la sélection admissible des observations et opérations métier, la dernière tentative connue pour la même opération, la disponibilité des sources et une provenance des faits. Les valeurs inconnues sont des `null`, pas des booléens ou compteurs fabriqués.
+
+| Faits utilisés | Type actuel | Sélection et portée |
+|---|---|---|
+| `symptomKind`, `expectedValue`, `observedValue` | Chaîne ou null | Symptôme du dossier mono-symptôme de démo ; valeur observée inconnue si le constat n'est pas fiable |
+| `systemStatus`, `expectedStatus`, sites/lieux attendus | Chaîne ou null | État informatique du dossier de preuves figé ; provenance de cet état |
+| `observedSiteId`, `observedLocationId`, `observationQuality`, `observationReliable` | Chaînes ou booléen nullable | Une observation unique valide avant la référence ; les constats ambigus/absents ne donnent pas de lieu certain |
+| `latestBusinessEventType` | Chaîne ou null | Dernière opération datée parmi prêt, retour, réception, transfert et réparation ; clôture administrative conservée en preuve, pas confondue avec réception du retour |
+| `latestIntegrationOutcome`, `latestIntegrationErrorCode`, `latestProjectedStatus` | Chaîne ou null | Dernière tentative admissible de mise à jour de cette même opération ; corrélation vérifiée lorsqu'elle est présente |
+| Disponibilités des sources et compteurs | Chaîne ou entier nullable | Une source complète doit couvrir la référence ; absence/incomplétude interdit de conclure à partir d'un zéro fictif |
+
+Les noms techniques d'entrée existants sont conservés ; leur sens explicite reste « mise à jour du stock informatique ». La provenance est regroupée dans `factProvenance` et les traces d'évaluation ; ce n'est pas une nouvelle condition métier ni un accès à l'oracle.
+
+Une règle avec entrée indispensable inconnue n'est pas évaluée comme si cette entrée était fausse. Le résultat est un besoin d'investigation identifié. Une hypothèse seule ne suffit pas à couvrir le dossier. Pour la démo mono-cause, des codes de cause distincts concurrentiels sur un même symptôme entraînent un relais conservateur, sans prétendre démontrer mathématiquement une contradiction. Des règles de même cause conservent leurs contributions et preuves dans le diagnostic et les traces.
+
+Les sorties DMN sont désormais contrôlées : `causeCode` chaîne non vide et `epistemicStatus` `SUPPORTED` ou `HYPOTHESIS`. Les pannes de compilation/évaluation et les sorties non conformes restent des erreurs techniques, pas `NO_RULE_MATCH`. Elles sont persistées et ne déclenchent pas de mission LLM.
+
+**Encore ouverts :** structure JSON des conditions générées, restrictions et bornes d'exécution, analyse générale des conflits et traces détaillées par prédicat/ligne. Les tests/replay de publication restent à implémenter. Voir [les preuves de réalisation](12-etat-implementation-actuel.md).
+
 [L'interview et les décisions N19–N28](04-registre-des-decisions.md) fixent le résultat : le LLM produit les conditions FEEL ; Java sérialise le DMN standard, compile, teste et publie la révision approuvée au runtime. Les vagues d'arbitrage ci-dessous sont validées ; les détails historiques plus bas ne font pas autorité lorsqu'ils les contredisent. Le [glossaire explicite](06-domaine-ddd-et-cycles-de-vie.md) fait référence pour les discussions et les livrables.
 
 ### Première vague validée

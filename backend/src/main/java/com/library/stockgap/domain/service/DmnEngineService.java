@@ -12,6 +12,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
+import java.io.StringReader;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
 import java.util.*;
 
 @Service
@@ -23,37 +26,34 @@ public class DmnEngineService {
         for (RuleMetadata r : rules) {
             resources.add(ResourceFactory.newByteArrayResource(r.dmnXml().getBytes(StandardCharsets.UTF_8)));
         }
-        try {
-            return DMNRuntimeBuilder.fromDefaults()
-                    .buildConfiguration()
-                    .fromResources(resources)
-                    .getOrElseThrow(e -> new RuntimeException("Erreur de compilation DMN KIE", e));
-        } catch (Exception e) {
-            log.warn("Erreur de compilation globale DMN: {}, repli sur les règles valides", e.getMessage());
-            List<Resource> validResources = new ArrayList<>();
-            for (RuleMetadata r : rules) {
-                if (validateDmnXml(r.dmnXml())) {
-                    validResources.add(ResourceFactory.newByteArrayResource(r.dmnXml().getBytes(StandardCharsets.UTF_8)));
-                }
-            }
-            if (validResources.isEmpty()) {
-                throw e;
-            }
-            return DMNRuntimeBuilder.fromDefaults()
-                    .buildConfiguration()
-                    .fromResources(validResources)
-                    .getOrElseThrow(ex -> new RuntimeException("Erreur de compilation DMN KIE", ex));
+        DMNRuntime runtime = DMNRuntimeBuilder.fromDefaults().buildConfiguration().fromResources(resources)
+            .getOrElseThrow(error -> new IllegalStateException("Compilation DMN impossible", error));
+        if (runtime.getModels().size() != rules.size() || runtime.getModels().stream().anyMatch(DMNModel::hasErrors)) {
+            throw new IllegalStateException("Référentiel DMN incomplet ou invalide : aucune règle ne sera écartée silencieusement");
         }
+        return runtime;
     }
 
     private static String extractXmlAttribute(String xml, String attr) {
-        if (xml == null) return null;
-        var p = java.util.regex.Pattern.compile(attr + "\\s*=\\s*\"([^\"]+)\"");
-        var m = p.matcher(xml);
-        return m.find() ? m.group(1) : null;
+        try {
+            XMLInputFactory factory = XMLInputFactory.newFactory();
+            factory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
+            factory.setProperty("javax.xml.stream.isSupportingExternalEntities", false);
+            var reader = factory.createXMLStreamReader(new StringReader(xml));
+            try {
+                while (reader.hasNext()) {
+                    if (reader.next() == XMLStreamConstants.START_ELEMENT) return reader.getAttributeValue(null, attr);
+                }
+            } finally {
+                reader.close();
+            }
+            return null;
+        } catch (Exception error) {
+            throw new IllegalStateException("Attributs du modèle DMN illisibles", error);
+        }
     }
 
-    public List<Finding> evaluateRule(DMNRuntime runtime, RuleMetadata rule, Map<String, Object> facts, UUID copyId, List<UUID> symptomIds) {
+    private DMNModel modelFor(DMNRuntime runtime, RuleMetadata rule) {
         String ns = rule.namespace();
         String name = rule.modelName();
         String xmlNs = extractXmlAttribute(rule.dmnXml(), "namespace");
@@ -66,39 +66,20 @@ public class DmnEngineService {
         if (model == null && ns != null && name != null) {
             model = runtime.getModel(ns, name);
         }
-        if (model == null) {
-            String targetNs = xmlNs != null ? xmlNs : ns;
-            for (DMNModel m : runtime.getModels()) {
-                if (m.getNamespace().equals(targetNs)) {
-                    model = m;
-                    break;
-                }
-            }
-        }
-        if (model == null && (xmlName != null || name != null)) {
-            String targetName = xmlName != null ? xmlName : name;
-            for (DMNModel m : runtime.getModels()) {
-                if (m.getName().equals(targetName)) {
-                    model = m;
-                    break;
-                }
-            }
-        }
-        if (model == null) {
-            try {
-                DMNRuntime isolated = createRuntime(List.of(rule));
-                if (!isolated.getModels().isEmpty()) {
-                    model = isolated.getModels().get(0);
-                    runtime = isolated;
-                }
-            } catch (Exception e) {
-                log.warn("Impossible de compiler la règle isolée {}: {}", rule.ruleId(), e.getMessage());
-            }
-        }
         if (model == null || model.hasErrors()) {
-            log.warn("Modèle DMN invalide ou introuvable pour la règle {}: {}", rule.ruleId(), rule.name());
-            return Collections.emptyList();
+            throw new IllegalStateException("Modèle DMN invalide ou introuvable pour " + rule.ruleId());
         }
+        return model;
+    }
+
+    public Set<String> inputNames(DMNRuntime runtime, RuleMetadata rule) {
+        Set<String> names = new TreeSet<>();
+        for (var input : modelFor(runtime, rule).getInputs()) names.add(input.getName());
+        return names;
+    }
+
+    public List<Finding> evaluateRule(DMNRuntime runtime, RuleMetadata rule, Map<String, Object> facts, UUID copyId, List<UUID> symptomIds) {
+        DMNModel model = modelFor(runtime, rule);
 
         DMNContext ctx = runtime.newContext();
         for (Map.Entry<String, Object> entry : facts.entrySet()) {
@@ -107,12 +88,12 @@ public class DmnEngineService {
 
         DMNResult result = runtime.evaluateAll(model, ctx);
         if (result.hasErrors()) {
-            log.warn("Erreur d'évaluation DMN pour règle {}: {}", rule.ruleId(), result.getMessages());
-            return Collections.emptyList();
+            throw new IllegalStateException("Évaluation DMN en échec pour " + rule.ruleId() + ": " + result.getMessages());
         }
 
         List<Finding> findings = new ArrayList<>();
         for (DMNDecisionResult dr : result.getDecisionResults()) {
+            if (!rule.decisionName().equals(dr.getDecisionName()) && !rule.decisionName().equals(dr.getDecisionId())) continue;
             Object val = dr.getResult();
             if (val == null) continue;
             if (val instanceof List<?> list) {
@@ -130,14 +111,14 @@ public class DmnEngineService {
     private void processDecisionItem(Object item, RuleMetadata rule, UUID copyId, List<UUID> symptomIds, List<Finding> findings) {
         if (item instanceof Map<?, ?> map) {
             String causeCode = extractCauseCode(map, rule);
-            String epistemicStr = (String) map.get("epistemicStatus");
+            String epistemicStr = map.get("epistemicStatus") instanceof String value ? value : null;
             EpistemicStatus epistemic = parseEpistemicStatus(epistemicStr);
             findings.add(new Finding(
                 copyId,
                 symptomIds,
                 causeCode,
                 epistemic,
-                List.of("Règle " + rule.ruleId() + " (" + rule.name() + ") validée."),
+                List.of("Règle " + rule.ruleId() + " (" + rule.name() + ") applicable."),
                 Collections.emptyList(),
                 Collections.emptyList(),
                 rule.recommendations(),
@@ -145,40 +126,17 @@ public class DmnEngineService {
                 rule.ruleId(),
                 rule.ruleVersion()
             ));
-        } else if (item instanceof String s && !s.isBlank()) {
-            findings.add(new Finding(
-                copyId,
-                symptomIds,
-                rule.causeCode(),
-                EpistemicStatus.SUPPORTED,
-                List.of("Règle " + rule.ruleId() + " (" + rule.name() + ") validée."),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                rule.recommendations(),
-                "Diagnostic déterministe par DMN: " + rule.name(),
-                rule.ruleId(),
-                rule.ruleVersion()
-            ));
-        }
+        } else throw new IllegalStateException("Sortie DMN non conforme pour " + rule.ruleId() + " : causeCode et epistemicStatus requis");
     }
 
     private String extractCauseCode(Map<?, ?> map, RuleMetadata rule) {
-        if (map.containsKey("causeCode") && map.get("causeCode") != null) {
-            return map.get("causeCode").toString();
-        }
-        if (map.containsKey("cause") && map.get("cause") != null) {
-            return map.get("cause").toString();
-        }
-        return rule.causeCode();
+        if (map.get("causeCode") instanceof String value && !value.isBlank()) return value;
+        throw new IllegalStateException("Sortie DMN non conforme pour " + rule.ruleId() + " : causeCode absent ou invalide");
     }
 
     private EpistemicStatus parseEpistemicStatus(String str) {
-        if (str == null || str.isBlank()) return EpistemicStatus.SUPPORTED;
-        try {
-            return EpistemicStatus.valueOf(str);
-        } catch (Exception e) {
-            return EpistemicStatus.SUPPORTED;
-        }
+        if (!"SUPPORTED".equals(str) && !"HYPOTHESIS".equals(str)) throw new IllegalStateException("Sortie DMN non conforme : epistemicStatus absent ou invalide");
+        return EpistemicStatus.valueOf(str);
     }
 
     public boolean validateDmnXml(String dmnXml) {

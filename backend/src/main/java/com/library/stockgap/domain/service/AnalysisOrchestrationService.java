@@ -13,7 +13,13 @@ import java.time.Instant; import java.util.*;
   UUID sid=UUID.randomUUID(), aid=UUID.randomUUID(); int version=rules.getActiveRuleSetVersion(epoch);
   EvidenceSnapshot snap=new EvidenceSnapshot(sid,caseId,d.copyId(),"1.0.0",d.inventoryReferenceTime(),Instant.now(),Map.of("caseId",caseId.toString(),"copyId",d.copyId().toString()),d.timeline(),d.operatorNotes(),d.systemState(),d.observations(),d.sourceAvailability(),d.symptoms());
   analyses.insertSnapshot(epoch,snap); analyses.insertAnalysisRun(epoch,aid,caseId,sid,version);
-  var result=dmn.evaluate(snap,rules.getActiveRules(epoch));
+    DeterministicAnalysisService.DeterministicEvaluationResult result;
+    try { result=dmn.evaluate(snap,rules.getActiveRules(epoch)); }
+    catch (RuntimeException failure) {
+    analyses.failDeterministicAnalysis(epoch,aid,String.valueOf(failure.getMessage()));
+     sse.publishEvent(epoch,"AnalysisChanged","Analysis",aid.toString(),Map.of("analysisId",aid,"caseId",caseId,"state","FAILED","reason","DMN_EVALUATION_FAILED","message",String.valueOf(failure.getMessage())));
+     return aid;
+    }
   if(result.fullyCovered()) { UUID did=UUID.randomUUID(); DiagnosticRecord diag=new DiagnosticRecord(did,aid,caseId,DiagnosticConclusion.fromFindings(result.findings()),result.findings(),List.of(),"Diagnostic déterministe complet établi par les règles DMN actives.",true,"DMN"); analyses.markDeterministicCompleted(epoch,aid,caseId,result.trace(),diag); sse.publishEvent(epoch,"AnalysisChanged","Analysis",aid.toString(),Map.of("analysisId",aid,"caseId",caseId,"state","COMPLETED","isDeterministic",true)); }
   else { analyses.markFallbackRequested(epoch,aid,result.fallbackReason(),result.trace()); queueAgent(epoch,aid,caseId,sid,version,result.fallbackReason()); }
   return aid;

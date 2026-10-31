@@ -140,8 +140,15 @@
             </div>
           </div>
           <div v-else-if="dossier.analyses?.[0]?.status === 'FAILED'" style="border: 1px solid var(--accent-rose); border-radius: 6px; padding: 0.85rem; background: rgba(251, 113, 133, 0.08); margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-muted);">
-            <strong style="color: var(--accent-rose);">Investigation agentique en échec</strong><br>
-            La cascade DMN → agent a bien été déclenchée, mais l'agent n'a pas produit de diagnostic recevable. Le cas peut être relancé.
+            <template v-if="dossier.analyses[0].deterministicTrace?.phase === 'DETERMINISTIC'">
+              <strong style="color: var(--accent-rose);">Évaluation déterministe en échec</strong><br>
+              Le moteur DMN n'a pas pu terminer l'évaluation. Aucun agent LLM n'a été lancé pour masquer cette panne.
+              <div role="alert" style="margin-top: 0.5rem; overflow-wrap: anywhere;">{{ dossier.analyses[0].deterministicTrace.message }}</div>
+            </template>
+            <template v-else>
+              <strong style="color: var(--accent-rose);">Investigation agentique en échec</strong><br>
+              La cascade DMN → agent a bien été déclenchée, mais l'agent n'a pas produit de diagnostic recevable. Le cas peut être relancé.
+            </template>
           </div>
 
           <div v-else-if="dossier.status === 'EN_ANALYSE'" style="text-align: center; padding: 2rem;">

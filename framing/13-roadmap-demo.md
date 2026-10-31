@@ -6,7 +6,9 @@ Réalisation autorisée le **2026-10-31**, sur la base de [l'interview](04-regis
 
 **Avancement : M1 réalisé et vérifié localement.** Jeu 2 + 4 + 4, manifeste public, contrôle de préparation sans LLM, remise à zéro avec vérifications et écran responsive. La recette a produit deux diagnostics R001 et laissé dix dossiers vierges, zéro analyse/mission/conversation/proposition active, même empreinte et nouvelle époque.
 
-Deux garde-fous de M2 sont également réalisés : suppression des conclusions forcées dans les faits et filtrage d'une règle par les types de symptômes qu'elle couvre. M2 reste ouvert pour qualité des observations, corrélations, traces complètes et erreurs moteur ; M3–M8 ne sont pas déclarés livrés.
+**M2 : socle de fiabilité réalisé et vérifié.** Observations uniques/admissibles, dernières tentatives corrélées, bornes temporelles, compteurs inconnus sur source incomplète, provenance/entrées/résultats par règle, sorties strictes et panne DMN persistée sans fallback artificiel. La couverture est calculée sur les symptômes concernés et le degré d'étayage. Les causes concurrentes du périmètre mono-cause entraînent une abstention conservatrice.
+
+Les traces détaillées par prédicat/ligne de l'espace pédagogique restent à terminer avec M7 ; le sous-ensemble exécutable, ses restrictions/bornes et la publication testée restent à traiter avec M3. M3–M8 ne sont pas déclarés livrés.
 
 Ne pas reconstruire le projet ni migrer sa stack. Réaliser des incréments courts, démontrables et documentés ; ne pas élargir le périmètre avant la preuve de la boucle.
 
@@ -31,6 +33,8 @@ Les acquisitions doivent fonctionner dans les deux ordres, retour puis réparati
 | M8 — Recette et documentation | Livraison | M1–M7 | Preuve directe des deux boucles et documentation à jour | F01–F10 |
 
 Preuves de M1 : 16 tests du générateur, 15 tests Java sur compilation propre, build Vue, recette REST sur images reconstruites et contrôle navigateur desktop/mobile. Aucune inférence payante ; worker LLM resté arrêté durant la recette. Voir [l'état de réalisation](12-etat-implementation-actuel.md).
+
+Preuves de M2 : 28 tests Java sur compilation propre, build Vue et contrôle local de préparation après reconstruction, toujours `READY` et couverture 2 / 8 ; aucun traitement métier déclenché par ce contrôle. M1 est publié dans `a3a313b` ; la suite locale n'est pas automatiquement committée.
 
 Les documents pédagogiques sont mis à jour **à chaque jalon**, pas uniquement en M8. M4 est un travail transversal ; ses protections sont terminées avant les premiers essais de boucle réelle.
 

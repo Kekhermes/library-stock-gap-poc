@@ -121,6 +121,18 @@ public class AnalysisRepository {
         );
     }
 
+    @Transactional
+    public void failDeterministicAnalysis(UUID epoch, UUID analysisId, String message) {
+        try {
+            String trace = objectMapper.writeValueAsString(Map.of("phase", "DETERMINISTIC", "error", "DMN_EVALUATION_FAILED", "message", message));
+            jdbcTemplate.update("UPDATE runtime.analysis_run SET deterministic_trace = ?::jsonb WHERE dataset_epoch = ? AND analysis_id = ?",
+                trace, epoch, analysisId);
+            failAnalysis(epoch, analysisId);
+        } catch (Exception failure) {
+            throw new IllegalStateException("Enregistrement de l'échec déterministe impossible", failure);
+        }
+    }
+
     /** Analyse encore active (non terminale) d'un cas, si elle existe. */
     public Optional<UUID> findActiveAnalysisId(UUID epoch, UUID caseId) {
         var list = jdbcTemplate.query(
@@ -193,6 +205,12 @@ public class AnalysisRepository {
             map.put("createdAt", rs.getTimestamp("created_at").toInstant().toString());
             var fin = rs.getTimestamp("finished_at");
             map.put("finishedAt", fin != null ? fin.toInstant().toString() : null);
+            try {
+                String trace = rs.getString("deterministic_trace");
+                map.put("deterministicTrace", trace == null ? Map.of() : objectMapper.readValue(trace, Map.class));
+            } catch (Exception failure) {
+                throw new IllegalStateException("Trace déterministe illisible", failure);
+            }
             return map;
         }, epoch, analysisId);
         return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));

@@ -18,6 +18,18 @@ L'écran système affiche les neuf contrôles réels ; son état « Prête » co
 
 ## 1. Ce que le système apprend
 
+### Deuxième traitement livré : établir des faits fiables
+
+Une liste d'événements n'est pas nécessairement chronologique. Java trie les preuves admissibles, choisit l'opération métier concernée et recherche ses tentatives de mise à jour. Si la tentative la plus récente a réussi, l'ancien échec ne doit pas devenir une cause encore active. Une mise à jour d'une autre opération ne répond pas à cette question.
+
+Un scan unique et valide peut fournir un lieu observé. Deux lieux concurrents ou une qualité ambiguë rendent cette valeur inconnue. De même, une source partielle ne permet pas de transformer « aucun événement dans l'export » en « aucun événement n'a existé » : le compteur reste inconnu.
+
+Le moteur reçoit ces faits sans LLM et conserve leurs références. Il vérifie les entrées indispensables avant l'évaluation : inconnu → besoin d'investigation ; conditions non satisfaites → aucun match ; hypothèse seule → investigation ; compilation cassée ou sortie non conforme → panne visible, sans agent lancé pour l'escamoter.
+
+Les conclusions équivalentes conservent toutes leurs règles contributrices. Dans la démo mono-cause, des causes distinctes concurrentes sur le même symptôme ne sont pas départagées arbitrairement ; le système demande une investigation. Cela reste un contrôle conservateur sur le domaine de démo, pas une preuve générale de compatibilité logique.
+
+`deterministicTrace`, accessible avec l'analyse et le dossier, contient entrées, valeurs manquantes, faits/provenance et résultats par règle, ou la phase/message d'une panne. L'espace de lecture détaillée des conditions FEEL et le vrai replay de publication ne sont pas encore livrés. Voir [M2 et ses vérifications](12-etat-implementation-actuel.md).
+
 Le système ne modifie pas les poids du LLM. Il capitalise une connaissance sous forme de règle exécutable, conservée en base et évaluée ensuite par un moteur sans IA.
 
 Un dossier compare une situation informatique et des observations physiques. « Écart détecté » ne signifie pas « cause établie ». Un diagnostic fournit une explication, ses preuves et ses limites ; l'expert peut l'accepter sans corriger le stock.

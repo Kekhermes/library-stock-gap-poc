@@ -240,7 +240,7 @@ public class CaseRepository {
     }
 
     private List<Map<String, Object>> getAnalysesForCase(UUID epoch, UUID caseId) {
-        String sql = "SELECT analysis_id, rule_set_version, status, created_at, finished_at, fallback_reason " +
+        String sql = "SELECT analysis_id, rule_set_version, status, created_at, finished_at, fallback_reason, deterministic_trace " +
                      "FROM runtime.analysis_run WHERE dataset_epoch = ? AND case_id = ? ORDER BY created_at DESC";
         return jdbcTemplate.query(sql, (rs, rowNum) -> {
             Map<String, Object> map = new HashMap<>();
@@ -251,6 +251,12 @@ public class CaseRepository {
             var comp = rs.getTimestamp("finished_at");
             map.put("finishedAt", comp != null ? comp.toInstant().toString() : null);
             map.put("fallbackReason", rs.getString("fallback_reason"));
+            try {
+                String trace = rs.getString("deterministic_trace");
+                map.put("deterministicTrace", trace == null ? Map.of() : objectMapper.readValue(trace, Map.class));
+            } catch (Exception failure) {
+                throw new IllegalStateException("Trace déterministe du dossier illisible", failure);
+            }
             return map;
         }, epoch, caseId);
     }
